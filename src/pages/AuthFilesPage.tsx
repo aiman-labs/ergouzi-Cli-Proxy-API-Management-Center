@@ -50,11 +50,13 @@ import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModel
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
+import { filterAuthFilesBySuccessCount } from '@/features/authFiles/successFilter';
 import {
   isAuthFilesEnabledFilter,
   isAuthFilesErrorTypeFilter,
   isAuthFilesHealthFilter,
   isAuthFilesSortMode,
+  isAuthFilesSuccessCountFilter,
   readAuthFilesUiState,
   readPersistedAuthFilesCompactMode,
   writeAuthFilesUiState,
@@ -63,6 +65,7 @@ import {
   type AuthFilesErrorTypeFilter,
   type AuthFilesHealthFilter,
   type AuthFilesSortMode,
+  type AuthFilesSuccessCountFilter,
 } from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem } from '@/types/authFile';
@@ -157,6 +160,8 @@ export function AuthFilesPage() {
   const [healthFilter, setHealthFilter] = useState<AuthFilesHealthFilter>('all');
   const [enabledFilter, setEnabledFilter] = useState<AuthFilesEnabledFilter>('all');
   const [errorTypeFilter, setErrorTypeFilter] = useState<AuthFilesErrorTypeFilter>('all');
+  const [successCountFilter, setSuccessCountFilter] =
+    useState<AuthFilesSuccessCountFilter>('all');
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -303,6 +308,9 @@ export function AuthFilesPage() {
       if (isAuthFilesErrorTypeFilter(persisted.errorTypeFilter)) {
         setErrorTypeFilter(persisted.errorTypeFilter);
       }
+      if (isAuthFilesSuccessCountFilter(persisted.successCountFilter)) {
+        setSuccessCountFilter(persisted.successCountFilter);
+      }
       if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
@@ -344,6 +352,7 @@ export function AuthFilesPage() {
       healthFilter,
       enabledFilter,
       errorTypeFilter,
+      successCountFilter,
       compactMode,
       search,
       page,
@@ -364,6 +373,7 @@ export function AuthFilesPage() {
     pageSizeByMode,
     search,
     sortMode,
+    successCountFilter,
     uiStateHydrated,
   ]);
 
@@ -455,8 +465,8 @@ export function AuthFilesPage() {
   }, [files]);
 
   const filesMatchingStatusFilters = useMemo(
-    () =>
-      files.filter((file) => {
+    () => {
+      const statusFilteredFiles = files.filter((file) => {
         const hasProblem = Boolean(getFileProblemMessage(file));
         if (healthFilter === 'problem' && !hasProblem) return false;
         if (healthFilter === 'normal' && hasProblem) return false;
@@ -467,8 +477,17 @@ export function AuthFilesPage() {
           if (errorType !== errorTypeFilter) return false;
         }
         return true;
-      }),
-    [enabledFilter, errorTypeFilter, files, getFileProblemMessage, healthFilter]
+      });
+      return filterAuthFilesBySuccessCount(statusFilteredFiles, successCountFilter);
+    },
+    [
+      enabledFilter,
+      errorTypeFilter,
+      files,
+      getFileProblemMessage,
+      healthFilter,
+      successCountFilter,
+    ]
   );
 
   const sortOptions = useMemo(
@@ -504,6 +523,14 @@ export function AuthFilesPage() {
         label: t('auth_files.error_type_filter_authentication_error'),
       },
       { value: 'other', label: t('auth_files.error_type_filter_other') },
+    ],
+    [t]
+  );
+  const successCountFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: t('auth_files.success_count_filter_all') },
+      { value: 'positive', label: t('auth_files.success_count_filter_positive') },
+      { value: 'zero', label: t('auth_files.success_count_filter_zero') },
     ],
     [t]
   );
@@ -974,6 +1001,19 @@ export function AuthFilesPage() {
                       setPage(1);
                     }}
                     ariaLabel={t('auth_files.error_type_filter_label')}
+                    fullWidth
+                  />
+                </div>
+                <div className={styles.filterItem}>
+                  <label>{t('auth_files.success_count_filter_label')}</label>
+                  <Select
+                    value={successCountFilter}
+                    options={successCountFilterOptions}
+                    onChange={(value) => {
+                      setSuccessCountFilter(value as AuthFilesSuccessCountFilter);
+                      setPage(1);
+                    }}
+                    ariaLabel={t('auth_files.success_count_filter_label')}
                     fullWidth
                   />
                 </div>

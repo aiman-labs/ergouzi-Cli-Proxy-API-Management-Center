@@ -326,9 +326,9 @@
 .filterControls {
   display: grid;
   grid-template-columns:
-    minmax(260px, 1.4fr)
+    minmax(260px, 1.3fr)
     minmax(108px, 0.45fr)
-    repeat(3, minmax(148px, 0.65fr));
+    repeat(4, minmax(140px, 0.6fr));
   gap: 12px;
   align-items: flex-end;
 
