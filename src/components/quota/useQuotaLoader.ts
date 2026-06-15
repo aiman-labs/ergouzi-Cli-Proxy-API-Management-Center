@@ -7,9 +7,11 @@ import { useTranslation } from 'react-i18next';
 import type { AuthFileItem } from '@/types';
 import { useQuotaStore } from '@/stores';
 import { getStatusFromError } from '@/utils/quota';
+import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import type { QuotaConfig } from './quotaConfigs';
 
 type QuotaScope = 'page' | 'all';
+const QUOTA_BATCH_CONCURRENCY = 4;
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
@@ -55,8 +57,10 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
           return nextState;
         });
 
-        const results = await Promise.all(
-          targets.map(async (file): Promise<LoadQuotaResult<TData>> => {
+        await runLimitedBatch({
+          items: targets,
+          concurrency: QUOTA_BATCH_CONCURRENCY,
+          worker: async (file): Promise<LoadQuotaResult<TData>> => {
             try {
               const data = await config.fetchQuota(file, t);
               return { name: file.name, status: 'success', data };
@@ -65,24 +69,22 @@ export function useQuotaLoader<TState, TData>(config: QuotaConfig<TState, TData>
               const errorStatus = getStatusFromError(err);
               return { name: file.name, status: 'error', error: message, errorStatus };
             }
-          })
-        );
-
-        if (requestId !== requestIdRef.current) return;
-
-        setQuota((prev) => {
-          const nextState = { ...prev };
-          results.forEach((result) => {
-            if (result.status === 'success') {
-              nextState[result.name] = config.buildSuccessState(result.data as TData);
-            } else {
-              nextState[result.name] = config.buildErrorState(
-                result.error || t('common.unknown_error'),
-                result.errorStatus
-              );
-            }
-          });
-          return nextState;
+          },
+          onResult: (result) => {
+            if (requestId !== requestIdRef.current) return;
+            setQuota((prev) => {
+              const nextState = { ...prev };
+              if (result.status === 'success') {
+                nextState[result.name] = config.buildSuccessState(result.data as TData);
+              } else {
+                nextState[result.name] = config.buildErrorState(
+                  result.error || t('common.unknown_error'),
+                  result.errorStatus
+                );
+              }
+              return nextState;
+            });
+          },
         });
       } finally {
         if (requestId === requestIdRef.current) {

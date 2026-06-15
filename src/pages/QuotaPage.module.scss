@@ -61,6 +61,84 @@
   }
 }
 
+.sectionFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 180px;
+  min-width: 160px;
+
+  > span {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 700;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  @include mobile {
+    width: 100%;
+  }
+}
+
+.quotaCrudToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: $spacing-md;
+}
+
+.quotaFilterBar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--bg-secondary) 48%, transparent);
+
+  @include mobile {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.quotaBatchBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 18%, var(--border-color));
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-secondary));
+
+  @include mobile {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.sectionFilterSelect {
+  width: 100%;
+  height: 34px;
+  padding: 6px 32px 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 18%, transparent);
+  }
+}
+
 .headerActions {
   display: flex;
   gap: $spacing-sm;
@@ -73,6 +151,50 @@
     line-height: 16px;
     min-width: 0;
   }
+
+  :global(svg) {
+    display: block;
+  }
+
+  @include mobile {
+    width: 100%;
+    justify-content: stretch;
+  }
+}
+
+.sectionScopeSummary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+
+  strong {
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+
+  span {
+    color: var(--text-tertiary);
+  }
+
+  @include mobile {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    white-space: normal;
+  }
+}
+
+.batchActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
 
   :global(svg) {
     display: block;
@@ -158,6 +280,32 @@
 
   @include mobile {
     grid-template-columns: 1fr;
+  }
+}
+
+.sectionScrollBody {
+  max-height: clamp(480px, 62vh, 760px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--border-color) 72%, var(--text-tertiary));
+  }
+
+  @include mobile {
+    max-height: 68vh;
+    padding-right: 0;
   }
 }
 

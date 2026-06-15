@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getStatusFromError, isDisabledAuthFile } from '@/utils/quota';
+import { getAuthFileStatusMessage } from '@/features/authFiles/constants';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
@@ -23,9 +24,36 @@ type QuotaUpdater<T> = T | ((prev: T) => T);
 type QuotaSetter<T> = (updater: QuotaUpdater<T>) => void;
 
 type ViewMode = 'paged' | 'all';
+type IssueFilter = 'all' | 'normal' | 'problem';
 
 const MAX_ITEMS_PER_PAGE = 25;
 const MAX_SHOW_ALL_THRESHOLD = 30;
+const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'available']);
+
+const getModifiedTime = (file: AuthFileItem): number | null => {
+  const raw = file.modified ?? file['mtime'] ?? file['modified_at'] ?? file['updated_at'];
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  if (typeof raw === 'string') {
+    const numeric = Number(raw);
+    if (Number.isFinite(numeric)) return numeric;
+    const parsed = Date.parse(raw);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+};
+
+const sortByNewestImport = (files: AuthFileItem[]) =>
+  files
+    .map((file, index) => ({ file, index, modified: getModifiedTime(file) }))
+    .sort((a, b) => {
+      if (a.modified !== null && b.modified !== null && a.modified !== b.modified) {
+        return b.modified - a.modified;
+      }
+      if (a.modified !== null && b.modified === null) return -1;
+      if (a.modified === null && b.modified !== null) return 1;
+      return a.index - b.index;
+    })
+    .map((entry) => entry.file);
 
 interface QuotaPaginationState<T> {
   pageSize: number;
@@ -116,16 +144,44 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   /* Removed useRef */
   const [columns, gridRef] = useGridColumns(380); // Min card width 380px matches SCSS
   const [viewMode, setViewMode] = useState<ViewMode>('paged');
+  const [issueFilter, setIssueFilter] = useState<IssueFilter>('all');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
   const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
 
-  const filteredFiles = useMemo(
-    () => files.filter((file) => config.filterFn(file)),
+  const providerFiles = useMemo(
+    () => sortByNewestImport(files.filter((file) => config.filterFn(file))),
     [files, config]
   );
-  const refreshableFiles = useMemo(
-    () => filteredFiles.filter((file) => !isDisabledAuthFile(file)),
-    [filteredFiles]
+
+  const { quota, loadQuota } = useQuotaLoader(config);
+
+  const hasProblem = useCallback(
+    (file: AuthFileItem): boolean => {
+      if (file.unavailable === true) return true;
+
+      const rawStatus = typeof file.status === 'string' ? file.status.trim().toLowerCase() : '';
+      if (rawStatus && !HEALTHY_STATUS_MESSAGES.has(rawStatus) && rawStatus !== 'disabled') {
+        return true;
+      }
+
+      const statusMessage = getAuthFileStatusMessage(file);
+      if (statusMessage && !HEALTHY_STATUS_MESSAGES.has(statusMessage.toLowerCase())) {
+        return true;
+      }
+
+      return quota[file.name]?.status === 'error';
+    },
+    [quota]
+  );
+
+  const filteredFiles = useMemo(
+    () =>
+      providerFiles.filter((file) => {
+        if (issueFilter === 'all') return true;
+        const problem = hasProblem(file);
+        return issueFilter === 'problem' ? problem : !problem;
+      }),
+    [hasProblem, issueFilter, providerFiles]
   );
   const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
   const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
@@ -169,13 +225,10 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     }
   }, [effectiveViewMode, columns, filteredFiles.length, pageSizeOverride, setPageSize]);
 
-  const { quota, loadQuota } = useQuotaLoader(config);
-
   const refreshQuotaTargets = useCallback(
     (targets: AuthFileItem[], scope: 'page' | 'all') => {
-      const refreshableTargets = targets.filter((file) => !isDisabledAuthFile(file));
-      if (refreshableTargets.length === 0) return;
-      loadQuota(refreshableTargets, scope, setLoading);
+      if (targets.length === 0) return;
+      loadQuota(targets, scope, setLoading);
     },
     [loadQuota, setLoading]
   );
@@ -185,28 +238,28 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   }, [pageItems, refreshQuotaTargets]);
 
   const handleRefreshAll = useCallback(() => {
-    if (refreshableFiles.length === 0) return;
+    if (filteredFiles.length === 0) return;
 
     showConfirmation({
       title: t('quota_management.refresh_all_confirm_title'),
       message: t('quota_management.refresh_all_confirm_message', {
-        count: refreshableFiles.length,
+        count: filteredFiles.length,
       }),
       confirmText: t('quota_management.refresh_all_confirm_button'),
       variant: 'primary',
-      onConfirm: () => refreshQuotaTargets(refreshableFiles, 'all'),
+      onConfirm: () => refreshQuotaTargets(filteredFiles, 'all'),
     });
-  }, [refreshableFiles, refreshQuotaTargets, showConfirmation, t]);
+  }, [filteredFiles, refreshQuotaTargets, showConfirmation, t]);
 
   useEffect(() => {
     if (loading) return;
-    if (filteredFiles.length === 0) {
+    if (providerFiles.length === 0) {
       setQuota({});
       return;
     }
     setQuota((prev) => {
       const nextState: Record<string, TState> = {};
-      filteredFiles.forEach((file) => {
+      providerFiles.forEach((file) => {
         const cached = prev[file.name];
         if (cached) {
           nextState[file.name] = cached;
@@ -214,11 +267,11 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       });
       return nextState;
     });
-  }, [filteredFiles, loading, setQuota]);
+  }, [providerFiles, loading, setQuota]);
 
   const refreshQuotaForFile = useCallback(
     async (file: AuthFileItem) => {
-      if (disabled || file.disabled) return;
+      if (disabled) return;
       if (quota[file.name]?.status === 'loading') return;
 
       setQuota((prev) => ({
@@ -286,8 +339,12 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const titleNode = (
     <div className={styles.titleWrapper}>
       <span>{t(`${config.i18nPrefix}.title`)}</span>
-      {filteredFiles.length > 0 && (
-        <span className={styles.countBadge}>{filteredFiles.length}</span>
+      {providerFiles.length > 0 && (
+        <span className={styles.countBadge}>
+          {issueFilter === 'all'
+            ? filteredFiles.length
+            : `${filteredFiles.length}/${providerFiles.length}`}
+        </span>
       )}
     </div>
   );
@@ -295,13 +352,27 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const isRefreshing = sectionLoading || loading;
   const isRefreshingPage = sectionLoading && loadingScope === 'page';
   const isRefreshingAll = sectionLoading && loadingScope === 'all';
-  const currentPageRefreshableCount = pageItems.filter((file) => !isDisabledAuthFile(file)).length;
+  const currentPageRefreshableCount = pageItems.length;
+  const currentPageDisabledCount = pageItems.filter((file) => isDisabledAuthFile(file)).length;
+  const filteredDisabledCount = filteredFiles.filter((file) => isDisabledAuthFile(file)).length;
 
   return (
-    <Card
-      title={titleNode}
-      extra={
-        <div className={styles.headerActions}>
+    <Card title={titleNode}>
+      <div className={styles.quotaCrudToolbar}>
+        <div className={styles.quotaFilterBar}>
+          <label className={styles.sectionFilter}>
+            <span>{t('quota_management.credential_filter_label')}</span>
+            <select
+              className={styles.sectionFilterSelect}
+              value={issueFilter}
+              onChange={(event) => setIssueFilter(event.currentTarget.value as IssueFilter)}
+              aria-label={t('quota_management.credential_filter_label')}
+            >
+              <option value="all">{t('quota_management.filter_all_credentials')}</option>
+              <option value="normal">{t('quota_management.filter_normal_credentials')}</option>
+              <option value="problem">{t('quota_management.filter_problem_credentials')}</option>
+            </select>
+          </label>
           <div className={styles.viewModeToggle}>
             <Button
               variant="secondary"
@@ -330,6 +401,26 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
               {t('auth_files.view_mode_all')}
             </Button>
           </div>
+        </div>
+        <div className={styles.quotaBatchBar}>
+          <div className={styles.sectionScopeSummary}>
+            <strong>{t('quota_management.batch_actions_label')}</strong>
+            <span>
+              {t('quota_management.scope_summary', {
+                filtered: filteredFiles.length,
+                page: pageItems.length,
+              })}
+            </span>
+            {(currentPageDisabledCount > 0 || filteredDisabledCount > 0) && (
+              <span>
+                {t('quota_management.scope_disabled_summary', {
+                  pageDisabled: currentPageDisabledCount,
+                  totalDisabled: filteredDisabledCount,
+                })}
+              </span>
+            )}
+          </div>
+          <div className={styles.batchActions}>
           <Button
             variant="secondary"
             size="sm"
@@ -337,111 +428,134 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             onClick={handleRefreshCurrentPage}
             disabled={disabled || isRefreshing || currentPageRefreshableCount === 0}
             loading={isRefreshingPage}
-            title={t('quota_management.refresh_current_page_credentials', {
+            title={t('quota_management.batch_refresh_credentials', {
               count: currentPageRefreshableCount,
             })}
-            aria-label={t('quota_management.refresh_current_page_credentials', {
+            aria-label={t('quota_management.batch_refresh_credentials', {
               count: currentPageRefreshableCount,
             })}
           >
             {!isRefreshingPage && <IconRefreshCw size={16} />}
-            {t('quota_management.refresh_current_page')}
+            {t('quota_management.batch_refresh_count', {
+              count: currentPageRefreshableCount,
+            })}
           </Button>
           <Button
             variant="secondary"
             size="sm"
             className={styles.refreshAllButton}
             onClick={handleRefreshAll}
-            disabled={disabled || isRefreshing || refreshableFiles.length === 0}
+            disabled={disabled || isRefreshing || filteredFiles.length === 0}
             loading={isRefreshingAll}
             title={t('quota_management.refresh_all_credentials_count', {
-              count: refreshableFiles.length,
+              count: filteredFiles.length,
             })}
             aria-label={t('quota_management.refresh_all_credentials_count', {
-              count: refreshableFiles.length,
+              count: filteredFiles.length,
             })}
           >
             {!isRefreshingAll && <IconRefreshCw size={16} />}
-            {t('quota_management.refresh_all_credentials')}
+            {t('quota_management.refresh_all_credentials_count', {
+              count: filteredFiles.length,
+            })}
           </Button>
         </div>
-      }
-    >
-      {filteredFiles.length === 0 ? (
-        <EmptyState
-          title={t(`${config.i18nPrefix}.empty_title`)}
-          description={t(`${config.i18nPrefix}.empty_desc`)}
-        />
-      ) : (
-        <>
-          <div ref={gridRef} className={config.gridClassName}>
-            {pageItems.map((item) => {
-              const itemQuota = quota[item.name];
-              const isResettingQuota = resettingQuotaName === item.name;
-              const canUseQuotaAction =
-                !disabled && !item.disabled && itemQuota?.status !== 'loading';
-              const showResetQuotaAction =
-                itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));
-              const resetQuotaAction =
-                config.resetQuota && showResetQuotaAction ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className={styles.quotaResetCreditButton}
-                    onClick={() => resetQuotaForFile(item)}
-                    disabled={!canUseQuotaAction || isResettingQuota}
-                    loading={isResettingQuota}
-                    title={t('codex_quota.reset_button')}
-                    aria-label={t('codex_quota.reset_button')}
-                  >
-                    {!isResettingQuota && <IconRefreshCw size={14} />}
-                    {t('codex_quota.reset_button')}
-                  </Button>
-                ) : undefined;
+        </div>
+      </div>
+      <div className={styles.sectionScrollBody}>
+        {filteredFiles.length === 0 ? (
+          <EmptyState
+            title={
+              issueFilter === 'problem' && providerFiles.length > 0
+                ? t('quota_management.no_problem_title')
+                : issueFilter === 'normal' && providerFiles.length > 0
+                  ? t('quota_management.no_normal_title')
+                  : t(`${config.i18nPrefix}.empty_title`)
+            }
+            description={
+              issueFilter === 'problem' && providerFiles.length > 0
+                ? t('quota_management.no_problem_desc')
+                : issueFilter === 'normal' && providerFiles.length > 0
+                  ? t('quota_management.no_normal_desc')
+                  : t(`${config.i18nPrefix}.empty_desc`)
+            }
+          />
+        ) : (
+          <>
+            <div ref={gridRef} className={config.gridClassName}>
+              {pageItems.map((item) => {
+                const itemQuota = quota[item.name];
+                const isResettingQuota = resettingQuotaName === item.name;
+                const canRefreshQuotaAction = !disabled && itemQuota?.status !== 'loading';
+                const canResetQuotaAction = canRefreshQuotaAction && !item.disabled;
+                const showResetQuotaAction =
+                  itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));
+                const resetQuotaAction =
+                  config.resetQuota && showResetQuotaAction ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className={styles.quotaResetCreditButton}
+                      onClick={() => resetQuotaForFile(item)}
+                      disabled={!canResetQuotaAction || isResettingQuota}
+                      loading={isResettingQuota}
+                      title={t('codex_quota.reset_button')}
+                      aria-label={t('codex_quota.reset_button')}
+                    >
+                      {!isResettingQuota && <IconRefreshCw size={14} />}
+                      {t('codex_quota.reset_button')}
+                    </Button>
+                  ) : undefined;
 
-              return (
-                <QuotaCard
-                  key={item.name}
-                  item={item}
-                  quota={itemQuota}
-                  resolvedTheme={resolvedTheme}
-                  i18nPrefix={config.i18nPrefix}
-                  cardIdleMessageKey={config.cardIdleMessageKey}
-                  cardClassName={config.cardClassName}
-                  defaultType={config.type}
-                  canRefresh={canUseQuotaAction && !isResettingQuota}
-                  onRefresh={() => void refreshQuotaForFile(item)}
-                  resetQuotaAction={resetQuotaAction}
-                  renderQuotaItems={config.renderQuotaItems}
-                />
-              );
-            })}
-          </div>
-          {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
-            <div className={styles.pagination}>
-              <Button variant="secondary" size="sm" onClick={goToPrev} disabled={currentPage <= 1}>
-                {t('auth_files.pagination_prev')}
-              </Button>
-              <div className={styles.pageInfo}>
-                {t('auth_files.pagination_info', {
-                  current: currentPage,
-                  total: totalPages,
-                  count: filteredFiles.length,
-                })}
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={goToNext}
-                disabled={currentPage >= totalPages}
-              >
-                {t('auth_files.pagination_next')}
-              </Button>
+                return (
+                  <QuotaCard
+                    key={item.name}
+                    item={item}
+                    quota={itemQuota}
+                    resolvedTheme={resolvedTheme}
+                    i18nPrefix={config.i18nPrefix}
+                    cardIdleMessageKey={config.cardIdleMessageKey}
+                    cardClassName={config.cardClassName}
+                    defaultType={config.type}
+                    canRefresh={canRefreshQuotaAction && !isResettingQuota}
+                    onRefresh={() => void refreshQuotaForFile(item)}
+                    resetQuotaAction={resetQuotaAction}
+                    renderQuotaItems={config.renderQuotaItems}
+                  />
+                );
+              })}
             </div>
-          )}
-        </>
-      )}
+            {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
+              <div className={styles.pagination}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={goToPrev}
+                  disabled={currentPage <= 1}
+                >
+                  {t('auth_files.pagination_prev')}
+                </Button>
+                <div className={styles.pageInfo}>
+                  {t('auth_files.pagination_info', {
+                    current: currentPage,
+                    total: totalPages,
+                    count: filteredFiles.length,
+                  })}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={goToNext}
+                  disabled={currentPage >= totalPages}
+                >
+                  {t('auth_files.pagination_next')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
       {showTooManyWarning && (
         <div className={styles.warningOverlay} onClick={() => setShowTooManyWarning(false)}>
           <div className={styles.warningModal} onClick={(e) => e.stopPropagation()}>
