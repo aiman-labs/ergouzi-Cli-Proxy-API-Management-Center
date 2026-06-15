@@ -250,18 +250,33 @@
 
 .bulkScopePanel {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 12px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--border-color) 62%, transparent);
   background: color-mix(in srgb, var(--bg-secondary) 54%, transparent);
+}
+
+.bulkScopeGroup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
 
   @include tablet {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
   }
+}
+
+.bulkScopeGroupSelected {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 34%, transparent);
+  background: color-mix(in srgb, var(--primary-color) 7%, transparent);
 }
 
 .bulkScopeInfo {
@@ -286,6 +301,7 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+  min-width: 0;
 
   @include tablet {
     justify-content: flex-start;

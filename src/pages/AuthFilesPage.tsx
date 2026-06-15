@@ -126,7 +126,6 @@ export function AuthFilesPage() {
   const {
     files,
     selectedFiles,
-    selectionCount,
     loading,
     error,
     uploading,
@@ -528,10 +527,26 @@ export function AuthFilesPage() {
     () => selectableFilteredItems.map((file) => file.name),
     [selectableFilteredItems]
   );
-  const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
-  const selectedHasStatusUpdating = useMemo(
-    () => selectedNames.some((name) => statusUpdating[name] === true),
-    [selectedNames, statusUpdating]
+  const selectedPageItems = useMemo(
+    () => selectablePageItems.filter((file) => selectedFiles.has(file.name)),
+    [selectablePageItems, selectedFiles]
+  );
+  const selectedPageNames = useMemo(
+    () => selectedPageItems.map((file) => file.name),
+    [selectedPageItems]
+  );
+  const selectedPageEnableTargetNames = useMemo(
+    () => selectedPageItems.filter((file) => file.disabled === true).map((file) => file.name),
+    [selectedPageItems]
+  );
+  const selectedPageDisableTargetNames = useMemo(
+    () => selectedPageItems.filter((file) => file.disabled !== true).map((file) => file.name),
+    [selectedPageItems]
+  );
+  const selectedPageCount = selectedPageNames.length;
+  const selectedPageHasStatusUpdating = useMemo(
+    () => selectedPageNames.some((name) => statusUpdating[name] === true),
+    [selectedPageNames, statusUpdating]
   );
   const filteredHasStatusUpdating = useMemo(
     () =>
@@ -542,9 +557,9 @@ export function AuthFilesPage() {
   );
   const batchStatusButtonsDisabled =
     disableControls ||
-    selectedNames.length === 0 ||
+    selectedPageCount === 0 ||
     batchStatusUpdating ||
-    selectedHasStatusUpdating;
+    selectedPageHasStatusUpdating;
   const filteredStatusButtonsDisabled =
     disableControls || loading || batchStatusUpdating || filteredHasStatusUpdating;
 
@@ -661,15 +676,15 @@ export function AuthFilesPage() {
   );
 
   useEffect(() => {
-    selectionCountRef.current = selectionCount;
-    if (selectionCount > 0) {
+    selectionCountRef.current = selectedPageCount;
+    if (selectedPageCount > 0) {
       setBatchActionBarVisible(true);
     }
-  }, [selectionCount]);
+  }, [selectedPageCount]);
 
   useLayoutEffect(() => {
     if (!batchActionBarVisible) return;
-    const currentCount = selectionCount;
+    const currentCount = selectedPageCount;
     const previousCount = previousSelectionCountRef.current;
     const actionsEl = floatingBatchActionsRef.current;
     if (!actionsEl) return;
@@ -713,7 +728,7 @@ export function AuthFilesPage() {
     }
 
     previousSelectionCountRef.current = currentCount;
-  }, [batchActionBarVisible, selectionCount]);
+  }, [batchActionBarVisible, selectedPageCount]);
 
   useEffect(
     () => () => {
@@ -783,7 +798,7 @@ export function AuthFilesPage() {
   );
 
   const filteredScopeLabel = t('auth_files.scope_filtered_result');
-  const selectedScopeLabel = t('auth_files.scope_selected_items');
+  const selectedPageScopeLabel = t('auth_files.scope_selected_page_items');
 
   return (
     <div className={styles.container}>
@@ -915,60 +930,129 @@ export function AuthFilesPage() {
             </div>
 
             <div className={styles.bulkScopePanel}>
-              <div className={styles.bulkScopeInfo}>
-                <span className={styles.bulkScopeTitle}>{t('auth_files.bulk_scope_title')}</span>
-                <span>
-                  {t('auth_files.bulk_scope_filtered_count', {
-                    count: selectableFilteredItems.length,
-                  })}
-                </span>
-                <span>
-                  {t('auth_files.bulk_scope_page_count', { count: selectablePageItems.length })}
-                </span>
-                {selectionCount > 0 && (
-                  <span>
-                    {t('auth_files.bulk_scope_selected_count', { count: selectionCount })}
+              <div className={`${styles.bulkScopeGroup} ${styles.bulkScopeGroupSelected}`}>
+                <div className={styles.bulkScopeInfo}>
+                  <span className={styles.bulkScopeTitle}>
+                    {t('auth_files.bulk_selected_title')}
                   </span>
-                )}
+                  <span>
+                    {t('auth_files.bulk_selected_desc', {
+                      selected: selectedPageCount,
+                      page: selectablePageItems.length,
+                    })}
+                  </span>
+                </div>
+                <div className={styles.bulkScopeActions}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void batchDownload(selectedPageNames)}
+                    disabled={disableControls || selectedPageCount === 0}
+                  >
+                    {t('auth_files.batch_download_count', { count: selectedPageCount })}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      confirmBatchStatus(
+                        selectedPageEnableTargetNames,
+                        true,
+                        selectedPageScopeLabel
+                      )
+                    }
+                    disabled={
+                      batchStatusButtonsDisabled || selectedPageEnableTargetNames.length === 0
+                    }
+                    loading={batchStatusUpdating && selectedPageEnableTargetNames.length > 0}
+                  >
+                    {t('auth_files.batch_enable_count', {
+                      count: selectedPageEnableTargetNames.length,
+                    })}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      confirmBatchStatus(
+                        selectedPageDisableTargetNames,
+                        false,
+                        selectedPageScopeLabel
+                      )
+                    }
+                    disabled={
+                      batchStatusButtonsDisabled || selectedPageDisableTargetNames.length === 0
+                    }
+                    loading={batchStatusUpdating && selectedPageDisableTargetNames.length > 0}
+                  >
+                    {t('auth_files.batch_disable_count', {
+                      count: selectedPageDisableTargetNames.length,
+                    })}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => confirmBatchDelete(selectedPageNames, selectedPageScopeLabel)}
+                    disabled={disableControls || selectedPageCount === 0}
+                  >
+                    {t('auth_files.batch_delete_count', { count: selectedPageCount })}
+                  </Button>
+                </div>
               </div>
-              <div className={styles.bulkScopeActions}>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    confirmBatchStatus(filteredEnableTargetNames, true, filteredScopeLabel)
-                  }
-                  disabled={filteredStatusButtonsDisabled || filteredEnableTargetNames.length === 0}
-                  loading={batchStatusUpdating && filteredEnableTargetNames.length > 0}
-                >
-                  {t('auth_files.batch_enable_filtered_button', {
-                    count: filteredEnableTargetNames.length,
-                  })}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() =>
-                    confirmBatchStatus(filteredDisableTargetNames, false, filteredScopeLabel)
-                  }
-                  disabled={
-                    filteredStatusButtonsDisabled || filteredDisableTargetNames.length === 0
-                  }
-                  loading={batchStatusUpdating && filteredDisableTargetNames.length > 0}
-                >
-                  {t('auth_files.batch_disable_filtered_button', {
-                    count: filteredDisableTargetNames.length,
-                  })}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => confirmBatchDelete(filteredDeleteTargetNames, filteredScopeLabel)}
-                  disabled={disableControls || loading || filteredDeleteTargetNames.length === 0}
-                >
-                  {t('auth_files.delete_filtered_result_button', {
-                    count: filteredDeleteTargetNames.length,
-                  })}
-                </Button>
+
+              <div className={styles.bulkScopeGroup}>
+                <div className={styles.bulkScopeInfo}>
+                  <span className={styles.bulkScopeTitle}>
+                    {t('auth_files.bulk_filtered_title')}
+                  </span>
+                  <span>
+                    {t('auth_files.bulk_filtered_desc', {
+                      count: selectableFilteredItems.length,
+                    })}
+                  </span>
+                </div>
+                <div className={styles.bulkScopeActions}>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      confirmBatchStatus(filteredEnableTargetNames, true, filteredScopeLabel)
+                    }
+                    disabled={
+                      filteredStatusButtonsDisabled || filteredEnableTargetNames.length === 0
+                    }
+                    loading={batchStatusUpdating && filteredEnableTargetNames.length > 0}
+                  >
+                    {t('auth_files.batch_enable_filtered_button', {
+                      count: filteredEnableTargetNames.length,
+                    })}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      confirmBatchStatus(filteredDisableTargetNames, false, filteredScopeLabel)
+                    }
+                    disabled={
+                      filteredStatusButtonsDisabled || filteredDisableTargetNames.length === 0
+                    }
+                    loading={batchStatusUpdating && filteredDisableTargetNames.length > 0}
+                  >
+                    {t('auth_files.batch_disable_filtered_button', {
+                      count: filteredDisableTargetNames.length,
+                    })}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() =>
+                      confirmBatchDelete(filteredDeleteTargetNames, filteredScopeLabel)
+                    }
+                    disabled={disableControls || loading || filteredDeleteTargetNames.length === 0}
+                  >
+                    {t('auth_files.delete_filtered_result_button', {
+                      count: filteredDeleteTargetNames.length,
+                    })}
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -1092,7 +1176,7 @@ export function AuthFilesPage() {
               <div className={styles.batchActionBar}>
                 <div className={styles.batchActionLeft}>
                   <span className={styles.batchSelectionText}>
-                    {t('auth_files.batch_selected', { count: selectionCount })}
+                    {t('auth_files.batch_selected_page', { count: selectedPageCount })}
                   </span>
                   <Button
                     variant="secondary"
@@ -1101,14 +1185,6 @@ export function AuthFilesPage() {
                     disabled={selectablePageItems.length === 0}
                   >
                     {t('auth_files.batch_select_page')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => selectAllVisible(sorted)}
-                    disabled={selectableFilteredItems.length === 0}
-                  >
-                    {t('auth_files.batch_select_filtered')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -1126,33 +1202,53 @@ export function AuthFilesPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => void batchDownload(selectedNames)}
-                    disabled={disableControls || selectedNames.length === 0}
+                    onClick={() => void batchDownload(selectedPageNames)}
+                    disabled={disableControls || selectedPageCount === 0}
                   >
-                    {t('auth_files.batch_download')}
+                    {t('auth_files.batch_download_count', { count: selectedPageCount })}
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => confirmBatchStatus(selectedNames, true, selectedScopeLabel)}
-                    disabled={batchStatusButtonsDisabled}
+                    onClick={() =>
+                      confirmBatchStatus(
+                        selectedPageEnableTargetNames,
+                        true,
+                        selectedPageScopeLabel
+                      )
+                    }
+                    disabled={
+                      batchStatusButtonsDisabled || selectedPageEnableTargetNames.length === 0
+                    }
                   >
-                    {t('auth_files.batch_enable')}
+                    {t('auth_files.batch_enable_count', {
+                      count: selectedPageEnableTargetNames.length,
+                    })}
                   </Button>
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => confirmBatchStatus(selectedNames, false, selectedScopeLabel)}
-                    disabled={batchStatusButtonsDisabled}
+                    onClick={() =>
+                      confirmBatchStatus(
+                        selectedPageDisableTargetNames,
+                        false,
+                        selectedPageScopeLabel
+                      )
+                    }
+                    disabled={
+                      batchStatusButtonsDisabled || selectedPageDisableTargetNames.length === 0
+                    }
                   >
-                    {t('auth_files.batch_disable')}
+                    {t('auth_files.batch_disable_count', {
+                      count: selectedPageDisableTargetNames.length,
+                    })}
                   </Button>
                   <Button
                     variant="danger"
                     size="sm"
-                    onClick={() => confirmBatchDelete(selectedNames, selectedScopeLabel)}
-                    disabled={disableControls || selectedNames.length === 0}
+                    onClick={() => confirmBatchDelete(selectedPageNames, selectedPageScopeLabel)}
+                    disabled={disableControls || selectedPageCount === 0}
                   >
-                    {t('common.delete')}
+                    {t('auth_files.batch_delete_count', { count: selectedPageCount })}
                   </Button>
                 </div>
               </div>
