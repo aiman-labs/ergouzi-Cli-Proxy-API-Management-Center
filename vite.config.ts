@@ -46,6 +46,14 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(getVersion())
   },
+  server: {
+    proxy: {
+      '/v0/management': {
+        target: process.env.CPAMC_API_PROXY_TARGET || 'http://127.0.0.1:8318',
+        changeOrigin: true
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')

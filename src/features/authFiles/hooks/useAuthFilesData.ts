@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type RefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
@@ -21,6 +29,12 @@ type DeleteAllOptions = {
   onResetFilterToAll: () => void;
   onResetProblemOnly: () => void;
   onResetDisabledOnly: () => void;
+};
+
+type BatchDeleteOptions = {
+  title?: string;
+  message?: ReactNode;
+  confirmText?: string;
 };
 
 export type UseAuthFilesDataResult = {
@@ -48,7 +62,7 @@ export type UseAuthFilesDataResult = {
   deselectAll: () => void;
   batchDownload: (names: string[]) => Promise<void>;
   batchSetStatus: (names: string[], enabled: boolean) => Promise<void>;
-  batchDelete: (names: string[]) => void;
+  batchDelete: (names: string[], options?: BatchDeleteOptions) => void;
 };
 
 export function useAuthFilesData(): UseAuthFilesDataResult {
@@ -116,13 +130,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
   }, []);
 
   const applyDeletedFiles = useCallback((names: string[]) => {
-    const deletedNames = Array.from(
-      new Set(
-        names
-          .map((name) => name.trim())
-          .filter(Boolean)
-      )
-    );
+    const deletedNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
     if (deletedNames.length === 0) return;
 
     const deletedSet = new Set(deletedNames);
@@ -229,9 +237,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
         }
 
         if (result.failed.length > 0) {
-          const details = result.failed
-            .map((item) => `${item.name}: ${item.error}`)
-            .join('; ');
+          const details = result.failed.map((item) => `${item.name}: ${item.error}`).join('; ');
           showNotification(`${t('notification.upload_failed')}: ${details}`, 'error');
         }
       } catch (err: unknown) {
@@ -336,9 +342,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
                 return;
               }
 
-              const result = await authFilesApi.deleteFiles(
-                filesToDelete.map((file) => file.name)
-              );
+              const result = await authFilesApi.deleteFiles(filesToDelete.map((file) => file.name));
               const success = result.deleted;
               const failed = result.failed.length;
 
@@ -533,7 +537,10 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
         );
 
         if (failCount === 0) {
-          showNotification(t('auth_files.batch_status_success', { count: successCount }), 'success');
+          showNotification(
+            t('auth_files.batch_status_success', { count: successCount }),
+            'success'
+          );
         } else {
           showNotification(
             t('auth_files.batch_status_partial', { success: successCount, failed: failCount }),
@@ -595,15 +602,16 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
   );
 
   const batchDelete = useCallback(
-    (names: string[]) => {
+    (names: string[], options?: BatchDeleteOptions) => {
       const uniqueNames = Array.from(new Set(names));
       if (uniqueNames.length === 0) return;
 
       showConfirmation({
-        title: t('auth_files.batch_delete_title'),
-        message: t('auth_files.batch_delete_confirm', { count: uniqueNames.length }),
+        title: options?.title ?? t('auth_files.batch_delete_title'),
+        message:
+          options?.message ?? t('auth_files.batch_delete_confirm', { count: uniqueNames.length }),
         variant: 'danger',
-        confirmText: t('common.confirm'),
+        confirmText: options?.confirmText ?? t('common.confirm'),
         onConfirm: async () => {
           try {
             const result = await authFilesApi.deleteFiles(uniqueNames);

@@ -26,6 +26,41 @@
   margin: 0;
 }
 
+.pageControls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 62%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 54%, transparent);
+
+  @include mobile {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.pageSizeControl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 148px;
+
+  label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 700;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  @include mobile {
+    width: 100%;
+  }
+}
+
 .headerActions {
   display: flex;
   gap: $spacing-sm;
@@ -81,6 +116,7 @@
 }
 
 .pageSizeSelect {
+  width: 100%;
   padding: 8px 12px;
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
@@ -177,13 +213,13 @@
   border-radius: 999px;
   border-color: transparent;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--action-secondary-text);
   box-shadow: none;
 
   &:hover:not(:disabled) {
     border-color: transparent;
     background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
-    color: var(--text-primary);
+    color: var(--primary-active);
   }
 
   > span {
@@ -208,12 +244,13 @@
   }
 }
 
+.refreshScopeButton:global(.btn.btn-sm),
 .refreshAllButton:global(.btn.btn-sm) {
   padding-inline: 14px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
-  border-color: color-mix(in srgb, var(--primary-color) 22%, var(--border-color));
-  color: var(--text-primary);
+  background: var(--action-secondary-bg);
+  border-color: var(--action-secondary-border);
+  color: var(--action-secondary-text);
 
   > span {
     display: inline-flex;
@@ -223,8 +260,8 @@
   }
 
   &:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--primary-color) 16%, var(--bg-secondary));
-    border-color: color-mix(in srgb, var(--primary-color) 34%, var(--border-color));
+    background: var(--action-secondary-hover-bg);
+    border-color: var(--primary-color);
   }
 
   @include mobile {
@@ -233,13 +270,24 @@
   }
 }
 
+.refreshScopeButton:global(.btn.btn-sm) {
+  background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--primary-color) 22%, var(--border-color));
+}
+
 :global([data-theme='dark']) .viewModeToggle {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+:global([data-theme='dark']) .refreshScopeButton:global(.btn.btn-sm),
 :global([data-theme='dark']) .refreshAllButton:global(.btn.btn-sm) {
-  background: color-mix(in srgb, var(--primary-color) 18%, var(--bg-secondary));
-  border-color: color-mix(in srgb, var(--primary-color) 32%, var(--border-color));
+  background: var(--action-secondary-bg);
+  border-color: var(--action-secondary-border);
+}
+
+:global([data-theme='dark']) .refreshScopeButton:global(.btn.btn-sm) {
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-primary));
+  border-color: color-mix(in srgb, var(--primary-color) 30%, var(--border-color));
 }
 
 @include mobile {

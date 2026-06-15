@@ -31,9 +31,9 @@ import {
   QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
   getAuthFileIcon,
+  getAuthFileStatusMessage,
   getTypeColor,
   getTypeLabel,
-  hasAuthFileStatusMessage,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   parsePriorityValue,
@@ -58,7 +58,8 @@ import {
   writePersistedAuthFilesCompactMode,
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
-import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
+import type { AuthFileItem } from '@/types/authFile';
 import styles from './AuthFilesPage.module.scss';
 
 const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
@@ -68,8 +69,13 @@ const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
-const escapeWildcardSearchSegment = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+type QuotaIssueState = {
+  status?: string;
+  error?: string;
+  errorStatus?: number;
+};
+
+const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
@@ -80,8 +86,15 @@ const buildWildcardSearch = (value: string): RegExp | null => {
 export function AuthFilesPage() {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
+  const claudeQuota = useQuotaStore((state) => state.claudeQuota);
+  const codexQuota = useQuotaStore((state) => state.codexQuota);
+  const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
+  const kimiQuota = useQuotaStore((state) => state.kimiQuota);
+  const xaiQuota = useQuotaStore((state) => state.xaiQuota);
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
   const navigate = useNavigate();
@@ -114,7 +127,6 @@ export function AuthFilesPage() {
     error,
     uploading,
     deleting,
-    deletingAll,
     statusUpdating,
     batchStatusUpdating,
     fileInputRef,
@@ -122,7 +134,6 @@ export function AuthFilesPage() {
     handleUploadClick,
     handleFileChange,
     handleDelete,
-    handleDeleteAll,
     handleDownload,
     handleStatusToggle,
     toggleSelect,
@@ -186,6 +197,34 @@ export function AuthFilesPage() {
     : null;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
 
+  const quotaIssueByName = useMemo(() => {
+    const issues = new Map<string, string>();
+    const appendIssues = (quotaMap: Record<string, QuotaIssueState>) => {
+      Object.entries(quotaMap).forEach(([name, quotaState]) => {
+        if (quotaState.status !== 'error') return;
+        const message = String(quotaState.error ?? '').trim();
+        const status = quotaState.errorStatus;
+        const text = status ? `${status} ${message || t('common.unknown_error')}` : message;
+        if (text) {
+          issues.set(name, text);
+        }
+      });
+    };
+
+    appendIssues(antigravityQuota);
+    appendIssues(claudeQuota);
+    appendIssues(codexQuota);
+    appendIssues(geminiCliQuota);
+    appendIssues(kimiQuota);
+    appendIssues(xaiQuota);
+    return issues;
+  }, [antigravityQuota, claudeQuota, codexQuota, geminiCliQuota, kimiQuota, t, xaiQuota]);
+
+  const getFileProblemMessage = useCallback(
+    (file: AuthFileItem) => getAuthFileStatusMessage(file) || quotaIssueByName.get(file.name) || '',
+    [quotaIssueByName]
+  );
+
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
     if (typeof persistedCompactMode === 'boolean') {
@@ -203,10 +242,7 @@ export function AuthFilesPage() {
       if (typeof persisted.disabledOnly === 'boolean') {
         setDisabledOnly(persisted.disabledOnly);
       }
-      if (
-        typeof persistedCompactMode !== 'boolean' &&
-        typeof persisted.compactMode === 'boolean'
-      ) {
+      if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
       if (typeof persisted.search === 'string') {
@@ -222,11 +258,11 @@ export function AuthFilesPage() {
       const regularPageSize =
         typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
           ? clampCardPageSize(persisted.regularPageSize)
-          : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE);
       const compactPageSize =
         typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
           ? clampCardPageSize(persisted.compactPageSize)
-          : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE);
       setPageSizeByMode({
         regular: regularPageSize,
         compact: compactPageSize,
@@ -358,11 +394,11 @@ export function AuthFilesPage() {
   const filesMatchingStatusFilters = useMemo(
     () =>
       files.filter((file) => {
-        if (problemOnly && !hasAuthFileStatusMessage(file)) return false;
+        if (problemOnly && !getFileProblemMessage(file)) return false;
         if (disabledOnly && file.disabled !== true) return false;
         return true;
       }),
-    [disabledOnly, files, problemOnly]
+    [disabledOnly, files, getFileProblemMessage, problemOnly]
   );
 
   const sortOptions = useMemo(
@@ -431,6 +467,20 @@ export function AuthFilesPage() {
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const pageItems = sorted.slice(start, start + pageSize);
+  const displayPageItems = useMemo(
+    () =>
+      pageItems.map((file) => {
+        if (getAuthFileStatusMessage(file)) return file;
+        const quotaIssue = quotaIssueByName.get(file.name);
+        if (!quotaIssue) return file;
+        return {
+          ...file,
+          status_message: quotaIssue,
+          statusMessage: quotaIssue,
+        };
+      }),
+    [pageItems, quotaIssueByName]
+  );
   const selectablePageItems = useMemo(
     () => pageItems.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [pageItems]
@@ -439,12 +489,17 @@ export function AuthFilesPage() {
     () => sorted.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [sorted]
   );
-  const filteredStatusTargetNames = useMemo(
-    () =>
-      sorted
-        .filter((file) => !isRuntimeOnlyAuthFile(file) && file.disabled !== true)
-        .map((file) => file.name),
-    [sorted]
+  const filteredEnableTargetNames = useMemo(
+    () => selectableFilteredItems.filter((file) => file.disabled === true).map((file) => file.name),
+    [selectableFilteredItems]
+  );
+  const filteredDisableTargetNames = useMemo(
+    () => selectableFilteredItems.filter((file) => file.disabled !== true).map((file) => file.name),
+    [selectableFilteredItems]
+  );
+  const filteredDeleteTargetNames = useMemo(
+    () => selectableFilteredItems.map((file) => file.name),
+    [selectableFilteredItems]
   );
   const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
   const selectedHasStatusUpdating = useMemo(
@@ -452,20 +507,82 @@ export function AuthFilesPage() {
     [selectedNames, statusUpdating]
   );
   const filteredHasStatusUpdating = useMemo(
-    () => filteredStatusTargetNames.some((name) => statusUpdating[name] === true),
-    [filteredStatusTargetNames, statusUpdating]
+    () =>
+      [...filteredEnableTargetNames, ...filteredDisableTargetNames].some(
+        (name) => statusUpdating[name] === true
+      ),
+    [filteredDisableTargetNames, filteredEnableTargetNames, statusUpdating]
   );
   const batchStatusButtonsDisabled =
     disableControls ||
     selectedNames.length === 0 ||
     batchStatusUpdating ||
     selectedHasStatusUpdating;
-  const filteredDisableButtonDisabled =
-    disableControls ||
-    loading ||
-    batchStatusUpdating ||
-    filteredStatusTargetNames.length === 0 ||
-    filteredHasStatusUpdating;
+  const filteredStatusButtonsDisabled =
+    disableControls || loading || batchStatusUpdating || filteredHasStatusUpdating;
+
+  const confirmBatchStatus = useCallback(
+    (names: string[], enabled: boolean, scopeLabel: string) => {
+      const uniqueNames = Array.from(new Set(names));
+      if (uniqueNames.length === 0) return;
+
+      showConfirmation({
+        title: enabled
+          ? t('auth_files.batch_enable_confirm_title')
+          : t('auth_files.batch_disable_confirm_title'),
+        message: (
+          <div className={styles.confirmBody}>
+            <p>
+              {enabled
+                ? t('auth_files.batch_enable_confirm_message', {
+                    count: uniqueNames.length,
+                    scope: scopeLabel,
+                  })
+                : t('auth_files.batch_disable_confirm_message', {
+                    count: uniqueNames.length,
+                    scope: scopeLabel,
+                  })}
+            </p>
+            <p className={styles.confirmMeta}>
+              {t('auth_files.batch_scope_confirm_hint', { scope: scopeLabel })}
+            </p>
+          </div>
+        ),
+        variant: enabled ? 'primary' : 'danger',
+        confirmText: enabled
+          ? t('auth_files.batch_enable_confirm_button')
+          : t('auth_files.batch_disable_confirm_button'),
+        onConfirm: () => {
+          void batchSetStatus(uniqueNames, enabled);
+        },
+      });
+    },
+    [batchSetStatus, showConfirmation, t]
+  );
+
+  const confirmBatchDelete = useCallback(
+    (names: string[], scopeLabel: string) => {
+      const uniqueNames = Array.from(new Set(names));
+      if (uniqueNames.length === 0) return;
+
+      batchDelete(uniqueNames, {
+        title: t('auth_files.batch_delete_filtered_title'),
+        message: (
+          <div className={styles.confirmBody}>
+            <p>
+              {t('auth_files.batch_delete_scope_confirm_message', {
+                count: uniqueNames.length,
+                scope: scopeLabel,
+              })}
+            </p>
+            <p className={styles.confirmMeta}>{t('auth_files.batch_delete_confirm_hint')}</p>
+          </div>
+        ),
+        confirmText: t('auth_files.batch_delete_confirm_button'),
+      });
+    },
+    [batchDelete, t]
+  );
 
   const copyTextWithNotification = useCallback(
     async (text: string) => {
@@ -587,7 +704,7 @@ export function AuthFilesPage() {
           const iconSrc = getAuthFileIcon(type, resolvedTheme);
           const color =
             type === 'all'
-              ? { bg: 'var(--bg-tertiary)', text: 'var(--text-primary)' }
+              ? { bg: 'var(--primary-color)', text: 'var(--primary-color)' }
               : getTypeColor(type, resolvedTheme);
           const buttonStyle = {
             '--filter-color': color.text,
@@ -638,37 +755,8 @@ export function AuthFilesPage() {
     </div>
   );
 
-  const deleteAllButtonLabel = (() => {
-    if (disabledOnly) {
-      return t('auth_files.delete_filtered_result_button');
-    }
-    if (problemOnly) {
-      return normalizedFilter === 'all'
-        ? t('auth_files.delete_problem_button')
-        : t('auth_files.delete_problem_button_with_type', {
-            type: getTypeLabel(t, normalizedFilter),
-          });
-    }
-    return normalizedFilter === 'all'
-      ? t('auth_files.delete_all_button')
-      : `${t('common.delete')} ${getTypeLabel(t, normalizedFilter)}`;
-  })();
-
-  const batchDisableFilteredButtonLabel = (() => {
-    if (problemOnly) {
-      return normalizedFilter === 'all'
-        ? t('auth_files.batch_disable_problem_button')
-        : t('auth_files.batch_disable_problem_button_with_type', {
-            type: getTypeLabel(t, normalizedFilter),
-          });
-    }
-    if (normalizedFilter !== 'all') {
-      return t('auth_files.batch_disable_filtered_button_with_type', {
-        type: getTypeLabel(t, normalizedFilter),
-      });
-    }
-    return t('auth_files.batch_disable_filtered_button');
-  })();
+  const filteredScopeLabel = t('auth_files.scope_filtered_result');
+  const selectedScopeLabel = t('auth_files.scope_selected_items');
 
   return (
     <div className={styles.container}>
@@ -691,33 +779,6 @@ export function AuthFilesPage() {
               loading={uploading}
             >
               {t('auth_files.upload_button')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void batchSetStatus(filteredStatusTargetNames, false)}
-              disabled={filteredDisableButtonDisabled}
-              loading={batchStatusUpdating && filteredStatusTargetNames.length > 0}
-            >
-              {batchDisableFilteredButtonLabel}
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() =>
-                handleDeleteAll({
-                  filter,
-                  problemOnly,
-                  disabledOnly,
-                  onResetFilterToAll: () => setFilter('all'),
-                  onResetProblemOnly: () => setProblemOnly(false),
-                  onResetDisabledOnly: () => setDisabledOnly(false),
-                })
-              }
-              disabled={disableControls || loading || deletingAll}
-              loading={deletingAll}
-            >
-              {deleteAllButtonLabel}
             </Button>
             <input
               ref={fileInputRef}
@@ -830,6 +891,64 @@ export function AuthFilesPage() {
               </div>
             </div>
 
+            <div className={styles.bulkScopePanel}>
+              <div className={styles.bulkScopeInfo}>
+                <span className={styles.bulkScopeTitle}>{t('auth_files.bulk_scope_title')}</span>
+                <span>
+                  {t('auth_files.bulk_scope_filtered_count', {
+                    count: selectableFilteredItems.length,
+                  })}
+                </span>
+                <span>
+                  {t('auth_files.bulk_scope_page_count', { count: selectablePageItems.length })}
+                </span>
+                {selectionCount > 0 && (
+                  <span>
+                    {t('auth_files.bulk_scope_selected_count', { count: selectionCount })}
+                  </span>
+                )}
+              </div>
+              <div className={styles.bulkScopeActions}>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    confirmBatchStatus(filteredEnableTargetNames, true, filteredScopeLabel)
+                  }
+                  disabled={filteredStatusButtonsDisabled || filteredEnableTargetNames.length === 0}
+                  loading={batchStatusUpdating && filteredEnableTargetNames.length > 0}
+                >
+                  {t('auth_files.batch_enable_filtered_button', {
+                    count: filteredEnableTargetNames.length,
+                  })}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    confirmBatchStatus(filteredDisableTargetNames, false, filteredScopeLabel)
+                  }
+                  disabled={
+                    filteredStatusButtonsDisabled || filteredDisableTargetNames.length === 0
+                  }
+                  loading={batchStatusUpdating && filteredDisableTargetNames.length > 0}
+                >
+                  {t('auth_files.batch_disable_filtered_button', {
+                    count: filteredDisableTargetNames.length,
+                  })}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => confirmBatchDelete(filteredDeleteTargetNames, filteredScopeLabel)}
+                  disabled={disableControls || loading || filteredDeleteTargetNames.length === 0}
+                >
+                  {t('auth_files.delete_filtered_result_button', {
+                    count: filteredDeleteTargetNames.length,
+                  })}
+                </Button>
+              </div>
+            </div>
+
             {loading ? (
               <div className={styles.hint}>{t('common.loading')}</div>
             ) : pageItems.length === 0 ? (
@@ -841,7 +960,7 @@ export function AuthFilesPage() {
               <div
                 className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''} ${compactMode ? styles.fileGridCompact : ''}`}
               >
-                {pageItems.map((file) => (
+                {displayPageItems.map((file) => (
                   <AuthFileCard
                     key={file.name}
                     file={file}
@@ -991,7 +1110,7 @@ export function AuthFilesPage() {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={() => batchSetStatus(selectedNames, true)}
+                    onClick={() => confirmBatchStatus(selectedNames, true, selectedScopeLabel)}
                     disabled={batchStatusButtonsDisabled}
                   >
                     {t('auth_files.batch_enable')}
@@ -999,7 +1118,7 @@ export function AuthFilesPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => batchSetStatus(selectedNames, false)}
+                    onClick={() => confirmBatchStatus(selectedNames, false, selectedScopeLabel)}
                     disabled={batchStatusButtonsDisabled}
                   >
                     {t('auth_files.batch_disable')}
@@ -1007,7 +1126,7 @@ export function AuthFilesPage() {
                   <Button
                     variant="danger"
                     size="sm"
-                    onClick={() => batchDelete(selectedNames)}
+                    onClick={() => confirmBatchDelete(selectedNames, selectedScopeLabel)}
                     disabled={disableControls || selectedNames.length === 0}
                   >
                     {t('common.delete')}

@@ -143,7 +143,7 @@
   line-height: 1.2;
   border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
   background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
-  color: var(--text-secondary);
+  color: var(--filter-color);
   cursor: pointer;
   white-space: nowrap;
   transition:
@@ -154,14 +154,14 @@
   &:hover {
     border-color: color-mix(in srgb, var(--filter-color) 40%, var(--border-color));
     background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
-    color: var(--text-primary);
+    color: var(--filter-color);
   }
 }
 
 .filterTagActive {
   border-color: color-mix(in srgb, var(--filter-color) 50%, var(--border-color));
   background: color-mix(in srgb, var(--filter-surface) 22%, var(--bg-secondary));
-  color: var(--text-primary);
+  color: var(--filter-color);
 
   .filterTagIconWrap {
     border-color: color-mix(in srgb, var(--filter-color) 40%, transparent);
@@ -215,7 +215,7 @@
   padding: 0 6px;
   border-radius: 6px;
   background: color-mix(in srgb, var(--filter-color) 12%, transparent);
-  color: var(--text-tertiary);
+  color: var(--filter-color);
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -246,6 +246,65 @@
   @include mobile {
     padding: 12px;
   }
+}
+
+.bulkScopePanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 62%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 54%, transparent);
+
+  @include tablet {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.bulkScopeInfo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.bulkScopeTitle {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bulkScopeActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+
+  @include tablet {
+    justify-content: flex-start;
+  }
+}
+
+.confirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.confirmMeta {
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .filterControls {

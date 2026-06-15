@@ -27,24 +27,24 @@
   }
 
   &.btn-secondary {
-    background-color: var(--bg-tertiary);
-    border-color: var(--border-color);
-    color: var(--text-primary);
+    background-color: var(--action-secondary-bg);
+    border-color: var(--action-secondary-border);
+    color: var(--action-secondary-text);
 
     &:hover {
-      background-color: var(--bg-hover, var(--bg-tertiary));
-      border-color: var(--border-hover);
+      background-color: var(--action-secondary-hover-bg);
+      border-color: var(--primary-color);
     }
   }
 
   &.btn-ghost {
     background: transparent;
     border-color: transparent;
-    color: var(--text-secondary);
+    color: var(--action-secondary-text);
 
     &:hover {
-      color: var(--text-primary);
-      background: var(--bg-tertiary);
+      color: var(--primary-active);
+      background: var(--action-ghost-hover-bg);
     }
   }
 
@@ -92,7 +92,9 @@ textarea {
   padding: 10px 12px;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
 
   &:focus {
     outline: none;
@@ -266,7 +268,9 @@ textarea {
     color: var(--text-secondary);
     border-radius: $radius-md;
     cursor: pointer;
-    transition: color 0.15s ease, background-color 0.15s ease;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
 
     svg {
       display: block;
@@ -296,7 +300,8 @@ textarea {
   .track {
     width: 44px;
     height: 24px;
-    background: var(--border-color);
+    background: var(--switch-off-bg);
+    border: 1px solid var(--switch-off-border);
     border-radius: $radius-full;
     position: relative;
     transition: background $transition-fast;
@@ -306,8 +311,8 @@ textarea {
     position: absolute;
     top: 3px;
     left: 3px;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     background: #fff;
     border-radius: $radius-full;
     box-shadow: $shadow-sm;
@@ -316,6 +321,7 @@ textarea {
 
   input:checked + .track {
     background: var(--primary-color);
+    border-color: var(--primary-color);
   }
 
   input:checked + .track .thumb {
@@ -466,7 +472,10 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
   z-index: 10;
 
   svg {
@@ -690,8 +699,9 @@ textarea {
 
   .item-subtitle {
     color: var(--text-secondary);
-    font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-      monospace;
+    font-family:
+      ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
     word-break: break-all;
   }
 
@@ -798,7 +808,9 @@ textarea {
   max-height: 520px;
   overflow: auto;
   white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
   color: var(--text-primary);
 }
 

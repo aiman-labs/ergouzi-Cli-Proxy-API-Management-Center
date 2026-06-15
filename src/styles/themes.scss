@@ -26,10 +26,17 @@
   --border-primary: #d5d2cb;
   --border-hover: #cecac4;
 
-  --primary-color: #8b8680; // 行动色（主色）
-  --primary-hover: #7f7a74;
-  --primary-active: #726d67;
+  --primary-color: #2563eb; // action color
+  --primary-hover: #1d4ed8;
+  --primary-active: #1e40af;
   --primary-contrast: #ffffff;
+  --action-secondary-bg: color-mix(in srgb, var(--primary-color) 9%, var(--bg-secondary));
+  --action-secondary-border: color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
+  --action-secondary-text: var(--primary-active);
+  --action-secondary-hover-bg: color-mix(in srgb, var(--primary-color) 14%, var(--bg-secondary));
+  --action-ghost-hover-bg: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  --switch-off-bg: color-mix(in srgb, var(--primary-color) 14%, var(--bg-secondary));
+  --switch-off-border: color-mix(in srgb, var(--primary-color) 30%, var(--border-color));
 
   --success-color: #10b981;
   --quota-medium-color: #e0aa14;
@@ -106,10 +113,17 @@
   --border-primary: #d9d9d9;
   --border-hover: #cccccc;
 
-  --primary-color: #8b8680;
-  --primary-hover: #7f7a74;
-  --primary-active: #726d67;
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-active: #1e40af;
   --primary-contrast: #ffffff;
+  --action-secondary-bg: color-mix(in srgb, var(--primary-color) 8%, var(--bg-secondary));
+  --action-secondary-border: color-mix(in srgb, var(--primary-color) 26%, var(--border-color));
+  --action-secondary-text: var(--primary-active);
+  --action-secondary-hover-bg: color-mix(in srgb, var(--primary-color) 13%, var(--bg-secondary));
+  --action-ghost-hover-bg: color-mix(in srgb, var(--primary-color) 9%, transparent);
+  --switch-off-bg: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
+  --switch-off-border: color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
 
   --success-color: #10b981;
   --quota-medium-color: #e0aa14;
@@ -179,10 +193,17 @@
   --border-primary: #4a453f;
   --border-hover: #5a544d;
 
-  --primary-color: #8b8680;
-  --primary-hover: #9a948e;
-  --primary-active: #a6a099;
+  --primary-color: #60a5fa;
+  --primary-hover: #93c5fd;
+  --primary-active: #bfdbfe;
   --primary-contrast: #ffffff;
+  --action-secondary-bg: color-mix(in srgb, var(--primary-color) 16%, var(--bg-primary));
+  --action-secondary-border: color-mix(in srgb, var(--primary-color) 34%, var(--border-color));
+  --action-secondary-text: var(--primary-active);
+  --action-secondary-hover-bg: color-mix(in srgb, var(--primary-color) 22%, var(--bg-primary));
+  --action-ghost-hover-bg: color-mix(in srgb, var(--primary-color) 16%, transparent);
+  --switch-off-bg: color-mix(in srgb, var(--primary-color) 18%, var(--bg-primary));
+  --switch-off-border: color-mix(in srgb, var(--primary-color) 36%, var(--border-color));
 
   --success-color: #10b981;
   --quota-medium-color: #ffd862;
@@ -230,7 +251,9 @@
   --glass-border: color-mix(in srgb, var(--border-color) 55%, transparent);
 }
 
-@media (max-width: 768px), (prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce) {
+@media (max-width: 768px),
+  (prefers-reduced-motion: reduce),
+  (prefers-reduced-transparency: reduce) {
   :root {
     --glass-backdrop-filter: none;
     --glass-filter: none;
