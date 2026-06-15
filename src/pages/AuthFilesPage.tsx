@@ -439,16 +439,33 @@ export function AuthFilesPage() {
     () => sorted.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [sorted]
   );
+  const filteredStatusTargetNames = useMemo(
+    () =>
+      sorted
+        .filter((file) => !isRuntimeOnlyAuthFile(file) && file.disabled !== true)
+        .map((file) => file.name),
+    [sorted]
+  );
   const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
   const selectedHasStatusUpdating = useMemo(
     () => selectedNames.some((name) => statusUpdating[name] === true),
     [selectedNames, statusUpdating]
+  );
+  const filteredHasStatusUpdating = useMemo(
+    () => filteredStatusTargetNames.some((name) => statusUpdating[name] === true),
+    [filteredStatusTargetNames, statusUpdating]
   );
   const batchStatusButtonsDisabled =
     disableControls ||
     selectedNames.length === 0 ||
     batchStatusUpdating ||
     selectedHasStatusUpdating;
+  const filteredDisableButtonDisabled =
+    disableControls ||
+    loading ||
+    batchStatusUpdating ||
+    filteredStatusTargetNames.length === 0 ||
+    filteredHasStatusUpdating;
 
   const copyTextWithNotification = useCallback(
     async (text: string) => {
@@ -637,6 +654,22 @@ export function AuthFilesPage() {
       : `${t('common.delete')} ${getTypeLabel(t, normalizedFilter)}`;
   })();
 
+  const batchDisableFilteredButtonLabel = (() => {
+    if (problemOnly) {
+      return normalizedFilter === 'all'
+        ? t('auth_files.batch_disable_problem_button')
+        : t('auth_files.batch_disable_problem_button_with_type', {
+            type: getTypeLabel(t, normalizedFilter),
+          });
+    }
+    if (normalizedFilter !== 'all') {
+      return t('auth_files.batch_disable_filtered_button_with_type', {
+        type: getTypeLabel(t, normalizedFilter),
+      });
+    }
+    return t('auth_files.batch_disable_filtered_button');
+  })();
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -658,6 +691,15 @@ export function AuthFilesPage() {
               loading={uploading}
             >
               {t('auth_files.upload_button')}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void batchSetStatus(filteredStatusTargetNames, false)}
+              disabled={filteredDisableButtonDisabled}
+              loading={batchStatusUpdating && filteredStatusTargetNames.length > 0}
+            >
+              {batchDisableFilteredButtonLabel}
             </Button>
             <Button
               variant="danger"

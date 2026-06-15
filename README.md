@@ -4,6 +4,18 @@ A single-file Web UI (React + TypeScript) for operating and troubleshooting the 
 
 [中文文档](README_CN.md)
 
+## Ergouzi fork
+
+This repository is the Ergouzi fork of
+`router-for-me/Cli-Proxy-API-Management-Center`. Ergouzi maintains local
+management-console changes directly on `main`, publishes `management.html` from
+this fork, and keeps the upstream repository as a periodic sync source.
+
+The matching server fork is
+`aiman-labs/ergouzi-CLIProxyAPI`; its
+`remote-management.panel-github-repository` default should point to this
+repository.
+
 **Main Project**: https://github.com/router-for-me/CLIProxyAPI  
 **Example URL**: https://remote.router-for.me/  
 **Minimum Required Version**: ≥ 7.1.0 (recommended latest)

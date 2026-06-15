@@ -4,6 +4,15 @@
 
 [English](README.md)
 
+## Ergouzi fork
+
+本仓库是 `router-for-me/Cli-Proxy-API-Management-Center` 的 Ergouzi 二开
+fork。Ergouzi 管理台改造直接在 `main` 分支维护，从本仓库发布
+`management.html`，并定期同步 upstream。
+
+配套服务端 fork 是 `aiman-labs/ergouzi-CLIProxyAPI`；其
+`remote-management.panel-github-repository` 默认值应指向本仓库。
+
 **主项目**: https://github.com/router-for-me/CLIProxyAPI  
 **示例地址**: https://remote.router-for.me/  
 **最低版本要求**: ≥ 7.1.0（推荐最新）
