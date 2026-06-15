@@ -59,3 +59,19 @@ for the current filtered result and allows page size up to `100`.
 Review notes: This is operational tooling for CPA account-pool management. If
 upstream later implements similar batch actions, compare semantics before
 replacing Ergouzi behavior.
+
+## DEC-20260615-004: Release asset name must be management.html
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | release |
+| Upstream base | `729df08` |
+| Ergouzi source | `51b3f04` |
+
+Final decision: The release asset consumed by CLIProxyAPI must be named exactly
+`management.html`. GitHub release labels are not enough because the server
+matches the asset `name` field.
+
+Review notes: Keep `workflow_dispatch` on the release workflow so the tag can
+be rebuilt manually when tag push events do not run.
