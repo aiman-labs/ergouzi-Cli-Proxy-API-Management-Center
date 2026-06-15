@@ -456,6 +456,16 @@
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  align-content: start;
+  max-height: clamp(420px, 62vh, 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+
+  @include mobile {
+    max-height: 68vh;
+  }
 }
 
 .fileGridQuotaManaged {

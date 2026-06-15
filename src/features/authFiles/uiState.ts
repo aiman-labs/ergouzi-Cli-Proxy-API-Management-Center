@@ -1,10 +1,17 @@
 export const AUTH_FILES_SORT_MODES = ['default', 'az', 'priority'] as const;
 export const AUTH_FILES_HEALTH_FILTERS = ['all', 'normal', 'problem'] as const;
 export const AUTH_FILES_ENABLED_FILTERS = ['all', 'enabled', 'disabled'] as const;
+export const AUTH_FILES_ERROR_TYPE_FILTERS = [
+  'all',
+  'usage_limit',
+  'authentication_error',
+  'other',
+] as const;
 
 export type AuthFilesSortMode = (typeof AUTH_FILES_SORT_MODES)[number];
 export type AuthFilesHealthFilter = (typeof AUTH_FILES_HEALTH_FILTERS)[number];
 export type AuthFilesEnabledFilter = (typeof AUTH_FILES_ENABLED_FILTERS)[number];
+export type AuthFilesErrorTypeFilter = (typeof AUTH_FILES_ERROR_TYPE_FILTERS)[number];
 
 export type AuthFilesUiState = {
   filter?: string;
@@ -12,6 +19,7 @@ export type AuthFilesUiState = {
   disabledOnly?: boolean;
   healthFilter?: AuthFilesHealthFilter;
   enabledFilter?: AuthFilesEnabledFilter;
+  errorTypeFilter?: AuthFilesErrorTypeFilter;
   compactMode?: boolean;
   search?: string;
   page?: number;
@@ -26,6 +34,9 @@ const AUTH_FILES_COMPACT_MODE_KEY = 'authFilesPage.compactMode';
 const AUTH_FILES_SORT_MODE_SET = new Set<AuthFilesSortMode>(AUTH_FILES_SORT_MODES);
 const AUTH_FILES_HEALTH_FILTER_SET = new Set<AuthFilesHealthFilter>(AUTH_FILES_HEALTH_FILTERS);
 const AUTH_FILES_ENABLED_FILTER_SET = new Set<AuthFilesEnabledFilter>(AUTH_FILES_ENABLED_FILTERS);
+const AUTH_FILES_ERROR_TYPE_FILTER_SET = new Set<AuthFilesErrorTypeFilter>(
+  AUTH_FILES_ERROR_TYPE_FILTERS
+);
 
 export const isAuthFilesSortMode = (value: unknown): value is AuthFilesSortMode =>
   typeof value === 'string' && AUTH_FILES_SORT_MODE_SET.has(value as AuthFilesSortMode);
@@ -35,6 +46,10 @@ export const isAuthFilesHealthFilter = (value: unknown): value is AuthFilesHealt
 
 export const isAuthFilesEnabledFilter = (value: unknown): value is AuthFilesEnabledFilter =>
   typeof value === 'string' && AUTH_FILES_ENABLED_FILTER_SET.has(value as AuthFilesEnabledFilter);
+
+export const isAuthFilesErrorTypeFilter = (value: unknown): value is AuthFilesErrorTypeFilter =>
+  typeof value === 'string' &&
+  AUTH_FILES_ERROR_TYPE_FILTER_SET.has(value as AuthFilesErrorTypeFilter);
 
 const readAuthFilesUiStateFromStorage = (
   storage: Pick<Storage, 'getItem'> | null | undefined
