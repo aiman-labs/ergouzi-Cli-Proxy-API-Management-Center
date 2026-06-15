@@ -16,6 +16,13 @@ The matching server fork is
 `remote-management.panel-github-repository` default should point to this
 repository.
 
+CPAMC-only deployments publish a new `management.html` release asset. They do
+not restart New API or the CLIProxyAPI runtime unless the server fork or
+configuration also changes. Production CLIProxyAPI caches the asset as
+`/CLIProxyAPI/static/management.html`; if the latest release is correct but the
+served page is stale, refresh that cache and verify the served SHA-256 against
+the release asset.
+
 **Main Project**: https://github.com/router-for-me/CLIProxyAPI  
 **Example URL**: https://remote.router-for.me/  
 **Minimum Required Version**: ≥ 7.1.0 (recommended latest)
@@ -129,6 +136,10 @@ The UI language is automatically detected from browser settings and can be manua
 
 - Vite produces a **single HTML** output (`dist/index.html`) with all assets inlined (via `vite-plugin-singlefile`).
 - Tagging `vX.Y.Z` triggers `.github/workflows/release.yml` to publish `dist/management.html`.
+- Ergouzi tags use the `v1.16.6-ergouzi.N` line while this fork tracks the
+  upstream `1.16.6` base.
+- The production-proven asset name is exactly `management.html`; GitHub release
+  labels are not enough.
 - The UI version shown on the System page is injected at build time (env `VERSION`, git tag, or `package.json` fallback).
 
 ## Security notes

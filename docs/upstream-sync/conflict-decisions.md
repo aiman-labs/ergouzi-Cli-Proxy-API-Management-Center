@@ -75,3 +75,39 @@ matches the asset `name` field.
 
 Review notes: Keep `workflow_dispatch` on the release workflow so the tag can
 be rebuilt manually when tag push events do not run.
+
+## DEC-20260615-005: Treat account-pool operations as Ergouzi-owned UX
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | auth-files / quota |
+| Upstream base | `729df08` |
+| Ergouzi source | `c79feca` |
+
+Final decision: CPAMC account-pool management UX is an Ergouzi-owned operational
+surface. Preserve the CRUD-style filter list pattern: filters narrow the visible
+list, batch actions operate on the current filtered scope, and dangerous actions
+require second confirmation.
+
+Review notes: Upstream UI changes can be adopted only after checking that they
+do not regress filtered batch enable/disable/delete, quota search, quota
+credential filters, operation-count labels, or large-list scrolling.
+
+## DEC-20260615-006: CPAMC-only deploy refreshes static asset cache
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | deployment |
+| Upstream base | `729df08` |
+| Ergouzi source | `c79feca` |
+
+Final decision: A CPAMC-only release updates the `management.html` asset and the
+production static cache. It does not require a New API deploy, a CLIProxyAPI
+image deploy, or a `cli-proxy-api` container restart.
+
+Review notes: If the latest GitHub release is correct but production serves an
+old page, refresh `/CLIProxyAPI/static/management.html` in the CPA container and
+verify the served SHA-256. Do not change `config.yaml` or restart services just
+to pick up a CPAMC UI-only release.

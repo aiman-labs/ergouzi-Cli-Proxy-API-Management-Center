@@ -13,6 +13,12 @@ fork。Ergouzi 管理台改造直接在 `main` 分支维护，从本仓库发布
 配套服务端 fork 是 `aiman-labs/ergouzi-CLIProxyAPI`；其
 `remote-management.panel-github-repository` 默认值应指向本仓库。
 
+仅部署 CPAMC 时，会发布新的 `management.html` release asset。除非同时改动
+服务端 fork 或配置，否则不会重启 New API，也不会重启 CLIProxyAPI 运行时。生产
+CLIProxyAPI 会把该 asset 缓存在 `/CLIProxyAPI/static/management.html`；如果
+latest release 已正确但页面仍旧，应刷新该缓存并用 release asset 的 SHA-256
+核对生产返回内容。
+
 **主项目**: https://github.com/router-for-me/CLIProxyAPI  
 **示例地址**: https://remote.router-for.me/  
 **最低版本要求**: ≥ 7.1.0（推荐最新）
@@ -126,6 +132,10 @@ bun run build
 
 - 使用 Vite 输出 **单文件 HTML**（`dist/index.html`），资源全部内联（`vite-plugin-singlefile`）。
 - 打 `vX.Y.Z` 标签会触发 `.github/workflows/release.yml`，发布 `dist/management.html`。
+- Ergouzi 二开 tag 使用 `v1.16.6-ergouzi.N` 这条线，当前仍以 upstream
+  `1.16.6` 为基线。
+- 生产验证过的 release asset 名必须准确为 `management.html`；GitHub release
+  label 不等于 asset name。
 - 系统信息页显示的 UI 版本在构建期注入（优先使用环境变量 `VERSION`，否则使用 git tag / `package.json`）。
 
 ## 安全提示

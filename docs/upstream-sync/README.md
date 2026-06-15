@@ -23,6 +23,8 @@ future sync becomes large enough to need a pure upstream review base.
 - Publish `management.html` from this fork.
 - Keep the single-file Vite build contract unless CLIProxyAPI changes with it.
 - Protect Ergouzi auth-file operations and account-pool UX.
+- Treat CPAMC-only deployments as static asset refreshes; do not restart New API
+  or CLIProxyAPI unless the server fork/config changed.
 - Keep i18n keys aligned across zh-CN, zh-TW, en, and ru.
 - Record only non-obvious choices as DEC entries; do not document trivial merges.
 - Before closing a sync, run type-check, build, lint, `git diff --check`, and a conflict-marker scan.

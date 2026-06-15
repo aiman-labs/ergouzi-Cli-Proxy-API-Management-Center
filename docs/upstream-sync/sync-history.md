@@ -77,3 +77,41 @@ gh release view v1.16.6-ergouzi.1 \
 Production `/management.html` matched the release hash after the server-side
 `panel-github-repository` config was pointed to the Ergouzi CPAMC fork and the
 CPA container was force-recreated.
+
+## 2026-06-15 Stable CPAMC UI Iteration Line
+
+| Item | Value |
+|---|---|
+| Ergouzi main | `c79feca` |
+| Origin main | `c79feca` |
+| Upstream main | `729df08` |
+| Merge base | `729df08` |
+| Ergouzi commits since upstream | `8` |
+| Upstream commits not in Ergouzi | `0` |
+| Changed files vs upstream | `26` |
+| Latest CPAMC release | `v1.16.6-ergouzi.5` |
+| Latest asset | `management.html` |
+| Latest asset sha256 | `117a99f9832eb46f7a7d8e538ea933817566d642047e43d38fd25493222c2d12` |
+| Latest asset size | `2174480` bytes |
+
+Behavior now treated as Ergouzi-local product surface:
+
+| Area | Behavior |
+|---|---|
+| Auth files | Current-filter batch enable, disable, and delete with second confirmation for high-risk actions |
+| Auth filters | Health and enabled-state selects replace the older problem-only / disabled-only switches |
+| Auth page size | Supports up to `100` items per page |
+| Quota page | Codex first, newest imported credentials first, per-section credential filter, search box, bounded section scroll |
+| Quota refresh | Batch refresh and refresh-all labels show the effective operation counts under current filters |
+| UI theme | Controls use active color tokens instead of neutral grey-only switch/button states |
+
+Deployment finding:
+
+- CPAMC-only deployment does not require restarting New API or CLIProxyAPI.
+- Production CLIProxyAPI caches the downloaded panel at
+  `/CLIProxyAPI/static/management.html`.
+- If production serves an older `management.html` after a CPAMC release, back up
+  and remove the cached file, then request `/management.html` to trigger a fresh
+  latest-release download.
+- Verify the served file by SHA-256 against the GitHub release asset and by UI
+  markers such as `健康状态`, `启用状态`, and `搜索账号`.
