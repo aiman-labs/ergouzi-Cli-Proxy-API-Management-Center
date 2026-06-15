@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
-import { getStatusFromError } from '@/utils/quota';
+import { getStatusFromError, isDisabledAuthFile } from '@/utils/quota';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
@@ -123,6 +123,10 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     () => files.filter((file) => config.filterFn(file)),
     [files, config]
   );
+  const refreshableFiles = useMemo(
+    () => filteredFiles.filter((file) => !isDisabledAuthFile(file)),
+    [filteredFiles]
+  );
   const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
   const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
 
@@ -169,8 +173,9 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
   const refreshQuotaTargets = useCallback(
     (targets: AuthFileItem[], scope: 'page' | 'all') => {
-      if (targets.length === 0) return;
-      loadQuota(targets, scope, setLoading);
+      const refreshableTargets = targets.filter((file) => !isDisabledAuthFile(file));
+      if (refreshableTargets.length === 0) return;
+      loadQuota(refreshableTargets, scope, setLoading);
     },
     [loadQuota, setLoading]
   );
@@ -180,18 +185,18 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   }, [pageItems, refreshQuotaTargets]);
 
   const handleRefreshAll = useCallback(() => {
-    if (filteredFiles.length === 0) return;
+    if (refreshableFiles.length === 0) return;
 
     showConfirmation({
       title: t('quota_management.refresh_all_confirm_title'),
       message: t('quota_management.refresh_all_confirm_message', {
-        count: filteredFiles.length,
+        count: refreshableFiles.length,
       }),
       confirmText: t('quota_management.refresh_all_confirm_button'),
       variant: 'primary',
-      onConfirm: () => refreshQuotaTargets(filteredFiles, 'all'),
+      onConfirm: () => refreshQuotaTargets(refreshableFiles, 'all'),
     });
-  }, [filteredFiles, refreshQuotaTargets, showConfirmation, t]);
+  }, [refreshableFiles, refreshQuotaTargets, showConfirmation, t]);
 
   useEffect(() => {
     if (loading) return;
@@ -290,6 +295,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const isRefreshing = sectionLoading || loading;
   const isRefreshingPage = sectionLoading && loadingScope === 'page';
   const isRefreshingAll = sectionLoading && loadingScope === 'all';
+  const currentPageRefreshableCount = pageItems.filter((file) => !isDisabledAuthFile(file)).length;
 
   return (
     <Card
@@ -329,13 +335,13 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             size="sm"
             className={styles.refreshScopeButton}
             onClick={handleRefreshCurrentPage}
-            disabled={disabled || isRefreshing}
+            disabled={disabled || isRefreshing || currentPageRefreshableCount === 0}
             loading={isRefreshingPage}
             title={t('quota_management.refresh_current_page_credentials', {
-              count: pageItems.length,
+              count: currentPageRefreshableCount,
             })}
             aria-label={t('quota_management.refresh_current_page_credentials', {
-              count: pageItems.length,
+              count: currentPageRefreshableCount,
             })}
           >
             {!isRefreshingPage && <IconRefreshCw size={16} />}
@@ -346,13 +352,13 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             size="sm"
             className={styles.refreshAllButton}
             onClick={handleRefreshAll}
-            disabled={disabled || isRefreshing || filteredFiles.length === 0}
+            disabled={disabled || isRefreshing || refreshableFiles.length === 0}
             loading={isRefreshingAll}
             title={t('quota_management.refresh_all_credentials_count', {
-              count: filteredFiles.length,
+              count: refreshableFiles.length,
             })}
             aria-label={t('quota_management.refresh_all_credentials_count', {
-              count: filteredFiles.length,
+              count: refreshableFiles.length,
             })}
           >
             {!isRefreshingAll && <IconRefreshCw size={16} />}
