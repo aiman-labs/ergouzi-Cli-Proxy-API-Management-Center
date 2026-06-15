@@ -81,6 +81,27 @@
   }
 }
 
+.sectionSearch {
+  display: flex;
+  flex: 1 1 360px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 240px;
+
+  > span {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 700;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  @include mobile {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 .quotaCrudToolbar {
   display: flex;
   flex-direction: column;
@@ -120,6 +141,7 @@
   }
 }
 
+.sectionSearchInput,
 .sectionFilterSelect {
   width: 100%;
   height: 34px;
@@ -137,6 +159,11 @@
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 18%, transparent);
   }
+}
+
+.sectionSearchInput {
+  padding-right: 12px;
+  cursor: text;
 }
 
 .headerActions {

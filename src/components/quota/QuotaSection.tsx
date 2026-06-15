@@ -55,6 +55,27 @@ const sortByNewestImport = (files: AuthFileItem[]) =>
     })
     .map((entry) => entry.file);
 
+const searchableAuthFileText = (file: AuthFileItem): string =>
+  [
+    file.name,
+    file.type,
+    file.provider,
+    file.note,
+    file.authIndex,
+    file['auth_index'],
+    file['email'],
+    file['account'],
+    file['username'],
+    file['user'],
+    file['path'],
+    file.status,
+    file.statusMessage,
+    file['status_message'],
+  ]
+    .filter((value) => value !== undefined && value !== null)
+    .map((value) => String(value).toLowerCase())
+    .join('\n');
+
 interface QuotaPaginationState<T> {
   pageSize: number;
   totalPages: number;
@@ -145,6 +166,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [columns, gridRef] = useGridColumns(380); // Min card width 380px matches SCSS
   const [viewMode, setViewMode] = useState<ViewMode>('paged');
   const [issueFilter, setIssueFilter] = useState<IssueFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
   const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
 
@@ -177,12 +199,18 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const filteredFiles = useMemo(
     () =>
       providerFiles.filter((file) => {
+        const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+        if (normalizedSearchQuery && !searchableAuthFileText(file).includes(normalizedSearchQuery)) {
+          return false;
+        }
+
         if (issueFilter === 'all') return true;
         const problem = hasProblem(file);
         return issueFilter === 'problem' ? problem : !problem;
       }),
-    [hasProblem, issueFilter, providerFiles]
+    [hasProblem, issueFilter, providerFiles, searchQuery]
   );
+  const hasActiveSearch = searchQuery.trim().length > 0;
   const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
   const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
 
@@ -341,7 +369,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       <span>{t(`${config.i18nPrefix}.title`)}</span>
       {providerFiles.length > 0 && (
         <span className={styles.countBadge}>
-          {issueFilter === 'all'
+          {issueFilter === 'all' && !hasActiveSearch
             ? filteredFiles.length
             : `${filteredFiles.length}/${providerFiles.length}`}
         </span>
@@ -360,6 +388,17 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     <Card title={titleNode}>
       <div className={styles.quotaCrudToolbar}>
         <div className={styles.quotaFilterBar}>
+          <label className={styles.sectionSearch}>
+            <span>{t('quota_management.search_label')}</span>
+            <input
+              className={styles.sectionSearchInput}
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.currentTarget.value)}
+              placeholder={t('quota_management.search_placeholder')}
+              aria-label={t('quota_management.search_label')}
+            />
+          </label>
           <label className={styles.sectionFilter}>
             <span>{t('quota_management.credential_filter_label')}</span>
             <select
@@ -466,14 +505,18 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         {filteredFiles.length === 0 ? (
           <EmptyState
             title={
-              issueFilter === 'problem' && providerFiles.length > 0
+              hasActiveSearch && providerFiles.length > 0
+                ? t('quota_management.no_search_title')
+                : issueFilter === 'problem' && providerFiles.length > 0
                 ? t('quota_management.no_problem_title')
                 : issueFilter === 'normal' && providerFiles.length > 0
                   ? t('quota_management.no_normal_title')
                   : t(`${config.i18nPrefix}.empty_title`)
             }
             description={
-              issueFilter === 'problem' && providerFiles.length > 0
+              hasActiveSearch && providerFiles.length > 0
+                ? t('quota_management.no_search_desc')
+                : issueFilter === 'problem' && providerFiles.length > 0
                 ? t('quota_management.no_problem_desc')
                 : issueFilter === 'normal' && providerFiles.length > 0
                   ? t('quota_management.no_normal_desc')

@@ -310,9 +310,9 @@
 .filterControls {
   display: grid;
   grid-template-columns:
-    minmax(260px, 1fr)
-    minmax(108px, 0.35fr)
-    minmax(148px, 0.45fr);
+    minmax(260px, 1.4fr)
+    minmax(108px, 0.45fr)
+    repeat(3, minmax(148px, 0.65fr));
   gap: 12px;
   align-items: flex-end;
 
@@ -365,7 +365,7 @@
 
 .filterToggleGroup {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
   min-height: 42px;
 
