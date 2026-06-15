@@ -242,6 +242,7 @@ export interface CodexQuotaWindow {
   labelKey?: string;
   labelParams?: Record<string, string | number>;
   usedPercent: number | null;
+  limitReached?: boolean;
   resetLabel: string;
 }
 

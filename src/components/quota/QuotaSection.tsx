@@ -25,6 +25,7 @@ type QuotaSetter<T> = (updater: QuotaUpdater<T>) => void;
 
 type ViewMode = 'paged' | 'all';
 type IssueFilter = 'all' | 'normal' | 'problem';
+type QuotaFilterValue = IssueFilter | string;
 
 const MAX_ITEMS_PER_PAGE = 25;
 const MAX_SHOW_ALL_THRESHOLD = 30;
@@ -165,7 +166,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   /* Removed useRef */
   const [columns, gridRef] = useGridColumns(380); // Min card width 380px matches SCSS
   const [viewMode, setViewMode] = useState<ViewMode>('paged');
-  const [issueFilter, setIssueFilter] = useState<IssueFilter>('all');
+  const [issueFilter, setIssueFilter] = useState<QuotaFilterValue>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
   const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
@@ -176,6 +177,16 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   );
 
   const { quota, loadQuota } = useQuotaLoader(config);
+  const configuredFilterOptionValues = useMemo(
+    () => new Set((config.quotaFilterOptions ?? []).map((option) => option.value)),
+    [config.quotaFilterOptions]
+  );
+
+  useEffect(() => {
+    if (!config.quotaFilterOptions) return;
+    if (configuredFilterOptionValues.has(issueFilter)) return;
+    setIssueFilter('all');
+  }, [config.quotaFilterOptions, configuredFilterOptionValues, issueFilter]);
 
   const hasProblem = useCallback(
     (file: AuthFileItem): boolean => {
@@ -200,15 +211,23 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     () =>
       providerFiles.filter((file) => {
         const normalizedSearchQuery = searchQuery.trim().toLowerCase();
-        if (normalizedSearchQuery && !searchableAuthFileText(file).includes(normalizedSearchQuery)) {
+        if (
+          normalizedSearchQuery &&
+          !searchableAuthFileText(file).includes(normalizedSearchQuery)
+        ) {
           return false;
+        }
+
+        if (config.quotaFilterOptions) {
+          const option = config.quotaFilterOptions.find((item) => item.value === issueFilter);
+          return option ? option.matches({ file, quota: quota[file.name] }) : true;
         }
 
         if (issueFilter === 'all') return true;
         const problem = hasProblem(file);
         return issueFilter === 'problem' ? problem : !problem;
       }),
-    [hasProblem, issueFilter, providerFiles, searchQuery]
+    [config.quotaFilterOptions, hasProblem, issueFilter, providerFiles, quota, searchQuery]
   );
   const hasActiveSearch = searchQuery.trim().length > 0;
   const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
@@ -383,6 +402,19 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const currentPageRefreshableCount = pageItems.length;
   const currentPageDisabledCount = pageItems.filter((file) => isDisabledAuthFile(file)).length;
   const filteredDisabledCount = filteredFiles.filter((file) => isDisabledAuthFile(file)).length;
+  const filterOptions = config.quotaFilterOptions
+    ? config.quotaFilterOptions.map((option) => ({
+        value: option.value,
+        label: t(option.labelKey),
+      }))
+    : [
+        { value: 'all', label: t('quota_management.filter_all_credentials') },
+        { value: 'normal', label: t('quota_management.filter_normal_credentials') },
+        { value: 'problem', label: t('quota_management.filter_problem_credentials') },
+      ];
+  const activeConfiguredFilter = config.quotaFilterOptions?.find(
+    (option) => option.value === issueFilter
+  );
 
   return (
     <Card title={titleNode}>
@@ -400,16 +432,22 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             />
           </label>
           <label className={styles.sectionFilter}>
-            <span>{t('quota_management.credential_filter_label')}</span>
+            <span>
+              {t(config.quotaFilterLabelKey ?? 'quota_management.credential_filter_label')}
+            </span>
             <select
               className={styles.sectionFilterSelect}
               value={issueFilter}
-              onChange={(event) => setIssueFilter(event.currentTarget.value as IssueFilter)}
-              aria-label={t('quota_management.credential_filter_label')}
+              onChange={(event) => setIssueFilter(event.currentTarget.value)}
+              aria-label={t(
+                config.quotaFilterLabelKey ?? 'quota_management.credential_filter_label'
+              )}
             >
-              <option value="all">{t('quota_management.filter_all_credentials')}</option>
-              <option value="normal">{t('quota_management.filter_normal_credentials')}</option>
-              <option value="problem">{t('quota_management.filter_problem_credentials')}</option>
+              {filterOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <div className={styles.viewModeToggle}>
@@ -460,45 +498,45 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             )}
           </div>
           <div className={styles.batchActions}>
-          <Button
-            variant="secondary"
-            size="sm"
-            className={styles.refreshScopeButton}
-            onClick={handleRefreshCurrentPage}
-            disabled={disabled || isRefreshing || currentPageRefreshableCount === 0}
-            loading={isRefreshingPage}
-            title={t('quota_management.batch_refresh_credentials', {
-              count: currentPageRefreshableCount,
-            })}
-            aria-label={t('quota_management.batch_refresh_credentials', {
-              count: currentPageRefreshableCount,
-            })}
-          >
-            {!isRefreshingPage && <IconRefreshCw size={16} />}
-            {t('quota_management.batch_refresh_count', {
-              count: currentPageRefreshableCount,
-            })}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            className={styles.refreshAllButton}
-            onClick={handleRefreshAll}
-            disabled={disabled || isRefreshing || filteredFiles.length === 0}
-            loading={isRefreshingAll}
-            title={t('quota_management.refresh_all_credentials_count', {
-              count: filteredFiles.length,
-            })}
-            aria-label={t('quota_management.refresh_all_credentials_count', {
-              count: filteredFiles.length,
-            })}
-          >
-            {!isRefreshingAll && <IconRefreshCw size={16} />}
-            {t('quota_management.refresh_all_credentials_count', {
-              count: filteredFiles.length,
-            })}
-          </Button>
-        </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              className={styles.refreshScopeButton}
+              onClick={handleRefreshCurrentPage}
+              disabled={disabled || isRefreshing || currentPageRefreshableCount === 0}
+              loading={isRefreshingPage}
+              title={t('quota_management.batch_refresh_credentials', {
+                count: currentPageRefreshableCount,
+              })}
+              aria-label={t('quota_management.batch_refresh_credentials', {
+                count: currentPageRefreshableCount,
+              })}
+            >
+              {!isRefreshingPage && <IconRefreshCw size={16} />}
+              {t('quota_management.batch_refresh_count', {
+                count: currentPageRefreshableCount,
+              })}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className={styles.refreshAllButton}
+              onClick={handleRefreshAll}
+              disabled={disabled || isRefreshing || filteredFiles.length === 0}
+              loading={isRefreshingAll}
+              title={t('quota_management.refresh_all_credentials_count', {
+                count: filteredFiles.length,
+              })}
+              aria-label={t('quota_management.refresh_all_credentials_count', {
+                count: filteredFiles.length,
+              })}
+            >
+              {!isRefreshingAll && <IconRefreshCw size={16} />}
+              {t('quota_management.refresh_all_credentials_count', {
+                count: filteredFiles.length,
+              })}
+            </Button>
+          </div>
         </div>
       </div>
       <div className={styles.sectionScrollBody}>
@@ -507,20 +545,24 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             title={
               hasActiveSearch && providerFiles.length > 0
                 ? t('quota_management.no_search_title')
-                : issueFilter === 'problem' && providerFiles.length > 0
-                ? t('quota_management.no_problem_title')
-                : issueFilter === 'normal' && providerFiles.length > 0
-                  ? t('quota_management.no_normal_title')
-                  : t(`${config.i18nPrefix}.empty_title`)
+                : activeConfiguredFilter && issueFilter !== 'all' && providerFiles.length > 0
+                  ? t(activeConfiguredFilter.emptyTitleKey)
+                  : issueFilter === 'problem' && providerFiles.length > 0
+                    ? t('quota_management.no_problem_title')
+                    : issueFilter === 'normal' && providerFiles.length > 0
+                      ? t('quota_management.no_normal_title')
+                      : t(`${config.i18nPrefix}.empty_title`)
             }
             description={
               hasActiveSearch && providerFiles.length > 0
                 ? t('quota_management.no_search_desc')
-                : issueFilter === 'problem' && providerFiles.length > 0
-                ? t('quota_management.no_problem_desc')
-                : issueFilter === 'normal' && providerFiles.length > 0
-                  ? t('quota_management.no_normal_desc')
-                  : t(`${config.i18nPrefix}.empty_desc`)
+                : activeConfiguredFilter && issueFilter !== 'all' && providerFiles.length > 0
+                  ? t(activeConfiguredFilter.emptyDescKey)
+                  : issueFilter === 'problem' && providerFiles.length > 0
+                    ? t('quota_management.no_problem_desc')
+                    : issueFilter === 'normal' && providerFiles.length > 0
+                      ? t('quota_management.no_normal_desc')
+                      : t(`${config.i18nPrefix}.empty_desc`)
             }
           />
         ) : (

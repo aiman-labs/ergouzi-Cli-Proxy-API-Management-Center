@@ -122,6 +122,14 @@ export interface QuotaStore {
   clearQuotaCache: () => void;
 }
 
+export interface QuotaFilterOption<TState> {
+  value: string;
+  labelKey: string;
+  emptyTitleKey: string;
+  emptyDescKey: string;
+  matches: (args: { file: AuthFileItem; quota: TState | undefined }) => boolean;
+}
+
 export interface QuotaConfig<TState, TData> {
   type: QuotaType;
   i18nPrefix: string;
@@ -135,6 +143,8 @@ export interface QuotaConfig<TState, TData> {
   buildLoadingState: () => TState;
   buildSuccessState: (data: TData) => TState;
   buildErrorState: (message: string, status?: number) => TState;
+  quotaFilterLabelKey?: string;
+  quotaFilterOptions?: QuotaFilterOption<TState>[];
   cardClassName: string;
   controlsClassName: string;
   controlClassName: string;
@@ -245,10 +255,7 @@ const fetchAntigravityQuota = async (
   throw createStatusError(lastError || t('common.unknown_error'), priorityStatus ?? lastStatus);
 };
 
-const buildCodexQuotaWindows = (
-  payload: CodexUsagePayload,
-  t: TFunction
-): CodexQuotaWindow[] => {
+const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): CodexQuotaWindow[] => {
   const FIVE_HOUR_SECONDS = 18000;
   const WEEK_SECONDS = 604800;
   const MIN_MONTH_SECONDS = 28 * 24 * 60 * 60;
@@ -297,6 +304,7 @@ const buildCodexQuotaWindows = (
       labelKey,
       labelParams,
       usedPercent,
+      limitReached: isLimitReached,
       resetLabel,
     });
   };
@@ -878,8 +886,7 @@ const renderCodexItems = (
   const windows = quota.windows ?? [];
   const planType = quota.planType ?? null;
   const subscriptionActiveUntil = quota.subscriptionActiveUntil ?? null;
-  const rateLimitResetCreditsAvailableCount =
-    quota.rateLimitResetCreditsAvailableCount ?? null;
+  const rateLimitResetCreditsAvailableCount = quota.rateLimitResetCreditsAvailableCount ?? null;
 
   const getPlanLabel = (pt?: string | null): string | null => {
     const normalized = normalizePlanType(pt);
@@ -999,6 +1006,32 @@ const renderCodexItems = (
   );
 
   return h(Fragment, null, ...nodes);
+};
+
+const getCodexQuotaAvailability = (
+  quota: CodexQuotaState | undefined
+): 'available' | 'zero' | 'error' | 'unknown' => {
+  if (!quota) return 'unknown';
+  if (quota.status === 'error') return 'error';
+  if (quota.status !== 'success') return 'unknown';
+
+  const knownWindows = (quota.windows ?? []).filter((window) => window.usedPercent !== null);
+  if (knownWindows.length === 0) return 'unknown';
+
+  if (knownWindows.some((window) => window.limitReached === false)) return 'available';
+  if (knownWindows.length > 0 && knownWindows.every((window) => window.limitReached === true)) {
+    return 'zero';
+  }
+
+  const remainingByWindow = knownWindows.map((window) => {
+    const clampedUsed = Math.max(0, Math.min(100, window.usedPercent ?? 0));
+    return Math.round(Math.max(0, Math.min(100, 100 - clampedUsed)));
+  });
+
+  if (remainingByWindow.some((remaining) => remaining > 0)) return 'available';
+  if (remainingByWindow.every((remaining) => remaining <= 0)) return 'zero';
+
+  return 'unknown';
 };
 
 const renderGeminiCliItems = (
@@ -1397,6 +1430,37 @@ export const CODEX_CONFIG: QuotaConfig<
     error: message,
     errorStatus: status,
   }),
+  quotaFilterLabelKey: 'quota_management.quota_filter_label',
+  quotaFilterOptions: [
+    {
+      value: 'all',
+      labelKey: 'quota_management.filter_all_quotas',
+      emptyTitleKey: 'quota_management.no_quota_filter_title',
+      emptyDescKey: 'quota_management.no_quota_filter_desc',
+      matches: () => true,
+    },
+    {
+      value: 'available',
+      labelKey: 'quota_management.filter_quota_available',
+      emptyTitleKey: 'quota_management.no_quota_available_title',
+      emptyDescKey: 'quota_management.no_quota_available_desc',
+      matches: ({ quota }) => getCodexQuotaAvailability(quota) === 'available',
+    },
+    {
+      value: 'zero',
+      labelKey: 'quota_management.filter_quota_zero',
+      emptyTitleKey: 'quota_management.no_quota_zero_title',
+      emptyDescKey: 'quota_management.no_quota_zero_desc',
+      matches: ({ quota }) => getCodexQuotaAvailability(quota) === 'zero',
+    },
+    {
+      value: 'error',
+      labelKey: 'quota_management.filter_quota_error',
+      emptyTitleKey: 'quota_management.no_quota_error_title',
+      emptyDescKey: 'quota_management.no_quota_error_desc',
+      matches: ({ quota }) => getCodexQuotaAvailability(quota) === 'error',
+    },
+  ],
   cardClassName: styles.codexCard,
   controlsClassName: styles.codexControls,
   controlClassName: styles.codexControl,
