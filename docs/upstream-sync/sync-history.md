@@ -115,3 +115,42 @@ Deployment finding:
   latest-release download.
 - Verify the served file by SHA-256 against the GitHub release asset and by UI
   markers such as `健康状态`, `启用状态`, and `搜索账号`.
+
+## 2026-06-16 Upstream Plugin And Logs Refresh
+
+| Item | Value |
+|---|---|
+| Ergouzi main before sync | `7a9b9e1` |
+| Upstream previous baseline | `729df08` |
+| Upstream target | `b0db1df` |
+| Merge base | `729df08` |
+| Upstream commits adopted | `4` |
+| Merge result | clean merge, staged and verified before commit |
+
+Upstream changes adopted:
+
+| Area | Summary |
+|---|---|
+| Plugin store | Default source labels, third-party source support, safer install warning copy, repository link display |
+| Visual config | `plugins.store-sources` editor support |
+| Logs | Incremental fetching supports `cursor` plus legacy `after` fallback |
+
+Protected Ergouzi surfaces checked:
+
+| Area | Result |
+|---|---|
+| Release contract | No upstream change touched `vite.config.ts`, release workflow, or the `management.html` asset name |
+| Auth files | No merge conflict with filtered batch enable/disable/delete, success-count filter, health filter, enabled-state filter, or page size `100` |
+| Quota page | No merge conflict with Codex-first quota ordering, quota availability filter, batch refresh counts, search, or bounded section scroll |
+| Upstream-sync docs | Preserved Ergouzi local sync records; no new DEC entry was needed |
+
+Verification target before closing:
+
+```bash
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+git diff --cached --check
+rg -n '<<<<<<<|=======|>>>>>>>' .
+```
