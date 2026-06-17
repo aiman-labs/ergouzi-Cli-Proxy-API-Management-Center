@@ -92,7 +92,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     failure: normalizeUsageTotal(file.failed),
   };
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
-  const providerKey = normalizeProviderKey(String(file.type ?? file.provider ?? 'unknown'));
+  const providerKey = normalizeProviderKey(resolveAuthProvider(file) || 'unknown');
   const isAntigravity = providerKey === 'antigravity';
   const isAistudio = providerKey === 'aistudio';
   const showModelsButton = !isRuntimeOnly || isAistudio;
