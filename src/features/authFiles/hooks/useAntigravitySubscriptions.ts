@@ -68,12 +68,13 @@ export function useAntigravitySubscriptions(files: AuthFileItem[]) {
     if (targetsToLoad.length === 0) return;
 
     let cancelled = false;
+    const cacheKeys = cacheKeysRef.current;
     const requestTargets = targetsToLoad.filter((target) => target.authIndex);
 
     setSubscriptions((prev) => {
       const next = { ...prev };
       targetsToLoad.forEach((target) => {
-        cacheKeysRef.current.set(target.file.name, target.cacheKey);
+        cacheKeys.set(target.file.name, target.cacheKey);
         next[target.file.name] = target.authIndex
           ? { status: 'loading' }
           : {
@@ -122,7 +123,7 @@ export function useAntigravitySubscriptions(files: AuthFileItem[]) {
       setSubscriptions((prev) => {
         const next = { ...prev };
         results.forEach((result) => {
-          if (cacheKeysRef.current.get(result.name) !== result.cacheKey) return;
+          if (cacheKeys.get(result.name) !== result.cacheKey) return;
           if (result.status === 'success') {
             next[result.name] = { status: 'success', data: result.data };
           } else {
@@ -139,6 +140,11 @@ export function useAntigravitySubscriptions(files: AuthFileItem[]) {
 
     return () => {
       cancelled = true;
+      requestTargets.forEach((target) => {
+        if (cacheKeys.get(target.file.name) === target.cacheKey) {
+          cacheKeys.delete(target.file.name);
+        }
+      });
     };
   }, [t, targets]);
 

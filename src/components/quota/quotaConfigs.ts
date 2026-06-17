@@ -958,7 +958,9 @@ const renderAntigravityItems = (
               : t('antigravity_quota.remaining_percent', {
                   percent: Math.round(percent),
                 });
-          const resetLabel = formatAntigravityResetLabel(bucket.resetTime, t, nowMs);
+          const formattedResetLabel = formatAntigravityResetLabel(bucket.resetTime, t, nowMs);
+          const resetLabel =
+            formattedResetLabel === '-' ? (bucket.description ?? formattedResetLabel) : formattedResetLabel;
 
           return h(
             'div',
