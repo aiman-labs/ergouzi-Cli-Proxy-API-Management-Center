@@ -176,12 +176,27 @@ function getNonNegativeIntegerError(value: string): 'non_negative_integer' | und
   return Number(trimmed) >= 0 ? undefined : 'non_negative_integer';
 }
 
+function getPositiveIntegerError(value: string): 'positive_integer' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return 'positive_integer';
+  if (!/^\d+$/.test(trimmed)) return 'positive_integer';
+  return Number(trimmed) >= 1 ? undefined : 'positive_integer';
+}
+
 function getPortError(value: string): 'port_range' | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   if (!/^\d+$/.test(trimmed)) return 'port_range';
   const parsed = Number(trimmed);
   return parsed >= 1 && parsed <= 65535 ? undefined : 'port_range';
+}
+
+function getPercentRangeError(value: string): 'percent_range' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return 'percent_range';
+  if (!/^\d+$/.test(trimmed)) return 'percent_range';
+  const parsed = Number(trimmed);
+  return parsed >= 1 && parsed <= 100 ? undefined : 'percent_range';
 }
 
 export function getVisualConfigValidationErrors(
@@ -198,6 +213,10 @@ export function getVisualConfigValidationErrors(
     maxRetryCredentials: getNonNegativeIntegerError(values.maxRetryCredentials),
     maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
     authAutoRefreshWorkers: getNonNegativeIntegerError(values.authAutoRefreshWorkers),
+    quotaAutoDisableIntervalSeconds: getPositiveIntegerError(
+      values.quotaAutoDisableIntervalSeconds
+    ),
+    quotaAutoDisableThresholdPercent: getPercentRangeError(values.quotaAutoDisableThresholdPercent),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
     'streaming.nonstreamKeepaliveInterval': getNonNegativeIntegerError(
@@ -784,6 +803,9 @@ function getNextDirtyFields(
       'quotaSwitchProject',
       'quotaSwitchPreviewModel',
       'quotaAntigravityCredits',
+      'quotaAutoDisableEnabled',
+      'quotaAutoDisableIntervalSeconds',
+      'quotaAutoDisableThresholdPercent',
       'routingStrategy',
       'routingSessionAffinity',
       'routingSessionAffinityTTL',
@@ -886,6 +908,451 @@ function visualConfigReducer(
   }
 }
 
+export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConfigValues {
+  const document = parseDocument(yamlContent);
+  if (document.errors.length > 0) {
+    throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
+  }
+
+  const parsedRaw: unknown = parseYaml(yamlContent) || {};
+  const parsed = asRecord(parsedRaw) ?? {};
+  const tls = asRecord(parsed.tls);
+  const remoteManagement = asRecord(parsed['remote-management']);
+  const quotaExceeded = asRecord(parsed['quota-exceeded']);
+  const quotaAutoDisable = asRecord(parsed['quota-auto-disable']);
+  const routing = asRecord(parsed.routing);
+  const payload = asRecord(parsed.payload);
+  const streaming = asRecord(parsed.streaming);
+  const plugins = asRecord(parsed.plugins);
+  const codex = asRecord(parsed.codex);
+  const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
+  const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
+
+  return {
+    host: typeof parsed.host === 'string' ? parsed.host : '',
+    port: String(parsed.port ?? ''),
+
+    tlsEnable: Boolean(tls?.enable),
+    tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
+    tlsKey: typeof tls?.key === 'string' ? tls.key : '',
+
+    rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
+    rmSecretKey:
+      typeof remoteManagement?.['secret-key'] === 'string' ? remoteManagement['secret-key'] : '',
+    rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
+    rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
+    rmPanelRepo:
+      typeof remoteManagement?.['panel-github-repository'] === 'string'
+        ? remoteManagement['panel-github-repository']
+        : typeof remoteManagement?.['panel-repo'] === 'string'
+          ? remoteManagement['panel-repo']
+          : '',
+
+    authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
+    apiKeysText: resolveApiKeysText(parsed),
+    pluginsEnabled: Boolean(plugins?.enabled),
+
+    debug: Boolean(parsed.debug),
+    commercialMode: Boolean(parsed['commercial-mode']),
+    loggingToFile: Boolean(parsed['logging-to-file']),
+    logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
+    errorLogsMaxFiles: String(parsed['error-logs-max-files'] ?? ''),
+    usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
+    redisUsageQueueRetentionSeconds: String(parsed['redis-usage-queue-retention-seconds'] ?? ''),
+
+    proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
+    forceModelPrefix: Boolean(parsed['force-model-prefix']),
+    passthroughHeaders: Boolean(parsed['passthrough-headers']),
+    requestRetry: String(parsed['request-retry'] ?? ''),
+    maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
+    maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
+    disableCooling: Boolean(parsed['disable-cooling']),
+    disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
+    gptImage2BaseModel:
+      typeof parsed['gpt-image-2-base-model'] === 'string' ? parsed['gpt-image-2-base-model'] : '',
+    authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
+    wsAuth: Boolean(parsed['ws-auth']),
+    enableGeminiCliEndpoint: Boolean(parsed['enable-gemini-cli-endpoint']),
+    antigravitySignatureCacheEnabled: Boolean(
+      parsed['antigravity-signature-cache-enabled'] ?? true
+    ),
+    antigravitySignatureBypassStrict: Boolean(parsed['antigravity-signature-bypass-strict']),
+
+    claudeHeaderUserAgent:
+      typeof claudeHeaderDefaults?.['user-agent'] === 'string'
+        ? claudeHeaderDefaults['user-agent']
+        : '',
+    claudeHeaderPackageVersion:
+      typeof claudeHeaderDefaults?.['package-version'] === 'string'
+        ? claudeHeaderDefaults['package-version']
+        : '',
+    claudeHeaderRuntimeVersion:
+      typeof claudeHeaderDefaults?.['runtime-version'] === 'string'
+        ? claudeHeaderDefaults['runtime-version']
+        : '',
+    claudeHeaderOs: typeof claudeHeaderDefaults?.os === 'string' ? claudeHeaderDefaults.os : '',
+    claudeHeaderArch:
+      typeof claudeHeaderDefaults?.arch === 'string' ? claudeHeaderDefaults.arch : '',
+    claudeHeaderTimeout:
+      typeof claudeHeaderDefaults?.timeout === 'string' ? claudeHeaderDefaults.timeout : '',
+    claudeHeaderStabilizeDeviceProfile: Boolean(claudeHeaderDefaults?.['stabilize-device-profile']),
+    codexHeaderUserAgent:
+      typeof codexHeaderDefaults?.['user-agent'] === 'string'
+        ? codexHeaderDefaults['user-agent']
+        : '',
+    codexHeaderBetaFeatures:
+      typeof codexHeaderDefaults?.['beta-features'] === 'string'
+        ? codexHeaderDefaults['beta-features']
+        : '',
+    codexIdentityConfuse: Boolean(codex?.['identity-confuse']),
+
+    quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
+    quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
+    quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
+    quotaAutoDisableEnabled: Boolean(quotaAutoDisable?.enabled ?? false),
+    quotaAutoDisableIntervalSeconds: String(quotaAutoDisable?.['interval-seconds'] ?? '300'),
+    quotaAutoDisableThresholdPercent: String(quotaAutoDisable?.['threshold-percent'] ?? '5'),
+
+    routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
+    routingSessionAffinity: Boolean(
+      routing?.['session-affinity'] ?? routing?.sessionAffinity ?? routing?.['sessionAffinity']
+    ),
+    routingSessionAffinityTTL:
+      typeof routing?.['session-affinity-ttl'] === 'string'
+        ? routing['session-affinity-ttl']
+        : typeof routing?.sessionAffinityTTL === 'string'
+          ? routing.sessionAffinityTTL
+          : typeof routing?.['sessionAffinityTTL'] === 'string'
+            ? routing['sessionAffinityTTL']
+            : '',
+
+    payloadDefaultRules: parsePayloadRules(payload?.default),
+    payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
+    payloadOverrideRules: parsePayloadRules(payload?.override),
+    payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
+    payloadFilterRules: parsePayloadFilterRules(payload?.filter),
+
+    streaming: {
+      keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
+      bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
+      nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
+    },
+  };
+}
+
+export function applyVisualConfigValuesToYaml(
+  currentYaml: string,
+  values: VisualConfigValues,
+  dirtyFields: Set<string>
+): string {
+  try {
+    const doc = parseDocument(currentYaml);
+    if (doc.errors.length > 0) return currentYaml;
+    if (!isMap(doc.contents)) {
+      doc.contents = doc.createNode({}) as unknown as typeof doc.contents;
+    }
+
+    setStringInDoc(doc, ['host'], values.host);
+    setIntFromStringInDoc(doc, ['port'], values.port);
+
+    if (docHas(doc, ['tls']) || values.tlsEnable || values.tlsCert.trim() || values.tlsKey.trim()) {
+      ensureMapInDoc(doc, ['tls']);
+      setBooleanInDoc(doc, ['tls', 'enable'], values.tlsEnable);
+      setStringInDoc(doc, ['tls', 'cert'], values.tlsCert);
+      setStringInDoc(doc, ['tls', 'key'], values.tlsKey);
+      deleteIfMapEmpty(doc, ['tls']);
+    }
+
+    if (
+      docHas(doc, ['remote-management']) ||
+      values.rmAllowRemote ||
+      values.rmSecretKey.trim() ||
+      values.rmDisableControlPanel ||
+      values.rmDisableAutoUpdatePanel ||
+      values.rmPanelRepo.trim()
+    ) {
+      ensureMapInDoc(doc, ['remote-management']);
+      setBooleanInDoc(doc, ['remote-management', 'allow-remote'], values.rmAllowRemote);
+      setStringInDoc(doc, ['remote-management', 'secret-key'], values.rmSecretKey);
+      setBooleanInDoc(
+        doc,
+        ['remote-management', 'disable-control-panel'],
+        values.rmDisableControlPanel
+      );
+      setBooleanInDoc(
+        doc,
+        ['remote-management', 'disable-auto-update-panel'],
+        values.rmDisableAutoUpdatePanel
+      );
+      setStringInDoc(doc, ['remote-management', 'panel-github-repository'], values.rmPanelRepo);
+      if (docHas(doc, ['remote-management', 'panel-repo'])) {
+        doc.deleteIn(['remote-management', 'panel-repo']);
+      }
+      deleteIfMapEmpty(doc, ['remote-management']);
+    }
+
+    setStringInDoc(doc, ['auth-dir'], values.authDir);
+    const apiKeys = values.apiKeysText
+      .split('\n')
+      .map((key) => key.trim())
+      .filter(Boolean);
+    if (apiKeys.length > 0) {
+      doc.setIn(['api-keys'], apiKeys);
+    } else if (docHas(doc, ['api-keys'])) {
+      doc.deleteIn(['api-keys']);
+    }
+    deleteLegacyApiKeysProvider(doc);
+
+    if (
+      docHas(doc, ['plugins']) ||
+      values.pluginsEnabled ||
+      shouldWriteManagedField(doc, ['plugins', 'enabled'], dirtyFields, 'pluginsEnabled')
+    ) {
+      ensureMapInDoc(doc, ['plugins']);
+      setBooleanInDoc(doc, ['plugins', 'enabled'], values.pluginsEnabled);
+      deleteIfMapEmpty(doc, ['plugins']);
+    }
+
+    setBooleanInDoc(doc, ['debug'], values.debug);
+    setBooleanInDoc(doc, ['commercial-mode'], values.commercialMode);
+    setBooleanInDoc(doc, ['logging-to-file'], values.loggingToFile);
+    setIntFromStringInDoc(doc, ['logs-max-total-size-mb'], values.logsMaxTotalSizeMb);
+    setIntFromStringInDoc(doc, ['error-logs-max-files'], values.errorLogsMaxFiles);
+    setBooleanInDoc(doc, ['usage-statistics-enabled'], values.usageStatisticsEnabled);
+    setIntFromStringInDoc(
+      doc,
+      ['redis-usage-queue-retention-seconds'],
+      values.redisUsageQueueRetentionSeconds
+    );
+
+    setStringInDoc(doc, ['proxy-url'], values.proxyUrl);
+    setBooleanInDoc(doc, ['force-model-prefix'], values.forceModelPrefix);
+    setBooleanInDoc(doc, ['passthrough-headers'], values.passthroughHeaders);
+    setIntFromStringInDoc(doc, ['request-retry'], values.requestRetry);
+    setIntFromStringInDoc(doc, ['max-retry-credentials'], values.maxRetryCredentials);
+    setIntFromStringInDoc(doc, ['max-retry-interval'], values.maxRetryInterval);
+    setBooleanInDoc(doc, ['disable-cooling'], values.disableCooling);
+    setDisableImageGenerationInDoc(
+      doc,
+      ['disable-image-generation'],
+      values.disableImageGeneration
+    );
+    if (
+      values.gptImage2BaseModel.trim() ||
+      shouldWriteManagedField(doc, ['gpt-image-2-base-model'], dirtyFields, 'gptImage2BaseModel')
+    ) {
+      setStringInDoc(doc, ['gpt-image-2-base-model'], values.gptImage2BaseModel);
+    }
+    setIntFromStringInDoc(doc, ['auth-auto-refresh-workers'], values.authAutoRefreshWorkers);
+    setBooleanInDoc(doc, ['ws-auth'], values.wsAuth);
+    setBooleanInDoc(doc, ['enable-gemini-cli-endpoint'], values.enableGeminiCliEndpoint);
+    if (
+      docHas(doc, ['antigravity-signature-cache-enabled']) ||
+      !values.antigravitySignatureCacheEnabled
+    ) {
+      doc.setIn(['antigravity-signature-cache-enabled'], values.antigravitySignatureCacheEnabled);
+    }
+    setBooleanInDoc(
+      doc,
+      ['antigravity-signature-bypass-strict'],
+      values.antigravitySignatureBypassStrict
+    );
+
+    if (
+      docHas(doc, ['claude-header-defaults']) ||
+      values.claudeHeaderUserAgent.trim() ||
+      values.claudeHeaderPackageVersion.trim() ||
+      values.claudeHeaderRuntimeVersion.trim() ||
+      values.claudeHeaderOs.trim() ||
+      values.claudeHeaderArch.trim() ||
+      values.claudeHeaderTimeout.trim() ||
+      values.claudeHeaderStabilizeDeviceProfile
+    ) {
+      ensureMapInDoc(doc, ['claude-header-defaults']);
+      setStringInDoc(doc, ['claude-header-defaults', 'user-agent'], values.claudeHeaderUserAgent);
+      setStringInDoc(
+        doc,
+        ['claude-header-defaults', 'package-version'],
+        values.claudeHeaderPackageVersion
+      );
+      setStringInDoc(
+        doc,
+        ['claude-header-defaults', 'runtime-version'],
+        values.claudeHeaderRuntimeVersion
+      );
+      setStringInDoc(doc, ['claude-header-defaults', 'os'], values.claudeHeaderOs);
+      setStringInDoc(doc, ['claude-header-defaults', 'arch'], values.claudeHeaderArch);
+      setStringInDoc(doc, ['claude-header-defaults', 'timeout'], values.claudeHeaderTimeout);
+      setBooleanInDoc(
+        doc,
+        ['claude-header-defaults', 'stabilize-device-profile'],
+        values.claudeHeaderStabilizeDeviceProfile
+      );
+      deleteIfMapEmpty(doc, ['claude-header-defaults']);
+    }
+
+    if (
+      docHas(doc, ['codex-header-defaults']) ||
+      values.codexHeaderUserAgent.trim() ||
+      values.codexHeaderBetaFeatures.trim()
+    ) {
+      ensureMapInDoc(doc, ['codex-header-defaults']);
+      setStringInDoc(doc, ['codex-header-defaults', 'user-agent'], values.codexHeaderUserAgent);
+      setStringInDoc(
+        doc,
+        ['codex-header-defaults', 'beta-features'],
+        values.codexHeaderBetaFeatures
+      );
+      deleteIfMapEmpty(doc, ['codex-header-defaults']);
+    }
+
+    if (
+      docHas(doc, ['codex']) ||
+      values.codexIdentityConfuse ||
+      shouldWriteManagedField(
+        doc,
+        ['codex', 'identity-confuse'],
+        dirtyFields,
+        'codexIdentityConfuse'
+      )
+    ) {
+      ensureMapInDoc(doc, ['codex']);
+      setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
+      deleteIfMapEmpty(doc, ['codex']);
+    }
+
+    if (
+      docHas(doc, ['quota-exceeded']) ||
+      !values.quotaSwitchProject ||
+      !values.quotaSwitchPreviewModel ||
+      shouldWriteManagedField(
+        doc,
+        ['quota-exceeded', 'antigravity-credits'],
+        dirtyFields,
+        'quotaAntigravityCredits'
+      )
+    ) {
+      ensureMapInDoc(doc, ['quota-exceeded']);
+      const writeQuotaAntigravityCredits = shouldWriteManagedField(
+        doc,
+        ['quota-exceeded', 'antigravity-credits'],
+        dirtyFields,
+        'quotaAntigravityCredits'
+      );
+      doc.setIn(['quota-exceeded', 'switch-project'], values.quotaSwitchProject);
+      doc.setIn(['quota-exceeded', 'switch-preview-model'], values.quotaSwitchPreviewModel);
+      if (writeQuotaAntigravityCredits) {
+        doc.setIn(['quota-exceeded', 'antigravity-credits'], values.quotaAntigravityCredits);
+      }
+      deleteIfMapEmpty(doc, ['quota-exceeded']);
+    }
+
+    if (
+      docHas(doc, ['quota-auto-disable']) ||
+      dirtyFields.has('quotaAutoDisableEnabled') ||
+      dirtyFields.has('quotaAutoDisableIntervalSeconds') ||
+      dirtyFields.has('quotaAutoDisableThresholdPercent')
+    ) {
+      ensureMapInDoc(doc, ['quota-auto-disable']);
+      doc.setIn(['quota-auto-disable', 'enabled'], values.quotaAutoDisableEnabled);
+      setIntFromStringInDoc(
+        doc,
+        ['quota-auto-disable', 'interval-seconds'],
+        values.quotaAutoDisableIntervalSeconds
+      );
+      setIntFromStringInDoc(
+        doc,
+        ['quota-auto-disable', 'threshold-percent'],
+        values.quotaAutoDisableThresholdPercent
+      );
+      deleteIfMapEmpty(doc, ['quota-auto-disable']);
+    }
+
+    if (
+      docHas(doc, ['routing']) ||
+      values.routingStrategy !== 'round-robin' ||
+      values.routingSessionAffinity ||
+      values.routingSessionAffinityTTL.trim()
+    ) {
+      ensureMapInDoc(doc, ['routing']);
+      doc.setIn(['routing', 'strategy'], values.routingStrategy);
+      setBooleanInDoc(doc, ['routing', 'session-affinity'], values.routingSessionAffinity);
+      setStringInDoc(doc, ['routing', 'session-affinity-ttl'], values.routingSessionAffinityTTL);
+      deleteIfMapEmpty(doc, ['routing']);
+    }
+
+    const keepaliveSeconds =
+      typeof values.streaming?.keepaliveSeconds === 'string'
+        ? values.streaming.keepaliveSeconds
+        : '';
+    const bootstrapRetries =
+      typeof values.streaming?.bootstrapRetries === 'string'
+        ? values.streaming.bootstrapRetries
+        : '';
+    const nonstreamKeepaliveInterval =
+      typeof values.streaming?.nonstreamKeepaliveInterval === 'string'
+        ? values.streaming.nonstreamKeepaliveInterval
+        : '';
+
+    const streamingDefined =
+      docHas(doc, ['streaming']) || keepaliveSeconds.trim() || bootstrapRetries.trim();
+    if (streamingDefined) {
+      ensureMapInDoc(doc, ['streaming']);
+      setIntFromStringInDoc(doc, ['streaming', 'keepalive-seconds'], keepaliveSeconds);
+      setIntFromStringInDoc(doc, ['streaming', 'bootstrap-retries'], bootstrapRetries);
+      deleteIfMapEmpty(doc, ['streaming']);
+    }
+
+    setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
+
+    if (hasPayloadDirtyFields(dirtyFields)) {
+      ensureMapInDoc(doc, ['payload']);
+      if (values.payloadDefaultRules.length > 0) {
+        doc.setIn(['payload', 'default'], serializePayloadRulesForYaml(values.payloadDefaultRules));
+      } else if (docHas(doc, ['payload', 'default'])) {
+        doc.deleteIn(['payload', 'default']);
+      }
+      if (values.payloadDefaultRawRules.length > 0) {
+        doc.setIn(
+          ['payload', 'default-raw'],
+          serializeRawPayloadRulesForYaml(values.payloadDefaultRawRules)
+        );
+      } else if (docHas(doc, ['payload', 'default-raw'])) {
+        doc.deleteIn(['payload', 'default-raw']);
+      }
+      if (values.payloadOverrideRules.length > 0) {
+        doc.setIn(
+          ['payload', 'override'],
+          serializePayloadRulesForYaml(values.payloadOverrideRules)
+        );
+      } else if (docHas(doc, ['payload', 'override'])) {
+        doc.deleteIn(['payload', 'override']);
+      }
+      if (values.payloadOverrideRawRules.length > 0) {
+        doc.setIn(
+          ['payload', 'override-raw'],
+          serializeRawPayloadRulesForYaml(values.payloadOverrideRawRules)
+        );
+      } else if (docHas(doc, ['payload', 'override-raw'])) {
+        doc.deleteIn(['payload', 'override-raw']);
+      }
+      if (values.payloadFilterRules.length > 0) {
+        doc.setIn(
+          ['payload', 'filter'],
+          serializePayloadFilterRulesForYaml(values.payloadFilterRules)
+        );
+      } else if (docHas(doc, ['payload', 'filter'])) {
+        doc.deleteIn(['payload', 'filter']);
+      }
+      deleteIfMapEmpty(doc, ['payload']);
+    }
+
+    return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
+  } catch {
+    return currentYaml;
+  }
+}
+
 export function useVisualConfig() {
   const [state, dispatch] = useReducer(
     visualConfigReducer,
@@ -914,140 +1381,7 @@ export function useVisualConfig() {
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
-      const document = parseDocument(yamlContent);
-      if (document.errors.length > 0) {
-        throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
-      }
-
-      const parsedRaw: unknown = parseYaml(yamlContent) || {};
-      const parsed = asRecord(parsedRaw) ?? {};
-      const tls = asRecord(parsed.tls);
-      const remoteManagement = asRecord(parsed['remote-management']);
-      const quotaExceeded = asRecord(parsed['quota-exceeded']);
-      const routing = asRecord(parsed.routing);
-      const payload = asRecord(parsed.payload);
-      const streaming = asRecord(parsed.streaming);
-      const plugins = asRecord(parsed.plugins);
-      const codex = asRecord(parsed.codex);
-      const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
-      const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
-
-      const newValues: VisualConfigValues = {
-        host: typeof parsed.host === 'string' ? parsed.host : '',
-        port: String(parsed.port ?? ''),
-
-        tlsEnable: Boolean(tls?.enable),
-        tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
-        tlsKey: typeof tls?.key === 'string' ? tls.key : '',
-
-        rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
-        rmSecretKey:
-          typeof remoteManagement?.['secret-key'] === 'string'
-            ? remoteManagement['secret-key']
-            : '',
-        rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
-        rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
-        rmPanelRepo:
-          typeof remoteManagement?.['panel-github-repository'] === 'string'
-            ? remoteManagement['panel-github-repository']
-            : typeof remoteManagement?.['panel-repo'] === 'string'
-              ? remoteManagement['panel-repo']
-              : '',
-
-        authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: resolveApiKeysText(parsed),
-        pluginsEnabled: Boolean(plugins?.enabled),
-
-        debug: Boolean(parsed.debug),
-        commercialMode: Boolean(parsed['commercial-mode']),
-        loggingToFile: Boolean(parsed['logging-to-file']),
-        logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
-        errorLogsMaxFiles: String(parsed['error-logs-max-files'] ?? ''),
-        usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
-        redisUsageQueueRetentionSeconds: String(
-          parsed['redis-usage-queue-retention-seconds'] ?? ''
-        ),
-
-        proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
-        forceModelPrefix: Boolean(parsed['force-model-prefix']),
-        passthroughHeaders: Boolean(parsed['passthrough-headers']),
-        requestRetry: String(parsed['request-retry'] ?? ''),
-        maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
-        maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
-        disableCooling: Boolean(parsed['disable-cooling']),
-        disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
-        gptImage2BaseModel:
-          typeof parsed['gpt-image-2-base-model'] === 'string'
-            ? parsed['gpt-image-2-base-model']
-            : '',
-        authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
-        wsAuth: Boolean(parsed['ws-auth']),
-        enableGeminiCliEndpoint: Boolean(parsed['enable-gemini-cli-endpoint']),
-        antigravitySignatureCacheEnabled: Boolean(
-          parsed['antigravity-signature-cache-enabled'] ?? true
-        ),
-        antigravitySignatureBypassStrict: Boolean(parsed['antigravity-signature-bypass-strict']),
-
-        claudeHeaderUserAgent:
-          typeof claudeHeaderDefaults?.['user-agent'] === 'string'
-            ? claudeHeaderDefaults['user-agent']
-            : '',
-        claudeHeaderPackageVersion:
-          typeof claudeHeaderDefaults?.['package-version'] === 'string'
-            ? claudeHeaderDefaults['package-version']
-            : '',
-        claudeHeaderRuntimeVersion:
-          typeof claudeHeaderDefaults?.['runtime-version'] === 'string'
-            ? claudeHeaderDefaults['runtime-version']
-            : '',
-        claudeHeaderOs: typeof claudeHeaderDefaults?.os === 'string' ? claudeHeaderDefaults.os : '',
-        claudeHeaderArch:
-          typeof claudeHeaderDefaults?.arch === 'string' ? claudeHeaderDefaults.arch : '',
-        claudeHeaderTimeout:
-          typeof claudeHeaderDefaults?.timeout === 'string' ? claudeHeaderDefaults.timeout : '',
-        claudeHeaderStabilizeDeviceProfile: Boolean(
-          claudeHeaderDefaults?.['stabilize-device-profile']
-        ),
-        codexHeaderUserAgent:
-          typeof codexHeaderDefaults?.['user-agent'] === 'string'
-            ? codexHeaderDefaults['user-agent']
-            : '',
-        codexHeaderBetaFeatures:
-          typeof codexHeaderDefaults?.['beta-features'] === 'string'
-            ? codexHeaderDefaults['beta-features']
-            : '',
-        codexIdentityConfuse: Boolean(codex?.['identity-confuse']),
-
-        quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
-        quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
-        quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
-
-        routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
-        routingSessionAffinity: Boolean(
-          routing?.['session-affinity'] ?? routing?.sessionAffinity ?? routing?.['sessionAffinity']
-        ),
-        routingSessionAffinityTTL:
-          typeof routing?.['session-affinity-ttl'] === 'string'
-            ? routing['session-affinity-ttl']
-            : typeof routing?.sessionAffinityTTL === 'string'
-              ? routing.sessionAffinityTTL
-              : typeof routing?.['sessionAffinityTTL'] === 'string'
-                ? routing['sessionAffinityTTL']
-                : '',
-
-        payloadDefaultRules: parsePayloadRules(payload?.default),
-        payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
-        payloadOverrideRules: parsePayloadRules(payload?.override),
-        payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
-        payloadFilterRules: parsePayloadFilterRules(payload?.filter),
-
-        streaming: {
-          keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
-          bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
-          nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
-        },
-      };
-
+      const newValues = parseVisualConfigValuesFromYaml(yamlContent);
       dispatch({ type: 'load_success', values: newValues });
       return { ok: true as const };
     } catch (error: unknown) {
@@ -1058,319 +1392,8 @@ export function useVisualConfig() {
   }, []);
 
   const applyVisualChangesToYaml = useCallback(
-    (currentYaml: string): string => {
-      try {
-        const doc = parseDocument(currentYaml);
-        if (doc.errors.length > 0) return currentYaml;
-        if (!isMap(doc.contents)) {
-          doc.contents = doc.createNode({}) as unknown as typeof doc.contents;
-        }
-        const values = visualValues;
-
-        setStringInDoc(doc, ['host'], values.host);
-        setIntFromStringInDoc(doc, ['port'], values.port);
-
-        if (
-          docHas(doc, ['tls']) ||
-          values.tlsEnable ||
-          values.tlsCert.trim() ||
-          values.tlsKey.trim()
-        ) {
-          ensureMapInDoc(doc, ['tls']);
-          setBooleanInDoc(doc, ['tls', 'enable'], values.tlsEnable);
-          setStringInDoc(doc, ['tls', 'cert'], values.tlsCert);
-          setStringInDoc(doc, ['tls', 'key'], values.tlsKey);
-          deleteIfMapEmpty(doc, ['tls']);
-        }
-
-        if (
-          docHas(doc, ['remote-management']) ||
-          values.rmAllowRemote ||
-          values.rmSecretKey.trim() ||
-          values.rmDisableControlPanel ||
-          values.rmDisableAutoUpdatePanel ||
-          values.rmPanelRepo.trim()
-        ) {
-          ensureMapInDoc(doc, ['remote-management']);
-          setBooleanInDoc(doc, ['remote-management', 'allow-remote'], values.rmAllowRemote);
-          setStringInDoc(doc, ['remote-management', 'secret-key'], values.rmSecretKey);
-          setBooleanInDoc(
-            doc,
-            ['remote-management', 'disable-control-panel'],
-            values.rmDisableControlPanel
-          );
-          setBooleanInDoc(
-            doc,
-            ['remote-management', 'disable-auto-update-panel'],
-            values.rmDisableAutoUpdatePanel
-          );
-          setStringInDoc(doc, ['remote-management', 'panel-github-repository'], values.rmPanelRepo);
-          if (docHas(doc, ['remote-management', 'panel-repo'])) {
-            doc.deleteIn(['remote-management', 'panel-repo']);
-          }
-          deleteIfMapEmpty(doc, ['remote-management']);
-        }
-
-        setStringInDoc(doc, ['auth-dir'], values.authDir);
-        const apiKeys = values.apiKeysText
-          .split('\n')
-          .map((key) => key.trim())
-          .filter(Boolean);
-        if (apiKeys.length > 0) {
-          doc.setIn(['api-keys'], apiKeys);
-        } else if (docHas(doc, ['api-keys'])) {
-          doc.deleteIn(['api-keys']);
-        }
-        deleteLegacyApiKeysProvider(doc);
-
-        if (
-          docHas(doc, ['plugins']) ||
-          values.pluginsEnabled ||
-          shouldWriteManagedField(doc, ['plugins', 'enabled'], dirtyFields, 'pluginsEnabled')
-        ) {
-          ensureMapInDoc(doc, ['plugins']);
-          setBooleanInDoc(doc, ['plugins', 'enabled'], values.pluginsEnabled);
-          deleteIfMapEmpty(doc, ['plugins']);
-        }
-
-        setBooleanInDoc(doc, ['debug'], values.debug);
-
-        setBooleanInDoc(doc, ['commercial-mode'], values.commercialMode);
-        setBooleanInDoc(doc, ['logging-to-file'], values.loggingToFile);
-        setIntFromStringInDoc(doc, ['logs-max-total-size-mb'], values.logsMaxTotalSizeMb);
-        setIntFromStringInDoc(doc, ['error-logs-max-files'], values.errorLogsMaxFiles);
-        setBooleanInDoc(doc, ['usage-statistics-enabled'], values.usageStatisticsEnabled);
-        setIntFromStringInDoc(
-          doc,
-          ['redis-usage-queue-retention-seconds'],
-          values.redisUsageQueueRetentionSeconds
-        );
-
-        setStringInDoc(doc, ['proxy-url'], values.proxyUrl);
-        setBooleanInDoc(doc, ['force-model-prefix'], values.forceModelPrefix);
-        setBooleanInDoc(doc, ['passthrough-headers'], values.passthroughHeaders);
-        setIntFromStringInDoc(doc, ['request-retry'], values.requestRetry);
-        setIntFromStringInDoc(doc, ['max-retry-credentials'], values.maxRetryCredentials);
-        setIntFromStringInDoc(doc, ['max-retry-interval'], values.maxRetryInterval);
-        setBooleanInDoc(doc, ['disable-cooling'], values.disableCooling);
-        setDisableImageGenerationInDoc(
-          doc,
-          ['disable-image-generation'],
-          values.disableImageGeneration
-        );
-        if (
-          values.gptImage2BaseModel.trim() ||
-          shouldWriteManagedField(
-            doc,
-            ['gpt-image-2-base-model'],
-            dirtyFields,
-            'gptImage2BaseModel'
-          )
-        ) {
-          setStringInDoc(doc, ['gpt-image-2-base-model'], values.gptImage2BaseModel);
-        }
-        setIntFromStringInDoc(doc, ['auth-auto-refresh-workers'], values.authAutoRefreshWorkers);
-        setBooleanInDoc(doc, ['ws-auth'], values.wsAuth);
-        setBooleanInDoc(doc, ['enable-gemini-cli-endpoint'], values.enableGeminiCliEndpoint);
-        if (
-          docHas(doc, ['antigravity-signature-cache-enabled']) ||
-          !values.antigravitySignatureCacheEnabled
-        ) {
-          doc.setIn(
-            ['antigravity-signature-cache-enabled'],
-            values.antigravitySignatureCacheEnabled
-          );
-        }
-        setBooleanInDoc(
-          doc,
-          ['antigravity-signature-bypass-strict'],
-          values.antigravitySignatureBypassStrict
-        );
-
-        if (
-          docHas(doc, ['claude-header-defaults']) ||
-          values.claudeHeaderUserAgent.trim() ||
-          values.claudeHeaderPackageVersion.trim() ||
-          values.claudeHeaderRuntimeVersion.trim() ||
-          values.claudeHeaderOs.trim() ||
-          values.claudeHeaderArch.trim() ||
-          values.claudeHeaderTimeout.trim() ||
-          values.claudeHeaderStabilizeDeviceProfile
-        ) {
-          ensureMapInDoc(doc, ['claude-header-defaults']);
-          setStringInDoc(
-            doc,
-            ['claude-header-defaults', 'user-agent'],
-            values.claudeHeaderUserAgent
-          );
-          setStringInDoc(
-            doc,
-            ['claude-header-defaults', 'package-version'],
-            values.claudeHeaderPackageVersion
-          );
-          setStringInDoc(
-            doc,
-            ['claude-header-defaults', 'runtime-version'],
-            values.claudeHeaderRuntimeVersion
-          );
-          setStringInDoc(doc, ['claude-header-defaults', 'os'], values.claudeHeaderOs);
-          setStringInDoc(doc, ['claude-header-defaults', 'arch'], values.claudeHeaderArch);
-          setStringInDoc(doc, ['claude-header-defaults', 'timeout'], values.claudeHeaderTimeout);
-          setBooleanInDoc(
-            doc,
-            ['claude-header-defaults', 'stabilize-device-profile'],
-            values.claudeHeaderStabilizeDeviceProfile
-          );
-          deleteIfMapEmpty(doc, ['claude-header-defaults']);
-        }
-
-        if (
-          docHas(doc, ['codex-header-defaults']) ||
-          values.codexHeaderUserAgent.trim() ||
-          values.codexHeaderBetaFeatures.trim()
-        ) {
-          ensureMapInDoc(doc, ['codex-header-defaults']);
-          setStringInDoc(doc, ['codex-header-defaults', 'user-agent'], values.codexHeaderUserAgent);
-          setStringInDoc(
-            doc,
-            ['codex-header-defaults', 'beta-features'],
-            values.codexHeaderBetaFeatures
-          );
-          deleteIfMapEmpty(doc, ['codex-header-defaults']);
-        }
-
-        if (
-          docHas(doc, ['codex']) ||
-          values.codexIdentityConfuse ||
-          shouldWriteManagedField(
-            doc,
-            ['codex', 'identity-confuse'],
-            dirtyFields,
-            'codexIdentityConfuse'
-          )
-        ) {
-          ensureMapInDoc(doc, ['codex']);
-          setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
-          deleteIfMapEmpty(doc, ['codex']);
-        }
-
-        if (
-          docHas(doc, ['quota-exceeded']) ||
-          !values.quotaSwitchProject ||
-          !values.quotaSwitchPreviewModel ||
-          shouldWriteManagedField(
-            doc,
-            ['quota-exceeded', 'antigravity-credits'],
-            dirtyFields,
-            'quotaAntigravityCredits'
-          )
-        ) {
-          ensureMapInDoc(doc, ['quota-exceeded']);
-          const writeQuotaAntigravityCredits = shouldWriteManagedField(
-            doc,
-            ['quota-exceeded', 'antigravity-credits'],
-            dirtyFields,
-            'quotaAntigravityCredits'
-          );
-          doc.setIn(['quota-exceeded', 'switch-project'], values.quotaSwitchProject);
-          doc.setIn(['quota-exceeded', 'switch-preview-model'], values.quotaSwitchPreviewModel);
-          if (writeQuotaAntigravityCredits) {
-            doc.setIn(['quota-exceeded', 'antigravity-credits'], values.quotaAntigravityCredits);
-          }
-          deleteIfMapEmpty(doc, ['quota-exceeded']);
-        }
-
-        if (
-          docHas(doc, ['routing']) ||
-          values.routingStrategy !== 'round-robin' ||
-          values.routingSessionAffinity ||
-          values.routingSessionAffinityTTL.trim()
-        ) {
-          ensureMapInDoc(doc, ['routing']);
-          doc.setIn(['routing', 'strategy'], values.routingStrategy);
-          setBooleanInDoc(doc, ['routing', 'session-affinity'], values.routingSessionAffinity);
-          setStringInDoc(
-            doc,
-            ['routing', 'session-affinity-ttl'],
-            values.routingSessionAffinityTTL
-          );
-          deleteIfMapEmpty(doc, ['routing']);
-        }
-
-        const keepaliveSeconds =
-          typeof values.streaming?.keepaliveSeconds === 'string'
-            ? values.streaming.keepaliveSeconds
-            : '';
-        const bootstrapRetries =
-          typeof values.streaming?.bootstrapRetries === 'string'
-            ? values.streaming.bootstrapRetries
-            : '';
-        const nonstreamKeepaliveInterval =
-          typeof values.streaming?.nonstreamKeepaliveInterval === 'string'
-            ? values.streaming.nonstreamKeepaliveInterval
-            : '';
-
-        const streamingDefined =
-          docHas(doc, ['streaming']) || keepaliveSeconds.trim() || bootstrapRetries.trim();
-        if (streamingDefined) {
-          ensureMapInDoc(doc, ['streaming']);
-          setIntFromStringInDoc(doc, ['streaming', 'keepalive-seconds'], keepaliveSeconds);
-          setIntFromStringInDoc(doc, ['streaming', 'bootstrap-retries'], bootstrapRetries);
-          deleteIfMapEmpty(doc, ['streaming']);
-        }
-
-        setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
-
-        if (hasPayloadDirtyFields(dirtyFields)) {
-          ensureMapInDoc(doc, ['payload']);
-          if (values.payloadDefaultRules.length > 0) {
-            doc.setIn(
-              ['payload', 'default'],
-              serializePayloadRulesForYaml(values.payloadDefaultRules)
-            );
-          } else if (docHas(doc, ['payload', 'default'])) {
-            doc.deleteIn(['payload', 'default']);
-          }
-          if (values.payloadDefaultRawRules.length > 0) {
-            doc.setIn(
-              ['payload', 'default-raw'],
-              serializeRawPayloadRulesForYaml(values.payloadDefaultRawRules)
-            );
-          } else if (docHas(doc, ['payload', 'default-raw'])) {
-            doc.deleteIn(['payload', 'default-raw']);
-          }
-          if (values.payloadOverrideRules.length > 0) {
-            doc.setIn(
-              ['payload', 'override'],
-              serializePayloadRulesForYaml(values.payloadOverrideRules)
-            );
-          } else if (docHas(doc, ['payload', 'override'])) {
-            doc.deleteIn(['payload', 'override']);
-          }
-          if (values.payloadOverrideRawRules.length > 0) {
-            doc.setIn(
-              ['payload', 'override-raw'],
-              serializeRawPayloadRulesForYaml(values.payloadOverrideRawRules)
-            );
-          } else if (docHas(doc, ['payload', 'override-raw'])) {
-            doc.deleteIn(['payload', 'override-raw']);
-          }
-          if (values.payloadFilterRules.length > 0) {
-            doc.setIn(
-              ['payload', 'filter'],
-              serializePayloadFilterRulesForYaml(values.payloadFilterRules)
-            );
-          } else if (docHas(doc, ['payload', 'filter'])) {
-            doc.deleteIn(['payload', 'filter']);
-          }
-          deleteIfMapEmpty(doc, ['payload']);
-        }
-
-        return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
-      } catch {
-        return currentYaml;
-      }
-    },
+    (currentYaml: string): string =>
+      applyVisualConfigValuesToYaml(currentYaml, visualValues, dirtyFields),
     [dirtyFields, visualValues]
   );
 

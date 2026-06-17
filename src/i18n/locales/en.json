@@ -1038,7 +1038,15 @@
           "switch_project_desc": "Automatically switch to another project when quota is exceeded",
           "switch_preview_model": "Switch to Preview Model",
           "switch_preview_model_desc": "Switch to preview model version when quota is exceeded",
-          "antigravity_credits": "Use Antigravity Credits"
+          "antigravity_credits": "Use Antigravity Credits",
+          "auto_disable_title": "Codex Auto Disable",
+          "auto_disable_desc": "Poll Codex quota in the background and disable the matching auth file when remaining quota reaches the threshold.",
+          "auto_disable_enabled": "Enable Auto Disable",
+          "auto_disable_enabled_desc": "Only applies to file-backed Codex OAuth auths and never re-enables them automatically.",
+          "auto_disable_interval": "Polling Interval (seconds)",
+          "auto_disable_interval_hint": "How often the backend checks Codex quota. 60 seconds or more is recommended.",
+          "auto_disable_threshold": "Disable Threshold (%)",
+          "auto_disable_threshold_hint": "For example, 5 disables auths at 5% remaining quota or lower."
         },
         "streaming": {
           "title": "Streaming Configuration",
@@ -1134,6 +1142,8 @@
         "validation_blocked": "Fix validation errors before saving",
         "port_range": "Enter a valid port between 1 and 65535",
         "non_negative_integer": "Enter a non-negative whole number",
+        "positive_integer": "Enter a whole number greater than 0",
+        "percent_range": "Enter a whole-number percentage between 1 and 100",
         "payload_invalid_number": "Enter a valid number",
         "payload_invalid_boolean": "Choose true or false",
         "payload_invalid_json": "Enter valid JSON"

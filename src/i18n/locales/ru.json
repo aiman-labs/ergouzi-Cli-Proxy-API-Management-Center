@@ -1025,7 +1025,15 @@
           "switch_project_desc": "Автоматически переходить на другой проект при превышении квоты",
           "switch_preview_model": "Переключить на preview-модель",
           "switch_preview_model_desc": "Переключаться на preview-версию модели при превышении квоты",
-          "antigravity_credits": "Использовать Antigravity Credits"
+          "antigravity_credits": "Использовать Antigravity Credits",
+          "auto_disable_title": "Автоотключение Codex",
+          "auto_disable_desc": "Фоновая проверка квоты Codex и отключение соответствующего auth-файла при достижении порога остатка.",
+          "auto_disable_enabled": "Включить автоотключение",
+          "auto_disable_enabled_desc": "Работает только для файловых Codex OAuth auth и не включает их обратно автоматически.",
+          "auto_disable_interval": "Интервал проверки (сек)",
+          "auto_disable_interval_hint": "Как часто backend проверяет квоту Codex. Рекомендуется 60 секунд или больше.",
+          "auto_disable_threshold": "Порог отключения (%)",
+          "auto_disable_threshold_hint": "Например, 5 отключает auth при остатке квоты 5% или меньше."
         },
         "streaming": {
           "title": "Настройки стриминга",
@@ -1121,6 +1129,8 @@
         "validation_blocked": "Исправьте ошибки валидации перед сохранением",
         "port_range": "Введите корректный порт от 1 до 65535",
         "non_negative_integer": "Введите неотрицательное целое число",
+        "positive_integer": "Введите целое число больше 0",
+        "percent_range": "Введите целый процент от 1 до 100",
         "payload_invalid_number": "Введите корректное число",
         "payload_invalid_boolean": "Выберите true или false",
         "payload_invalid_json": "Введите корректный JSON"

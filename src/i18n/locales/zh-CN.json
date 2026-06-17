@@ -1038,7 +1038,15 @@
           "switch_project_desc": "配额耗尽时自动切换到其他项目",
           "switch_preview_model": "切换预览模型",
           "switch_preview_model_desc": "配额耗尽时切换到预览版本模型",
-          "antigravity_credits": "使用Antigravity Credits"
+          "antigravity_credits": "使用Antigravity Credits",
+          "auto_disable_title": "Codex 自动停用",
+          "auto_disable_desc": "后台轮询 Codex 额度，剩余额度达到阈值时自动停用对应认证文件。",
+          "auto_disable_enabled": "启用自动停用",
+          "auto_disable_enabled_desc": "只作用于文件型 Codex OAuth 认证，不会自动重新启用。",
+          "auto_disable_interval": "轮询间隔 (秒)",
+          "auto_disable_interval_hint": "后台检查 Codex 额度的间隔，建议不低于 60 秒。",
+          "auto_disable_threshold": "停用阈值 (%)",
+          "auto_disable_threshold_hint": "例如 5 表示剩余 5% 或更低时停用。"
         },
         "streaming": {
           "title": "流式传输配置",
@@ -1134,6 +1142,8 @@
         "validation_blocked": "请先修复表单校验错误再保存",
         "port_range": "请输入 1 到 65535 之间的有效端口",
         "non_negative_integer": "请输入非负整数",
+        "positive_integer": "请输入大于 0 的整数",
+        "percent_range": "请输入 1 到 100 之间的百分比整数",
         "payload_invalid_number": "请输入有效数字",
         "payload_invalid_boolean": "请选择 true 或 false",
         "payload_invalid_json": "请输入有效的 JSON"
