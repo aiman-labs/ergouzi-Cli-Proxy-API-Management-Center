@@ -64,6 +64,26 @@ export interface AntigravityQuotaSummaryBucketPayload {
   description?: string;
 }
 
+export interface AntigravityQuotaInfo {
+  displayName?: string;
+  quotaInfo?: {
+    remainingFraction?: number | string;
+    remaining_fraction?: number | string;
+    remaining?: number | string;
+    resetTime?: string;
+    reset_time?: string;
+  };
+  quota_info?: {
+    remainingFraction?: number | string;
+    remaining_fraction?: number | string;
+    remaining?: number | string;
+    resetTime?: string;
+    reset_time?: string;
+  };
+}
+
+export type AntigravityModelsPayload = Record<string, AntigravityQuotaInfo>;
+
 export interface AntigravityQuotaSummaryGroupPayload {
   displayName?: string;
   display_name?: string;
@@ -74,6 +94,7 @@ export interface AntigravityQuotaSummaryGroupPayload {
 export interface AntigravityQuotaSummaryPayload {
   groups?: AntigravityQuotaSummaryGroupPayload[];
   response?: AntigravityQuotaSummaryPayload;
+  models?: AntigravityModelsPayload;
 }
 
 export interface GeminiCliQuotaGroupDefinition {

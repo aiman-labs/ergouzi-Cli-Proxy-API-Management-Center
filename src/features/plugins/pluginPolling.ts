@@ -26,6 +26,17 @@ export interface PluginStoreStateWaitResult {
   timedOut: boolean;
 }
 
+export function isPluginStoreInstallSettled(
+  plugin: PluginStoreEntry,
+  options: { isUpdate: boolean; expectedVersion?: string }
+): boolean {
+  if (!plugin.installed || !plugin.configured) return false;
+  if (!options.isUpdate) return true;
+
+  const expectedVersion = options.expectedVersion?.trim();
+  return (expectedVersion ? plugin.installedVersion === expectedVersion : false) || !plugin.updateAvailable;
+}
+
 export async function waitForPluginState(
   id: string,
   predicate: (plugin: PluginListEntry, response: PluginListResponse) => boolean,

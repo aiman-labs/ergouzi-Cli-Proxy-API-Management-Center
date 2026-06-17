@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import type {
   AntigravityQuotaGroup,
+  AntigravityModelsPayload,
   AntigravityQuotaSummaryPayload,
   AntigravityQuotaState,
   AuthFileItem,
@@ -70,6 +71,7 @@ import {
   formatCodexResetLabel,
   formatQuotaResetTime,
   formatKimiResetHint,
+  buildAntigravityLegacyModelGroups,
   buildAntigravityQuotaGroups,
   buildGeminiCliQuotaBuckets,
   buildKimiQuotaRows,
@@ -223,6 +225,22 @@ const resolveResponseServerTimeOffsetMs = (
   return serverTime - Date.now();
 };
 
+const resolveAntigravityLegacyModels = (
+  payload: AntigravityQuotaSummaryPayload | null
+): AntigravityModelsPayload | null => {
+  if (!payload) return null;
+  if (payload.models && typeof payload.models === 'object' && !Array.isArray(payload.models)) {
+    return payload.models;
+  }
+
+  const nestedModels = payload.response?.models;
+  if (nestedModels && typeof nestedModels === 'object' && !Array.isArray(nestedModels)) {
+    return nestedModels;
+  }
+
+  return null;
+};
+
 const fetchAntigravityQuota = async (
   file: AuthFileItem,
   t: TFunction
@@ -270,12 +288,18 @@ const fetchAntigravityQuota = async (
           : payload?.response && Array.isArray(payload.response.groups)
             ? payload.response
             : null;
-      if (!summaryPayload) {
+      const legacyModels = resolveAntigravityLegacyModels(payload);
+
+      if (!summaryPayload && !legacyModels) {
         lastError = t('antigravity_quota.empty_models');
         continue;
       }
 
-      const groups = buildAntigravityQuotaGroups(summaryPayload);
+      const groups = summaryPayload
+        ? buildAntigravityQuotaGroups(summaryPayload)
+        : legacyModels
+          ? buildAntigravityLegacyModelGroups(legacyModels)
+          : [];
       if (groups.length === 0) {
         lastError = t('antigravity_quota.empty_models');
         continue;

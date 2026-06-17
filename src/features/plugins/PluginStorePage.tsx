@@ -28,7 +28,7 @@ import {
   resolvePluginAssetURL,
 } from './pluginResources';
 import { PluginInstallGateModal } from './components/PluginInstallGateModal';
-import { waitForPluginStoreState } from './pluginPolling';
+import { isPluginStoreInstallSettled, waitForPluginStoreState } from './pluginPolling';
 import styles from './PluginStorePage.module.scss';
 
 type StoreStatusFilter = 'all' | 'installed' | 'notInstalled' | 'updates';
@@ -267,7 +267,11 @@ export function PluginStorePage() {
         const installedState = await waitForPluginStoreState(
           entry.id,
           sourceId,
-          (plugin) => plugin.installed && plugin.configured
+          (plugin) =>
+            isPluginStoreInstallSettled(plugin, {
+              isUpdate,
+              expectedVersion: result.version,
+            })
         );
         setData(installedState.response);
         if (

@@ -5,6 +5,8 @@
 import type {
   AntigravityQuotaBucket,
   AntigravityQuotaGroup,
+  AntigravityQuotaInfo,
+  AntigravityModelsPayload,
   AntigravityQuotaSummaryPayload,
   GeminiCliParsedBucket,
   GeminiCliQuotaBucketState,
@@ -210,6 +212,58 @@ export function buildAntigravityQuotaGroups(
       };
     })
     .filter((group): group is AntigravityQuotaGroup => group !== null);
+}
+
+export function getAntigravityLegacyQuotaInfo(entry?: AntigravityQuotaInfo): {
+  remainingFraction: number | null;
+  resetTime?: string;
+  displayName?: string;
+} {
+  if (!entry) {
+    return { remainingFraction: null };
+  }
+
+  const quotaInfo = entry.quotaInfo ?? entry.quota_info ?? {};
+  const remainingValue =
+    quotaInfo.remainingFraction ?? quotaInfo.remaining_fraction ?? quotaInfo.remaining;
+  const remainingFraction = normalizeQuotaFraction(remainingValue);
+
+  return {
+    remainingFraction,
+    resetTime: normalizeStringValue(quotaInfo.resetTime ?? quotaInfo.reset_time) ?? undefined,
+    displayName: normalizeStringValue(entry.displayName) ?? undefined,
+  };
+}
+
+export function buildAntigravityLegacyModelGroups(
+  models: AntigravityModelsPayload
+): AntigravityQuotaGroup[] {
+  const buckets = Object.entries(models)
+    .map(([modelId, entry]): AntigravityQuotaBucket | null => {
+      const info = getAntigravityLegacyQuotaInfo(entry);
+      const remainingFraction = info.remainingFraction ?? (info.resetTime ? 0 : null);
+      if (remainingFraction === null) return null;
+
+      return {
+        id: toStableId(modelId, modelId),
+        label: info.displayName ?? modelId,
+        remainingFraction,
+        resetTime: info.resetTime,
+        description: modelId,
+      };
+    })
+    .filter((bucket): bucket is AntigravityQuotaBucket => bucket !== null)
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  if (buckets.length === 0) return [];
+
+  return [
+    {
+      id: 'model-buckets',
+      label: 'Model Buckets',
+      buckets,
+    },
+  ];
 }
 
 function toInt(value: unknown): number | null {
