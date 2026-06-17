@@ -73,6 +73,7 @@ export interface AntigravityQuotaSummaryGroupPayload {
 
 export interface AntigravityQuotaSummaryPayload {
   groups?: AntigravityQuotaSummaryGroupPayload[];
+  response?: AntigravityQuotaSummaryPayload;
 }
 
 export interface GeminiCliQuotaGroupDefinition {
