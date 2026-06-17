@@ -50,6 +50,7 @@ import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModel
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
+import { useAntigravitySubscriptions } from '@/features/authFiles/hooks/useAntigravitySubscriptions';
 import { filterAuthFilesBySuccessCount } from '@/features/authFiles/successFilter';
 import {
   isAuthFilesEnabledFilter,
@@ -587,7 +588,8 @@ export function AuthFilesPage() {
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
-  const pageItems = sorted.slice(start, start + pageSize);
+  const pageItems = useMemo(() => sorted.slice(start, start + pageSize), [pageSize, sorted, start]);
+  const antigravitySubscriptions = useAntigravitySubscriptions(pageItems);
   const displayPageItems = useMemo(
     () =>
       pageItems.map((file) => {
@@ -1200,6 +1202,7 @@ export function AuthFilesPage() {
                     statusUpdating={statusUpdating}
                     quotaFilterType={quotaFilterType}
                     statusBarCache={statusBarCache}
+                    antigravitySubscription={antigravitySubscriptions[file.name]}
                     onShowModels={showModels}
                     onDownload={handleDownload}
                     onOpenPrefixProxyEditor={openPrefixProxyEditor}
