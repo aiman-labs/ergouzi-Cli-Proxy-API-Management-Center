@@ -234,10 +234,7 @@ const fetchAntigravityQuota = async (
   }
 
   const projectId = await resolveAntigravityProjectId(file);
-  if (!projectId) {
-    throw new Error(t('antigravity_quota.missing_project_id'));
-  }
-  const requestBody = JSON.stringify({ project: projectId });
+  const requestBody = projectId ? JSON.stringify({ project: projectId }) : '{}';
 
   let lastError = '';
   let lastStatus: number | undefined;
