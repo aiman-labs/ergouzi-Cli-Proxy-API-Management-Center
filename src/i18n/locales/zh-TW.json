@@ -1069,7 +1069,15 @@
           "switch_project_desc": "配額耗盡時自動切換到其他專案",
           "switch_preview_model": "切換預覽模型",
           "switch_preview_model_desc": "配額耗盡時切換到預覽版本模型",
-          "antigravity_credits": "使用Antigravity Credits"
+          "antigravity_credits": "使用Antigravity Credits",
+          "auto_disable_title": "Codex 自動停用",
+          "auto_disable_desc": "後台輪詢 Codex 配額，剩餘配額達到閾值時自動停用對應驗證檔案。",
+          "auto_disable_enabled": "啟用自動停用",
+          "auto_disable_enabled_desc": "只作用於檔案型 Codex OAuth 驗證，不會自動重新啟用。",
+          "auto_disable_interval": "輪詢間隔（秒）",
+          "auto_disable_interval_hint": "後台檢查 Codex 配額的間隔，建議不低於 60 秒。",
+          "auto_disable_threshold": "停用閾值（%）",
+          "auto_disable_threshold_hint": "例如 5 表示剩餘 5% 或更低時停用。"
         },
         "streaming": {
           "title": "串流傳輸設定",
@@ -1165,6 +1173,8 @@
         "validation_blocked": "請先修復表單驗證錯誤再儲存",
         "port_range": "請輸入 1 到 65535 之間的有效連接埠",
         "non_negative_integer": "請輸入非負整數",
+        "positive_integer": "請輸入大於 0 的整數",
+        "percent_range": "請輸入 1 到 100 之間的百分比整數",
         "payload_invalid_number": "請輸入有效數字",
         "payload_invalid_boolean": "請選擇 true 或 false",
         "payload_invalid_json": "請輸入有效的 JSON"

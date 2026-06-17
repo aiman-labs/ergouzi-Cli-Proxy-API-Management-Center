@@ -178,6 +178,8 @@ export function VisualConfigEditor({
   const nonstreamKeepaliveInputId = useId();
   const nonstreamKeepaliveHintId = `${nonstreamKeepaliveInputId}-hint`;
   const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
+  const quotaAutoDisableIntervalInputId = useId();
+  const quotaAutoDisableThresholdInputId = useId();
   const [activeSectionId, setActiveSectionId] = useState<VisualSectionId>('server');
   const sectionRefs = useRef<Partial<Record<VisualSectionId, HTMLElement | null>>>({});
   const mobileNavScrollerRef = useRef<HTMLDivElement | null>(null);
@@ -204,6 +206,14 @@ export function VisualConfigEditor({
   const authAutoRefreshWorkersError = getValidationMessage(
     t,
     validationErrors?.authAutoRefreshWorkers
+  );
+  const quotaAutoDisableIntervalError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableIntervalSeconds
+  );
+  const quotaAutoDisableThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableThresholdPercent
   );
   const keepaliveError = getValidationMessage(t, validationErrors?.['streaming.keepaliveSeconds']);
   const bootstrapRetriesError = getValidationMessage(
@@ -299,7 +309,10 @@ export function VisualConfigEditor({
         id: 'quota',
         title: t('config_management.visual.sections.quota.title'),
         icon: IconTimer,
-        errorCount: 0,
+        errorCount: countErrors([
+          'quotaAutoDisableIntervalSeconds',
+          'quotaAutoDisableThresholdPercent',
+        ]),
       },
       {
         id: 'streaming',
@@ -320,37 +333,6 @@ export function VisualConfigEditor({
     ],
     [countErrors, hasPayloadValidationErrors, t]
   );
-
-  const hasValidationIssues =
-    sections.some((section) => section.errorCount > 0) || hasPayloadValidationErrors;
-  const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0];
-
-  useEffect(() => {
-    if (!isCurrentLayer) return undefined;
-    if (typeof IntersectionObserver === 'undefined') return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio);
-
-        if (visibleEntries.length === 0) return;
-        setActiveSectionId(visibleEntries[0].target.id as VisualSectionId);
-      },
-      {
-        rootMargin: '-18% 0px -58% 0px',
-        threshold: [0.12, 0.3, 0.55],
-      }
-    );
-
-    for (const section of sections) {
-      const element = sectionRefs.current[section.id];
-      if (element) observer.observe(element);
-    }
-
-    return () => observer.disconnect();
-  }, [isCurrentLayer, sections]);
 
   useEffect(() => {
     if (!isCurrentLayer || !isMobile) return;
@@ -375,11 +357,6 @@ export function VisualConfigEditor({
 
   const handleSectionJump = useCallback((sectionId: VisualSectionId) => {
     setActiveSectionId(sectionId);
-    sectionRefs.current[sectionId]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'start',
-    });
   }, []);
 
   const navContent = (
@@ -395,6 +372,7 @@ export function VisualConfigEditor({
               activeSectionId === section.id ? styles.navButtonActive : ''
             }`}
             onClick={() => handleSectionJump(section.id)}
+            aria-pressed={activeSectionId === section.id}
           >
             <span className={styles.navIndex}>{String(index + 1).padStart(2, '0')}</span>
             <span className={styles.navMain}>
@@ -420,22 +398,6 @@ export function VisualConfigEditor({
 
   return (
     <div className={styles.visualEditor}>
-      <div className={styles.overview}>
-        <div className={styles.overviewHeader}>
-          <div className={styles.overviewMeta}>
-            <span className={styles.overviewPill}>
-              {t('config_management.visual.quick_jump', { defaultValue: '快速跳转' })}
-            </span>
-            <span className={styles.overviewPill}>{activeSection?.title}</span>
-            {hasValidationIssues ? (
-              <span className={`${styles.overviewPill} ${styles.overviewPillWarning}`}>
-                {t('config_management.visual.validation.validation_blocked')}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
       <div className={styles.workspace}>
         {isMobile ? (
           <div className={styles.mobileSectionNav}>
@@ -455,6 +417,7 @@ export function VisualConfigEditor({
                     activeSectionId === section.id ? styles.mobileSectionNavButtonActive : ''
                   }`}
                   onClick={() => handleSectionJump(section.id)}
+                  aria-pressed={activeSectionId === section.id}
                 >
                   <span className={styles.mobileSectionNavIndex}>
                     {String(index + 1).padStart(2, '0')}
@@ -478,6 +441,8 @@ export function VisualConfigEditor({
         <div className={styles.sections}>
           <ConfigSection
             id="server"
+            hidden={activeSectionId !== 'server'}
+            className={activeSectionId !== 'server' ? styles.sectionHidden : undefined}
             ref={(node) => {
               sectionRefs.current.server = node;
             }}
@@ -603,6 +568,8 @@ export function VisualConfigEditor({
 
           <ConfigSection
             id="auth"
+            hidden={activeSectionId !== 'auth'}
+            className={activeSectionId !== 'auth' ? styles.sectionHidden : undefined}
             ref={(node) => {
               sectionRefs.current.auth = node;
             }}
@@ -632,6 +599,8 @@ export function VisualConfigEditor({
 
           <ConfigSection
             id="system"
+            hidden={activeSectionId !== 'system'}
+            className={activeSectionId !== 'system' ? styles.sectionHidden : undefined}
             ref={(node) => {
               sectionRefs.current.system = node;
             }}
@@ -1060,6 +1029,8 @@ export function VisualConfigEditor({
 
           <ConfigSection
             id="quota"
+            hidden={activeSectionId !== 'quota'}
+            className={activeSectionId !== 'quota' ? styles.sectionHidden : undefined}
             ref={(node) => {
               sectionRefs.current.quota = node;
             }}
@@ -1068,32 +1039,88 @@ export function VisualConfigEditor({
             title={t('config_management.visual.sections.quota.title')}
             description={t('config_management.visual.sections.quota.description')}
           >
-            <SectionGrid>
-              <ToggleRow
-                title={t('config_management.visual.sections.quota.switch_project')}
-                description={t('config_management.visual.sections.quota.switch_project_desc')}
-                checked={values.quotaSwitchProject}
-                disabled={disabled}
-                onChange={(quotaSwitchProject) => onChange({ quotaSwitchProject })}
-              />
-              <ToggleRow
-                title={t('config_management.visual.sections.quota.switch_preview_model')}
-                description={t('config_management.visual.sections.quota.switch_preview_model_desc')}
-                checked={values.quotaSwitchPreviewModel}
-                disabled={disabled}
-                onChange={(quotaSwitchPreviewModel) => onChange({ quotaSwitchPreviewModel })}
-              />
-              <ToggleRow
-                title={t('config_management.visual.sections.quota.antigravity_credits')}
-                checked={values.quotaAntigravityCredits}
-                disabled={disabled}
-                onChange={(quotaAntigravityCredits) => onChange({ quotaAntigravityCredits })}
-              />
-            </SectionGrid>
+            <SectionStack>
+              <SectionGrid>
+                <ToggleRow
+                  title={t('config_management.visual.sections.quota.switch_project')}
+                  description={t('config_management.visual.sections.quota.switch_project_desc')}
+                  checked={values.quotaSwitchProject}
+                  disabled={disabled}
+                  onChange={(quotaSwitchProject) => onChange({ quotaSwitchProject })}
+                />
+                <ToggleRow
+                  title={t('config_management.visual.sections.quota.switch_preview_model')}
+                  description={t(
+                    'config_management.visual.sections.quota.switch_preview_model_desc'
+                  )}
+                  checked={values.quotaSwitchPreviewModel}
+                  disabled={disabled}
+                  onChange={(quotaSwitchPreviewModel) => onChange({ quotaSwitchPreviewModel })}
+                />
+                <ToggleRow
+                  title={t('config_management.visual.sections.quota.antigravity_credits')}
+                  checked={values.quotaAntigravityCredits}
+                  disabled={disabled}
+                  onChange={(quotaAntigravityCredits) => onChange({ quotaAntigravityCredits })}
+                />
+              </SectionGrid>
+
+              <SectionSubsection
+                title={t('config_management.visual.sections.quota.auto_disable_title')}
+                description={t('config_management.visual.sections.quota.auto_disable_desc')}
+              >
+                <SectionStack>
+                  <ToggleRow
+                    title={t('config_management.visual.sections.quota.auto_disable_enabled')}
+                    description={t(
+                      'config_management.visual.sections.quota.auto_disable_enabled_desc'
+                    )}
+                    checked={values.quotaAutoDisableEnabled}
+                    disabled={disabled}
+                    onChange={(quotaAutoDisableEnabled) => onChange({ quotaAutoDisableEnabled })}
+                  />
+                  <SectionGrid>
+                    <Input
+                      id={quotaAutoDisableIntervalInputId}
+                      label={t('config_management.visual.sections.quota.auto_disable_interval')}
+                      type="number"
+                      min={1}
+                      placeholder="300"
+                      value={values.quotaAutoDisableIntervalSeconds}
+                      onChange={(e) =>
+                        onChange({ quotaAutoDisableIntervalSeconds: e.target.value })
+                      }
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.quota.auto_disable_interval_hint')}
+                      error={quotaAutoDisableIntervalError}
+                    />
+                    <Input
+                      id={quotaAutoDisableThresholdInputId}
+                      label={t('config_management.visual.sections.quota.auto_disable_threshold')}
+                      type="number"
+                      min={1}
+                      max={100}
+                      placeholder="5"
+                      value={values.quotaAutoDisableThresholdPercent}
+                      onChange={(e) =>
+                        onChange({ quotaAutoDisableThresholdPercent: e.target.value })
+                      }
+                      disabled={disabled}
+                      hint={t(
+                        'config_management.visual.sections.quota.auto_disable_threshold_hint'
+                      )}
+                      error={quotaAutoDisableThresholdError}
+                    />
+                  </SectionGrid>
+                </SectionStack>
+              </SectionSubsection>
+            </SectionStack>
           </ConfigSection>
 
           <ConfigSection
             id="streaming"
+            hidden={activeSectionId !== 'streaming'}
+            className={activeSectionId !== 'streaming' ? styles.sectionHidden : undefined}
             ref={(node) => {
               sectionRefs.current.streaming = node;
             }}
@@ -1195,6 +1222,8 @@ export function VisualConfigEditor({
 
           <ConfigSection
             id="payload"
+            hidden={activeSectionId !== 'payload'}
+            className={activeSectionId !== 'payload' ? styles.sectionHidden : undefined}
             ref={(node) => {
               sectionRefs.current.payload = node;
             }}

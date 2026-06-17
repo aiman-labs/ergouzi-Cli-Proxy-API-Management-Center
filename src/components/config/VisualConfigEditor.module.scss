@@ -173,12 +173,15 @@
 }
 
 .workspace {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
   min-width: 0;
 
   @include mobile {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 }
@@ -265,20 +268,17 @@
 }
 
 .sidebarRail {
-  padding: 0 0 12px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
 }
 
 .navList {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
-
-  @include tablet {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 .navButton {
@@ -374,28 +374,26 @@
 
 .sections {
   display: flex;
-  gap: 0;
+  flex-direction: column;
+  gap: 14px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  align-items: stretch;
-  padding: 0 0 12px;
-  scroll-padding-left: 0;
-  scroll-snap-type: x mandatory;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
+  overflow: visible;
+  padding: 0;
 
   @include mobile {
-    padding-bottom: 10px;
+    gap: 12px;
   }
 
   > * {
-    flex: 0 0 100%;
     width: 100%;
     max-width: 100%;
   }
+}
+
+.sectionHidden {
+  display: none !important;
 }
 
 .sectionGrid {
