@@ -169,8 +169,12 @@ export function buildAntigravityQuotaGroups(
       const buckets = Array.isArray(group.buckets) ? group.buckets : [];
       const parsedBuckets = buckets
         .map((bucket, bucketIndex): AntigravityQuotaBucket | null => {
+          const remaining = bucket.remaining;
           const remainingFraction = normalizeQuotaFraction(
-            bucket.remainingFraction ?? bucket.remaining_fraction
+            remaining?.remainingFraction ??
+              remaining?.remaining_fraction ??
+              bucket.remainingFraction ??
+              bucket.remaining_fraction
           );
           if (remainingFraction === null) return null;
 
