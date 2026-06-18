@@ -7,9 +7,11 @@ import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { authFilesApi } from '@/services/api';
 import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
-import { getStatusFromError, isDisabledAuthFile } from '@/utils/quota';
+import { getStatusFromError, isDisabledAuthFile, isRuntimeOnlyAuthFile } from '@/utils/quota';
 import { getAuthFileStatusMessage } from '@/features/authFiles/constants';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
@@ -146,6 +148,8 @@ interface QuotaSectionProps<TState extends QuotaStatusState, TData> {
   loading: boolean;
   disabled: boolean;
   pageSizeOverride?: number;
+  enableStatusActions?: boolean;
+  onFilesChange?: (updater: (files: AuthFileItem[]) => AuthFileItem[]) => void;
 }
 
 export function QuotaSection<TState extends QuotaStatusState, TData>({
@@ -154,6 +158,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   loading,
   disabled,
   pageSizeOverride,
+  enableStatusActions = false,
+  onFilesChange,
 }: QuotaSectionProps<TState, TData>) {
   const { t } = useTranslation();
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
@@ -172,6 +178,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [searchQuery, setSearchQuery] = useState('');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
   const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
+  const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
+  const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
 
   const providerFiles = useMemo(
     () => sortByNewestImport(files.filter((file) => config.filterFn(file))),
@@ -429,6 +437,68 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     [config, disabled, quota, resettingQuotaName, setQuota, showConfirmation, showNotification, t]
   );
 
+  const statusActionsEnabled = enableStatusActions && Boolean(onFilesChange);
+
+  const updateFilesDisabledState = useCallback(
+    (names: string[], nextDisabled: boolean) => {
+      if (!onFilesChange) return;
+      const targetNames = new Set(names);
+      onFilesChange((currentFiles) =>
+        currentFiles.map((file) =>
+          targetNames.has(file.name) ? { ...file, disabled: nextDisabled } : file
+        )
+      );
+    },
+    [onFilesChange]
+  );
+
+  const handleStatusToggle = useCallback(
+    async (file: AuthFileItem, enabled: boolean) => {
+      if (!statusActionsEnabled) return;
+      if (disabled || loading) return;
+
+      const name = file.name;
+      const nextDisabled = !enabled;
+      const previousDisabled = file.disabled === true;
+      if (nextDisabled === previousDisabled) return;
+      if (statusUpdating[name] === true) return;
+
+      setStatusUpdating((prev) => ({ ...prev, [name]: true }));
+      updateFilesDisabledState([name], nextDisabled);
+
+      try {
+        const result = await authFilesApi.setStatus(name, nextDisabled);
+        updateFilesDisabledState([name], result.disabled);
+        showNotification(
+          enabled
+            ? t('auth_files.status_enabled_success', { name })
+            : t('auth_files.status_disabled_success', { name }),
+          'success'
+        );
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : '';
+        updateFilesDisabledState([name], previousDisabled);
+        showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
+      } finally {
+        setStatusUpdating((prev) => {
+          if (!prev[name]) return prev;
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    },
+    [
+      disabled,
+      loading,
+      showNotification,
+      statusActionsEnabled,
+      statusUpdating,
+      t,
+      updateFilesDisabledState,
+    ]
+  );
+
   const titleNode = (
     <div className={styles.titleWrapper}>
       <span>{t(`${config.i18nPrefix}.title`)}</span>
@@ -451,6 +521,36 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const currentPageRefreshableCount = pageItems.length;
   const currentPageDisabledCount = pageItems.filter((file) => isDisabledAuthFile(file)).length;
   const filteredDisabledCount = filteredFiles.filter((file) => isDisabledAuthFile(file)).length;
+  const filteredEnableTargetNames = useMemo(
+    () =>
+      statusActionsEnabled
+        ? filteredFiles
+            .filter(
+              (file) =>
+                !isRuntimeOnlyAuthFile(file) &&
+                file.disabled === true &&
+                statusUpdating[file.name] !== true
+            )
+            .map((file) => file.name)
+        : [],
+    [filteredFiles, statusActionsEnabled, statusUpdating]
+  );
+  const filteredDisableTargetNames = useMemo(
+    () =>
+      statusActionsEnabled
+        ? filteredFiles
+            .filter(
+              (file) =>
+                !isRuntimeOnlyAuthFile(file) &&
+                file.disabled !== true &&
+                statusUpdating[file.name] !== true
+            )
+            .map((file) => file.name)
+        : [],
+    [filteredFiles, statusActionsEnabled, statusUpdating]
+  );
+  const statusActionBusy =
+    batchStatusUpdating || Object.values(statusUpdating).some((value) => value === true);
   const filterOptions = config.quotaFilterOptions
     ? config.quotaFilterOptions.map((option) => ({
         value: option.value,
@@ -488,6 +588,134 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     (activeEnabledFilter && enabledFilter !== 'all') ||
       (activePlanFilter && planFilter !== 'all') ||
       (activeQuotaFilter && issueFilter !== 'all')
+  );
+
+  const batchSetFilteredStatus = useCallback(
+    (enabled: boolean) => {
+      if (!statusActionsEnabled) return;
+      if (disabled || loading || batchStatusUpdating) return;
+
+      const targetNames = enabled ? filteredEnableTargetNames : filteredDisableTargetNames;
+      const uniqueNames = Array.from(new Set(targetNames));
+      if (uniqueNames.length === 0) return;
+
+      showConfirmation({
+        title: enabled
+          ? t('auth_files.batch_enable_confirm_title')
+          : t('auth_files.batch_disable_confirm_title'),
+        message: (
+          <>
+            <p>
+              {enabled
+                ? t('auth_files.batch_enable_confirm_message', {
+                    count: uniqueNames.length,
+                    scope: t('auth_files.scope_filtered_result'),
+                  })
+                : t('auth_files.batch_disable_confirm_message', {
+                    count: uniqueNames.length,
+                    scope: t('auth_files.scope_filtered_result'),
+                  })}
+            </p>
+            <p>{t('auth_files.batch_scope_confirm_hint', { scope: t('auth_files.scope_filtered_result') })}</p>
+          </>
+        ),
+        variant: enabled ? 'primary' : 'danger',
+        confirmText: enabled
+          ? t('auth_files.batch_enable_confirm_button')
+          : t('auth_files.batch_disable_confirm_button'),
+        onConfirm: async () => {
+          const originalDisabled = new Map(
+            files
+              .filter((file) => uniqueNames.includes(file.name))
+              .map((file) => [file.name, file.disabled === true])
+          );
+          const targetNameList = Array.from(originalDisabled.keys());
+          if (targetNameList.length === 0) return;
+
+          const nextDisabled = !enabled;
+          setBatchStatusUpdating(true);
+          setStatusUpdating((prev) => {
+            const next = { ...prev };
+            targetNameList.forEach((name) => {
+              next[name] = true;
+            });
+            return next;
+          });
+          updateFilesDisabledState(targetNameList, nextDisabled);
+
+          try {
+            const results = await Promise.allSettled(
+              targetNameList.map((name) => authFilesApi.setStatus(name, nextDisabled))
+            );
+
+            let successCount = 0;
+            let failCount = 0;
+            const failedNames = new Set<string>();
+            const confirmedDisabled = new Map<string, boolean>();
+
+            results.forEach((result, index) => {
+              const name = targetNameList[index];
+              if (result.status === 'fulfilled') {
+                successCount++;
+                confirmedDisabled.set(name, result.value.disabled);
+              } else {
+                failCount++;
+                failedNames.add(name);
+              }
+            });
+
+            if (onFilesChange) {
+              onFilesChange((currentFiles) =>
+                currentFiles.map((file) => {
+                  if (failedNames.has(file.name)) {
+                    return { ...file, disabled: originalDisabled.get(file.name) === true };
+                  }
+                  if (confirmedDisabled.has(file.name)) {
+                    return { ...file, disabled: confirmedDisabled.get(file.name) };
+                  }
+                  return file;
+                })
+              );
+            }
+
+            if (failCount === 0) {
+              showNotification(
+                t('auth_files.batch_status_success', { count: successCount }),
+                'success'
+              );
+            } else {
+              showNotification(
+                t('auth_files.batch_status_partial', { success: successCount, failed: failCount }),
+                'warning'
+              );
+            }
+          } finally {
+            setBatchStatusUpdating(false);
+            setStatusUpdating((prev) => {
+              const next = { ...prev };
+              targetNameList.forEach((name) => {
+                delete next[name];
+              });
+              return next;
+            });
+          }
+        },
+      });
+    },
+    [
+      batchStatusUpdating,
+      disabled,
+      files,
+      filteredDisableTargetNames,
+      filteredEnableTargetNames,
+      loading,
+      onFilesChange,
+      showConfirmation,
+      showNotification,
+      statusActionsEnabled,
+      t,
+      updateFilesDisabledState,
+    ]
   );
 
   return (
@@ -610,6 +838,56 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             )}
           </div>
           <div className={styles.batchActions}>
+            {statusActionsEnabled && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className={styles.quotaStatusBatchButton}
+                  onClick={() => batchSetFilteredStatus(true)}
+                  disabled={
+                    disabled ||
+                    loading ||
+                    statusActionBusy ||
+                    filteredEnableTargetNames.length === 0
+                  }
+                  loading={batchStatusUpdating}
+                  title={t('quota_management.batch_enable_filtered_credentials', {
+                    count: filteredEnableTargetNames.length,
+                  })}
+                  aria-label={t('quota_management.batch_enable_filtered_credentials', {
+                    count: filteredEnableTargetNames.length,
+                  })}
+                >
+                  {t('quota_management.batch_enable_filtered_count', {
+                    count: filteredEnableTargetNames.length,
+                  })}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  className={styles.quotaStatusBatchButton}
+                  onClick={() => batchSetFilteredStatus(false)}
+                  disabled={
+                    disabled ||
+                    loading ||
+                    statusActionBusy ||
+                    filteredDisableTargetNames.length === 0
+                  }
+                  loading={batchStatusUpdating}
+                  title={t('quota_management.batch_disable_filtered_credentials', {
+                    count: filteredDisableTargetNames.length,
+                  })}
+                  aria-label={t('quota_management.batch_disable_filtered_credentials', {
+                    count: filteredDisableTargetNames.length,
+                  })}
+                >
+                  {t('quota_management.batch_disable_filtered_count', {
+                    count: filteredDisableTargetNames.length,
+                  })}
+                </Button>
+              </>
+            )}
             <Button
               variant="secondary"
               size="sm"
@@ -704,6 +982,23 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                       {t('codex_quota.reset_button')}
                     </Button>
                   ) : undefined;
+                const statusAction =
+                  statusActionsEnabled && !isRuntimeOnlyAuthFile(item) ? (
+                  <div className={styles.quotaStatusToggle}>
+                    <ToggleSwitch
+                      checked={item.disabled !== true}
+                      onChange={(enabled) => void handleStatusToggle(item, enabled)}
+                      disabled={
+                        disabled ||
+                        loading ||
+                        batchStatusUpdating ||
+                        statusUpdating[item.name] === true
+                      }
+                      label={t('auth_files.status_toggle_label')}
+                      ariaLabel={t('auth_files.status_toggle_label')}
+                    />
+                  </div>
+                  ) : undefined;
 
                 return (
                   <QuotaCard
@@ -718,6 +1013,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                     canRefresh={canRefreshQuotaAction && !isResettingQuota}
                     onRefresh={() => void refreshQuotaForFile(item)}
                     resetQuotaAction={resetQuotaAction}
+                    statusAction={statusAction}
                     renderQuotaItems={config.renderQuotaItems}
                   />
                 );

@@ -419,13 +419,11 @@
   }
 }
 
+.quotaStatusBatchButton:global(.btn.btn-sm),
 .refreshScopeButton:global(.btn.btn-sm),
 .refreshAllButton:global(.btn.btn-sm) {
   padding-inline: 14px;
   border-radius: 999px;
-  background: var(--action-secondary-bg);
-  border-color: var(--action-secondary-border);
-  color: var(--action-secondary-text);
 
   > span {
     display: inline-flex;
@@ -445,6 +443,18 @@
   }
 }
 
+.quotaStatusBatchButton:global(.btn-secondary),
+.refreshScopeButton:global(.btn.btn-sm),
+.refreshAllButton:global(.btn.btn-sm) {
+  background: var(--action-secondary-bg);
+  border-color: var(--action-secondary-border);
+  color: var(--action-secondary-text);
+}
+
+.quotaStatusBatchButton:global(.btn.btn-sm) {
+  min-width: 112px;
+}
+
 .refreshScopeButton:global(.btn.btn-sm) {
   background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-secondary));
   border-color: color-mix(in srgb, var(--primary-color) 22%, var(--border-color));
@@ -454,10 +464,13 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+:global([data-theme='dark']) .quotaStatusBatchButton:global(.btn.btn-sm),
 :global([data-theme='dark']) .refreshScopeButton:global(.btn.btn-sm),
 :global([data-theme='dark']) .refreshAllButton:global(.btn.btn-sm) {
-  background: var(--action-secondary-bg);
-  border-color: var(--action-secondary-border);
+  &:global(.btn-secondary) {
+    background: var(--action-secondary-bg);
+    border-color: var(--action-secondary-border);
+  }
 }
 
 :global([data-theme='dark']) .refreshScopeButton:global(.btn.btn-sm) {
@@ -648,10 +661,26 @@
 
 .quotaCardActions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: $spacing-xs;
   flex-wrap: wrap;
   padding-top: $spacing-xs;
+}
+
+.quotaStatusToggle {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin-right: auto;
+
+  label {
+    gap: 6px;
+  }
+
+  span {
+    font-size: 11px;
+  }
 }
 
 .quotaResetCreditButton:global(.btn.btn-sm),
