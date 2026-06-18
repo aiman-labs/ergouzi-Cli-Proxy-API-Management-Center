@@ -47,6 +47,23 @@ export interface GeminiCliCodeAssistPayload {
   paid_tier?: GeminiCliUserTier | null;
 }
 
+export interface AntigravityQuotaSummaryBucketPayload {
+  bucketId?: string;
+  bucket_id?: string;
+  displayName?: string;
+  display_name?: string;
+  window?: string;
+  resetTime?: string;
+  reset_time?: string;
+  remaining?: {
+    remainingFraction?: number | string;
+    remaining_fraction?: number | string;
+  };
+  remainingFraction?: number | string;
+  remaining_fraction?: number | string;
+  description?: string;
+}
+
 export interface AntigravityQuotaInfo {
   displayName?: string;
   quotaInfo?: {
@@ -67,11 +84,17 @@ export interface AntigravityQuotaInfo {
 
 export type AntigravityModelsPayload = Record<string, AntigravityQuotaInfo>;
 
-export interface AntigravityQuotaGroupDefinition {
-  id: string;
-  label: string;
-  identifiers: string[];
-  labelFromModel?: boolean;
+export interface AntigravityQuotaSummaryGroupPayload {
+  displayName?: string;
+  display_name?: string;
+  description?: string;
+  buckets?: AntigravityQuotaSummaryBucketPayload[];
+}
+
+export interface AntigravityQuotaSummaryPayload {
+  groups?: AntigravityQuotaSummaryGroupPayload[];
+  response?: AntigravityQuotaSummaryPayload;
+  models?: AntigravityModelsPayload;
 }
 
 export interface GeminiCliQuotaGroupDefinition {
@@ -204,14 +227,23 @@ export interface ClaudeQuotaState {
 export interface AntigravityQuotaGroup {
   id: string;
   label: string;
-  models: string[];
+  description?: string;
+  buckets: AntigravityQuotaBucket[];
+}
+
+export interface AntigravityQuotaBucket {
+  id: string;
+  label: string;
+  window?: string;
   remainingFraction: number;
   resetTime?: string;
+  description?: string;
 }
 
 export interface AntigravityQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
   groups: AntigravityQuotaGroup[];
+  serverTimeOffsetMs?: number | null;
   error?: string;
   errorStatus?: number;
 }

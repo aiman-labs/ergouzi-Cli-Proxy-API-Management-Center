@@ -154,3 +154,46 @@ git diff --check
 git diff --cached --check
 rg -n '<<<<<<<|=======|>>>>>>>' .
 ```
+
+## 2026-06-17 Upstream v1.16.10 Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi main before sync | `cd9365c` |
+| Upstream previous baseline | `b0db1df` |
+| Upstream target tag | `v1.16.10` |
+| Upstream target commit | `c74fa6d` |
+| Merge base | `b0db1df` |
+| Upstream commits adopted | `6` |
+| Merge result | one conflict in `src/pages/AuthFilesPage.tsx`, resolved by preserving Ergouzi filters and upstream Antigravity subscription loading |
+
+Upstream changes adopted:
+
+| Area | Summary |
+|---|---|
+| Quota | New quota data structures and UI formatting, including Xai remaining amount and SuperGrok plan resolution |
+| Auth files | Antigravity subscription loading and subscription badge styling |
+| Plugins | Runtime state polling after plugin changes |
+| I18n | New locale strings for quota and Antigravity subscription UI |
+
+Protected Ergouzi surfaces checked:
+
+| Area | Result |
+|---|---|
+| Release contract | `vite.config.ts` still uses `vite-plugin-singlefile`; release workflow still publishes asset name `management.html` |
+| Config panel | Vertical category layout and Codex `quota-auto-disable` visual config fields are still present |
+| Auth files | Filtered batch enable/disable/delete, success-count filter, health/enabled filters, and page size `100` were preserved |
+| Auth file conflict | `displayPageItems` still injects quota issue status messages, while upstream `useAntigravitySubscriptions(pageItems)` feeds Antigravity cards |
+| Quota page | Codex quota behavior remains present while upstream quota formatting updates are adopted |
+
+Verification:
+
+```bash
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+```
+
+`package.json` has no `test` script in this CPAMC repository, so no automated
+unit test command was available for this sync.
