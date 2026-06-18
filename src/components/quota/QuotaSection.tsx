@@ -11,7 +11,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { authFilesApi } from '@/services/api';
 import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
-import { getStatusFromError, isDisabledAuthFile } from '@/utils/quota';
+import { getStatusFromError, isDisabledAuthFile, isRuntimeOnlyAuthFile } from '@/utils/quota';
 import { getAuthFileStatusMessage } from '@/features/authFiles/constants';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
@@ -503,7 +503,12 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     () =>
       statusActionsEnabled
         ? filteredFiles
-            .filter((file) => file.disabled === true && statusUpdating[file.name] !== true)
+            .filter(
+              (file) =>
+                !isRuntimeOnlyAuthFile(file) &&
+                file.disabled === true &&
+                statusUpdating[file.name] !== true
+            )
             .map((file) => file.name)
         : [],
     [filteredFiles, statusActionsEnabled, statusUpdating]
@@ -512,7 +517,12 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     () =>
       statusActionsEnabled
         ? filteredFiles
-            .filter((file) => file.disabled !== true && statusUpdating[file.name] !== true)
+            .filter(
+              (file) =>
+                !isRuntimeOnlyAuthFile(file) &&
+                file.disabled !== true &&
+                statusUpdating[file.name] !== true
+            )
             .map((file) => file.name)
         : [],
     [filteredFiles, statusActionsEnabled, statusUpdating]
@@ -915,7 +925,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                       {t('codex_quota.reset_button')}
                     </Button>
                   ) : undefined;
-                const statusAction = statusActionsEnabled ? (
+                const statusAction =
+                  statusActionsEnabled && !isRuntimeOnlyAuthFile(item) ? (
                   <div className={styles.quotaStatusToggle}>
                     <ToggleSwitch
                       checked={item.disabled !== true}
@@ -930,7 +941,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                       ariaLabel={t('auth_files.status_toggle_label')}
                     />
                   </div>
-                ) : undefined;
+                  ) : undefined;
 
                 return (
                   <QuotaCard
