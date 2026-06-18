@@ -197,3 +197,72 @@ git diff --check
 
 `package.json` has no `test` script in this CPAMC repository, so no automated
 unit test command was available for this sync.
+
+## 2026-06-18 Upstream v1.16.11 Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi main before sync | `cd528c3` |
+| Sync branch | `sync/upstream-v1.16.11` |
+| Upstream previous baseline | `v1.16.10` / `c74fa6d` |
+| Upstream target tag | `v1.16.11` |
+| Upstream target commit | `069eaf2` |
+| Merge base | `c74fa6d` |
+| Upstream commits adopted | `1` |
+| Changed files from `v1.16.10` to `v1.16.11` | `11` |
+| Pre-merge latest release recheck | `v1.16.11` |
+| Sync status | `merged into worktree branch, not deployed` |
+
+Upstream changes adopted:
+
+| Area | Summary |
+|---|---|
+| Antigravity quota | Subscription / plan display and localized quota labels |
+| Auth files | Upstream removal of Antigravity subscription badge logic from auth-file cards |
+| I18n | New Antigravity subscription and quota label strings across zh-CN, zh-TW, en, and ru |
+
+Protected Ergouzi surfaces checked:
+
+| Area | Result |
+|---|---|
+| Release contract | `vite.config.ts` was not touched; release workflow and `management.html` asset contract remain unchanged |
+| Config panel | Vertical category layout and Codex `quota-auto-disable` visual config fields remain present |
+| Auth files | Filtered batch enable/disable/delete, success-count filter, error-type filter, health/enabled filters, and page size `100` were preserved |
+| Auth file provider detection | Kept Ergouzi provider-first detection via `resolveAuthProvider(file)` in `AuthFileCard` |
+| Quota page | Codex quota behavior remains present while upstream Antigravity quota formatting updates are adopted |
+
+Conflict handling:
+
+- `src/components/quota/quotaConfigs.ts`: accepted upstream Antigravity
+  subscription display while preserving Ergouzi's no-project-id fallback,
+  legacy `payload.models` fallback, and description fallback for reset labels.
+- `src/features/authFiles/components/AuthFileCard.tsx`: preserved provider-first
+  detection so mixed-shape auth files with `provider: "antigravity"` are still
+  recognized correctly.
+- `src/pages/AuthFilesPage.tsx`: preserved Ergouzi auth-file filters and quota
+  issue status injection; dropped the now-unused Antigravity subscription hook
+  after upstream removed the card badge consumer.
+- Antigravity-specific automated review comments after this sync should be
+  treated as deferred unless they break compilation, tests, or an Ergouzi-owned
+  workflow.
+
+Verification:
+
+```bash
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+git diff --cached --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- `bun run type-check` passed after the worktree merge.
+- `bun run build` passed after the worktree merge.
+- `bun run lint` passed after the worktree merge.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+- Conflict-marker scan returned no matches.
+- No production deployment has been performed for this sync.
