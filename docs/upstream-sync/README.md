@@ -28,6 +28,31 @@ future sync becomes large enough to need a pure upstream review base.
 - Keep i18n keys aligned across zh-CN, zh-TW, en, and ru.
 - Record only non-obvious choices as DEC entries; do not document trivial merges.
 - Before closing a sync, run type-check, build, lint, `git diff --check`, and a conflict-marker scan.
+- Check the latest upstream release tag at both the start of a sync and again
+  immediately before merging the PR. If a newer release appears during review,
+  stop and explicitly choose whether to retarget the sync or merge the current
+  release with a written follow-up.
+- Treat automated PR review as advisory. Fix comments that identify a real
+  regression in the management UI, Ergouzi auth-file/account-pool workflows, or
+  code just changed by the PR. Do not keep expanding a sync for unrelated
+  provider edge cases or unused surfaces; record those as deferred/ignored when
+  needed.
+- After a sync PR is merged, update local `main` from `origin/main` and verify
+  that the local working tree is clean and `HEAD` equals `origin/main`.
+
+## Normal Sync Checklist
+
+1. Fetch `origin` and `upstream`.
+2. Check worktree cleanliness.
+3. Identify the latest upstream release tag and the previous contained release
+   tag. Do not use unreleased upstream commits as the normal sync target.
+4. Count merge base, upstream commits, Ergouzi commits, and touched files.
+5. Resolve conflicts by behavior, not by blindly choosing one side.
+6. Add or update DEC entries for real tradeoffs.
+7. Update `sync-history.md` with snapshot and verification.
+8. Before merging the PR, re-check the latest upstream release tag and record
+   whether the PR is still targeting the latest release.
+9. After merging, fast-forward local `main` to `origin/main`.
 
 ## Cross-Repo Contract
 
