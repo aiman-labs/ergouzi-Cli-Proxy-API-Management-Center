@@ -94,6 +94,9 @@ CPA container was force-recreated.
 | Latest asset sha256 | `117a99f9832eb46f7a7d8e538ea933817566d642047e43d38fd25493222c2d12` |
 | Latest asset size | `2174480` bytes |
 
+This section is a 2026-06-15 historical baseline. Current production deployment
+state is recorded in the 2026-06-18 upstream `v1.16.11` sync section below.
+
 Behavior now treated as Ergouzi-local product surface:
 
 | Area | Behavior |
@@ -211,7 +214,10 @@ unit test command was available for this sync.
 | Upstream commits adopted | `1` |
 | Changed files from `v1.16.10` to `v1.16.11` | `11` |
 | Pre-merge latest release recheck | `v1.16.11` |
-| Sync status | `merged into worktree branch, not deployed` |
+| Sync status | `merged, released, deployed` |
+| Ergouzi release tag | `v1.16.11-ergouzi.1` |
+| Production asset | `management.html` |
+| Production deploy time | `2026-06-18` |
 
 Upstream changes adopted:
 
@@ -265,4 +271,19 @@ Result:
 - `git diff --check` passed.
 - `git diff --cached --check` passed.
 - Conflict-marker scan returned no matches.
-- No production deployment has been performed for this sync.
+- Released as `v1.16.11-ergouzi.1`.
+- GitHub `release.yml` workflow did not auto-run from the tag immediately, so
+  it was manually dispatched and completed successfully.
+- Release asset:
+  - Name: `management.html`
+  - Size: `2231405` bytes
+  - SHA-256: `281195bb093b86034abec21c4465a79db1e1c6fbcb910934ad9b2089e3aec8a7`
+- Production was updated by backing up and deleting the container cached
+  `/CLIProxyAPI/static/management.html`, then requesting `/management.html` to
+  fetch the latest release asset.
+- Post-deploy verification passed:
+  - served `/management.html` size is `2231405` bytes
+  - served `/management.html` SHA-256 matches the release asset
+  - UI markers `健康状态`, `启用状态`, and `搜索账号` are present
+  - unauthenticated `https://cpa.ergouzi.life/management.html` returns
+    Cloudflare Access `302`
