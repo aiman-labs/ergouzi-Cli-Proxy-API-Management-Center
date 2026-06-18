@@ -156,6 +156,8 @@ export function QuotaPage() {
         loading={loading}
         disabled={disableControls}
         pageSizeOverride={pageSize}
+        enableStatusActions
+        onFilesChange={setFiles}
       />
       <QuotaSection
         config={CLAUDE_CONFIG}
