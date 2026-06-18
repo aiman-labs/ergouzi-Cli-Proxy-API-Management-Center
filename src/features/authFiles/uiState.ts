@@ -8,12 +8,14 @@ export const AUTH_FILES_ERROR_TYPE_FILTERS = [
   'other',
 ] as const;
 export const AUTH_FILES_SUCCESS_COUNT_FILTERS = ['all', 'positive', 'zero'] as const;
+export const AUTH_FILES_CODEX_PLAN_FILTERS = ['all', 'pro20x', 'non_pro20x', 'unknown'] as const;
 
 export type AuthFilesSortMode = (typeof AUTH_FILES_SORT_MODES)[number];
 export type AuthFilesHealthFilter = (typeof AUTH_FILES_HEALTH_FILTERS)[number];
 export type AuthFilesEnabledFilter = (typeof AUTH_FILES_ENABLED_FILTERS)[number];
 export type AuthFilesErrorTypeFilter = (typeof AUTH_FILES_ERROR_TYPE_FILTERS)[number];
 export type AuthFilesSuccessCountFilter = (typeof AUTH_FILES_SUCCESS_COUNT_FILTERS)[number];
+export type AuthFilesCodexPlanFilter = (typeof AUTH_FILES_CODEX_PLAN_FILTERS)[number];
 
 export type AuthFilesUiState = {
   filter?: string;
@@ -23,6 +25,7 @@ export type AuthFilesUiState = {
   enabledFilter?: AuthFilesEnabledFilter;
   errorTypeFilter?: AuthFilesErrorTypeFilter;
   successCountFilter?: AuthFilesSuccessCountFilter;
+  codexPlanFilter?: AuthFilesCodexPlanFilter;
   compactMode?: boolean;
   search?: string;
   page?: number;
@@ -43,6 +46,9 @@ const AUTH_FILES_ERROR_TYPE_FILTER_SET = new Set<AuthFilesErrorTypeFilter>(
 const AUTH_FILES_SUCCESS_COUNT_FILTER_SET = new Set<AuthFilesSuccessCountFilter>(
   AUTH_FILES_SUCCESS_COUNT_FILTERS
 );
+const AUTH_FILES_CODEX_PLAN_FILTER_SET = new Set<AuthFilesCodexPlanFilter>(
+  AUTH_FILES_CODEX_PLAN_FILTERS
+);
 
 export const isAuthFilesSortMode = (value: unknown): value is AuthFilesSortMode =>
   typeof value === 'string' && AUTH_FILES_SORT_MODE_SET.has(value as AuthFilesSortMode);
@@ -62,6 +68,10 @@ export const isAuthFilesSuccessCountFilter = (
 ): value is AuthFilesSuccessCountFilter =>
   typeof value === 'string' &&
   AUTH_FILES_SUCCESS_COUNT_FILTER_SET.has(value as AuthFilesSuccessCountFilter);
+
+export const isAuthFilesCodexPlanFilter = (value: unknown): value is AuthFilesCodexPlanFilter =>
+  typeof value === 'string' &&
+  AUTH_FILES_CODEX_PLAN_FILTER_SET.has(value as AuthFilesCodexPlanFilter);
 
 const readAuthFilesUiStateFromStorage = (
   storage: Pick<Storage, 'getItem'> | null | undefined

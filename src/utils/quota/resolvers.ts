@@ -10,6 +10,8 @@ import {
   parseIdTokenPayload,
 } from './parsers';
 
+export type CodexPlanFilterValue = 'all' | 'pro20x' | 'non_pro20x' | 'unknown';
+
 const toRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
@@ -57,30 +59,36 @@ export function resolveCodexPlanType(file: AuthFileItem): string | null {
     file && typeof file.attributes === 'object' && file.attributes !== null
       ? (file.attributes as Record<string, unknown>)
       : null;
-  const idToken =
-    file && typeof file.id_token === 'object' && file.id_token !== null
-      ? (file.id_token as Record<string, unknown>)
-      : null;
-  const metadataIdToken =
-    metadata && typeof metadata.id_token === 'object' && metadata.id_token !== null
-      ? (metadata.id_token as Record<string, unknown>)
-      : null;
+  const idToken = resolveCodexAuthInfo(file.id_token);
+  const metadataIdToken = resolveCodexAuthInfo(metadata?.id_token);
+  const attributesIdToken = resolveCodexAuthInfo(attributes?.id_token);
   const candidates = [
     file.plan_type,
     file.planType,
     file['plan_type'],
     file['planType'],
-    file.id_token,
+    file.chatgpt_plan_type,
+    file.chatgptPlanType,
     idToken?.plan_type,
     idToken?.planType,
+    idToken?.chatgpt_plan_type,
+    idToken?.chatgptPlanType,
     metadata?.plan_type,
     metadata?.planType,
-    metadata?.id_token,
+    metadata?.chatgpt_plan_type,
+    metadata?.chatgptPlanType,
     metadataIdToken?.plan_type,
     metadataIdToken?.planType,
+    metadataIdToken?.chatgpt_plan_type,
+    metadataIdToken?.chatgptPlanType,
     attributes?.plan_type,
     attributes?.planType,
-    attributes?.id_token,
+    attributes?.chatgpt_plan_type,
+    attributes?.chatgptPlanType,
+    attributesIdToken?.plan_type,
+    attributesIdToken?.planType,
+    attributesIdToken?.chatgpt_plan_type,
+    attributesIdToken?.chatgptPlanType,
   ];
 
   for (const candidate of candidates) {
@@ -89,6 +97,15 @@ export function resolveCodexPlanType(file: AuthFileItem): string | null {
   }
 
   return null;
+}
+
+export function resolveCodexPlanFilterValue(
+  file: AuthFileItem,
+  quotaPlanType?: unknown
+): Exclude<CodexPlanFilterValue, 'all'> {
+  const planType = normalizePlanType(quotaPlanType) ?? resolveCodexPlanType(file);
+  if (!planType) return 'unknown';
+  return planType === 'pro' ? 'pro20x' : 'non_pro20x';
 }
 
 const normalizeDateLikeValue = (value: unknown): string | number | null => {

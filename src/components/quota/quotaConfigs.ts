@@ -72,6 +72,7 @@ import {
   parseKimiUsagePayload,
   parseXaiBillingPayload,
   resolveCodexChatgptAccountId,
+  resolveCodexPlanFilterValue,
   resolveCodexPlanType,
   resolveCodexSubscriptionActiveUntil,
   resolveGeminiCliProjectId,
@@ -159,6 +160,8 @@ export interface QuotaConfig<TState, TData> {
   buildErrorState: (message: string, status?: number) => TState;
   quotaFilterLabelKey?: string;
   quotaFilterOptions?: QuotaFilterOption<TState>[];
+  planFilterLabelKey?: string;
+  planFilterOptions?: QuotaFilterOption<TState>[];
   cardClassName: string;
   controlsClassName: string;
   controlClassName: string;
@@ -1716,6 +1719,39 @@ export const CODEX_CONFIG: QuotaConfig<
       emptyTitleKey: 'quota_management.no_quota_error_title',
       emptyDescKey: 'quota_management.no_quota_error_desc',
       matches: ({ quota }) => getCodexQuotaAvailability(quota) === 'error',
+    },
+  ],
+  planFilterLabelKey: 'quota_management.codex_plan_filter_label',
+  planFilterOptions: [
+    {
+      value: 'all',
+      labelKey: 'quota_management.codex_plan_filter_all',
+      emptyTitleKey: 'quota_management.no_codex_plan_filter_title',
+      emptyDescKey: 'quota_management.no_codex_plan_filter_desc',
+      matches: () => true,
+    },
+    {
+      value: 'pro20x',
+      labelKey: 'quota_management.codex_plan_filter_pro20x',
+      emptyTitleKey: 'quota_management.no_codex_plan_pro20x_title',
+      emptyDescKey: 'quota_management.no_codex_plan_pro20x_desc',
+      matches: ({ file, quota }) => resolveCodexPlanFilterValue(file, quota?.planType) === 'pro20x',
+    },
+    {
+      value: 'non_pro20x',
+      labelKey: 'quota_management.codex_plan_filter_non_pro20x',
+      emptyTitleKey: 'quota_management.no_codex_plan_non_pro20x_title',
+      emptyDescKey: 'quota_management.no_codex_plan_non_pro20x_desc',
+      matches: ({ file, quota }) =>
+        resolveCodexPlanFilterValue(file, quota?.planType) === 'non_pro20x',
+    },
+    {
+      value: 'unknown',
+      labelKey: 'quota_management.codex_plan_filter_unknown',
+      emptyTitleKey: 'quota_management.no_codex_plan_unknown_title',
+      emptyDescKey: 'quota_management.no_codex_plan_unknown_desc',
+      matches: ({ file, quota }) =>
+        resolveCodexPlanFilterValue(file, quota?.planType) === 'unknown',
     },
   ],
   cardClassName: styles.codexCard,
