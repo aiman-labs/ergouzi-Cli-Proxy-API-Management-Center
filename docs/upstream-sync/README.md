@@ -21,6 +21,11 @@ future sync becomes large enough to need a pure upstream review base.
 ## Rules
 
 - Publish `management.html` from this fork.
+- Never open pull requests against the upstream repository. All Ergouzi sync PRs
+  must target `aiman-labs/ergouzi-Cli-Proxy-API-Management-Center`; use explicit
+  commands such as
+  `gh pr create -R aiman-labs/ergouzi-Cli-Proxy-API-Management-Center --head aiman-labs:<branch>`
+  instead of relying on GitHub CLI auto-detection.
 - Keep the single-file Vite build contract unless CLIProxyAPI changes with it.
 - Protect Ergouzi auth-file operations and account-pool UX.
 - Treat CPAMC-only deployments as static asset refreshes; do not restart New API
