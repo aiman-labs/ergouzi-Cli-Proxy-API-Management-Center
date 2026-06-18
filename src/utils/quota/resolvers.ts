@@ -10,6 +10,8 @@ import {
   parseIdTokenPayload,
 } from './parsers';
 
+export type CodexPlanFilterValue = 'all' | 'pro20x' | 'non_pro20x' | 'unknown';
+
 const toRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
@@ -89,6 +91,15 @@ export function resolveCodexPlanType(file: AuthFileItem): string | null {
   }
 
   return null;
+}
+
+export function resolveCodexPlanFilterValue(
+  file: AuthFileItem,
+  quotaPlanType?: unknown
+): Exclude<CodexPlanFilterValue, 'all'> {
+  const planType = normalizePlanType(quotaPlanType) ?? resolveCodexPlanType(file);
+  if (!planType) return 'unknown';
+  return planType === 'pro' ? 'pro20x' : 'non_pro20x';
 }
 
 const normalizeDateLikeValue = (value: unknown): string | number | null => {

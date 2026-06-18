@@ -167,6 +167,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [columns, gridRef] = useGridColumns(380); // Min card width 380px matches SCSS
   const [viewMode, setViewMode] = useState<ViewMode>('paged');
   const [issueFilter, setIssueFilter] = useState<QuotaFilterValue>('all');
+  const [planFilter, setPlanFilter] = useState<QuotaFilterValue>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
   const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
@@ -181,12 +182,22 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     () => new Set((config.quotaFilterOptions ?? []).map((option) => option.value)),
     [config.quotaFilterOptions]
   );
+  const configuredPlanFilterOptionValues = useMemo(
+    () => new Set((config.planFilterOptions ?? []).map((option) => option.value)),
+    [config.planFilterOptions]
+  );
 
   useEffect(() => {
     if (!config.quotaFilterOptions) return;
     if (configuredFilterOptionValues.has(issueFilter)) return;
     setIssueFilter('all');
   }, [config.quotaFilterOptions, configuredFilterOptionValues, issueFilter]);
+
+  useEffect(() => {
+    if (!config.planFilterOptions) return;
+    if (configuredPlanFilterOptionValues.has(planFilter)) return;
+    setPlanFilter('all');
+  }, [config.planFilterOptions, configuredPlanFilterOptionValues, planFilter]);
 
   const hasProblem = useCallback(
     (file: AuthFileItem): boolean => {
@@ -220,16 +231,32 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
 
         if (config.quotaFilterOptions) {
           const option = config.quotaFilterOptions.find((item) => item.value === issueFilter);
-          return option ? option.matches({ file, quota: quota[file.name] }) : true;
+          if (option && !option.matches({ file, quota: quota[file.name] })) return false;
+        } else if (issueFilter !== 'all') {
+          const problem = hasProblem(file);
+          if (issueFilter === 'problem' ? !problem : problem) return false;
         }
 
-        if (issueFilter === 'all') return true;
-        const problem = hasProblem(file);
-        return issueFilter === 'problem' ? problem : !problem;
+        if (config.planFilterOptions) {
+          const option = config.planFilterOptions.find((item) => item.value === planFilter);
+          if (option && !option.matches({ file, quota: quota[file.name] })) return false;
+        }
+
+        return true;
       }),
-    [config.quotaFilterOptions, hasProblem, issueFilter, providerFiles, quota, searchQuery]
+    [
+      config.planFilterOptions,
+      config.quotaFilterOptions,
+      hasProblem,
+      issueFilter,
+      planFilter,
+      providerFiles,
+      quota,
+      searchQuery,
+    ]
   );
   const hasActiveSearch = searchQuery.trim().length > 0;
+  const hasActivePlanFilter = planFilter !== 'all';
   const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
   const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
 
@@ -388,7 +415,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       <span>{t(`${config.i18nPrefix}.title`)}</span>
       {providerFiles.length > 0 && (
         <span className={styles.countBadge}>
-          {issueFilter === 'all' && !hasActiveSearch
+          {issueFilter === 'all' && !hasActiveSearch && !hasActivePlanFilter
             ? filteredFiles.length
             : `${filteredFiles.length}/${providerFiles.length}`}
         </span>
@@ -412,9 +439,20 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         { value: 'normal', label: t('quota_management.filter_normal_credentials') },
         { value: 'problem', label: t('quota_management.filter_problem_credentials') },
       ];
-  const activeConfiguredFilter = config.quotaFilterOptions?.find(
+  const planFilterOptions = config.planFilterOptions?.map((option) => ({
+    value: option.value,
+    label: t(option.labelKey),
+  }));
+  const activeQuotaFilter = config.quotaFilterOptions?.find(
     (option) => option.value === issueFilter
   );
+  const activePlanFilter = config.planFilterOptions?.find((option) => option.value === planFilter);
+  const activeConfiguredFilter =
+    activePlanFilter && planFilter !== 'all'
+      ? activePlanFilter
+      : activeQuotaFilter && issueFilter !== 'all'
+        ? activeQuotaFilter
+        : (activeQuotaFilter ?? activePlanFilter);
 
   return (
     <Card title={titleNode}>
@@ -450,6 +488,23 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
               ))}
             </select>
           </label>
+          {planFilterOptions && (
+            <label className={styles.sectionFilter}>
+              <span>{t(config.planFilterLabelKey ?? 'quota_management.plan_filter_label')}</span>
+              <select
+                className={styles.sectionFilterSelect}
+                value={planFilter}
+                onChange={(event) => setPlanFilter(event.currentTarget.value)}
+                aria-label={t(config.planFilterLabelKey ?? 'quota_management.plan_filter_label')}
+              >
+                {planFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className={styles.viewModeToggle}>
             <Button
               variant="secondary"

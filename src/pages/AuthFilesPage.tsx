@@ -55,6 +55,7 @@ import { filterAuthFilesBySuccessCount } from '@/features/authFiles/successFilte
 import {
   isAuthFilesEnabledFilter,
   isAuthFilesErrorTypeFilter,
+  isAuthFilesCodexPlanFilter,
   isAuthFilesHealthFilter,
   isAuthFilesSortMode,
   isAuthFilesSuccessCountFilter,
@@ -62,6 +63,7 @@ import {
   readPersistedAuthFilesCompactMode,
   writeAuthFilesUiState,
   writePersistedAuthFilesCompactMode,
+  type AuthFilesCodexPlanFilter,
   type AuthFilesEnabledFilter,
   type AuthFilesErrorTypeFilter,
   type AuthFilesHealthFilter,
@@ -70,6 +72,7 @@ import {
 } from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem } from '@/types/authFile';
+import { isCodexFile, resolveCodexPlanFilterValue } from '@/utils/quota';
 import styles from './AuthFilesPage.module.scss';
 
 const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
@@ -161,8 +164,8 @@ export function AuthFilesPage() {
   const [healthFilter, setHealthFilter] = useState<AuthFilesHealthFilter>('all');
   const [enabledFilter, setEnabledFilter] = useState<AuthFilesEnabledFilter>('all');
   const [errorTypeFilter, setErrorTypeFilter] = useState<AuthFilesErrorTypeFilter>('all');
-  const [successCountFilter, setSuccessCountFilter] =
-    useState<AuthFilesSuccessCountFilter>('all');
+  const [successCountFilter, setSuccessCountFilter] = useState<AuthFilesSuccessCountFilter>('all');
+  const [codexPlanFilter, setCodexPlanFilter] = useState<AuthFilesCodexPlanFilter>('all');
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -312,6 +315,9 @@ export function AuthFilesPage() {
       if (isAuthFilesSuccessCountFilter(persisted.successCountFilter)) {
         setSuccessCountFilter(persisted.successCountFilter);
       }
+      if (isAuthFilesCodexPlanFilter(persisted.codexPlanFilter)) {
+        setCodexPlanFilter(persisted.codexPlanFilter);
+      }
       if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
@@ -354,6 +360,7 @@ export function AuthFilesPage() {
       enabledFilter,
       errorTypeFilter,
       successCountFilter,
+      codexPlanFilter,
       compactMode,
       search,
       page,
@@ -365,6 +372,7 @@ export function AuthFilesPage() {
     writePersistedAuthFilesCompactMode(compactMode);
   }, [
     compactMode,
+    codexPlanFilter,
     enabledFilter,
     errorTypeFilter,
     filter,
@@ -465,31 +473,38 @@ export function AuthFilesPage() {
     return Array.from(types);
   }, [files]);
 
-  const filesMatchingStatusFilters = useMemo(
-    () => {
-      const statusFilteredFiles = files.filter((file) => {
-        const hasProblem = Boolean(getFileProblemMessage(file));
-        if (healthFilter === 'problem' && !hasProblem) return false;
-        if (healthFilter === 'normal' && hasProblem) return false;
-        if (enabledFilter === 'disabled' && file.disabled !== true) return false;
-        if (enabledFilter === 'enabled' && file.disabled === true) return false;
-        if (errorTypeFilter !== 'all') {
-          const errorType = classifyAuthFileErrorType(getFileProblemMessage(file));
-          if (errorType !== errorTypeFilter) return false;
+  const filesMatchingStatusFilters = useMemo(() => {
+    const statusFilteredFiles = files.filter((file) => {
+      const hasProblem = Boolean(getFileProblemMessage(file));
+      if (healthFilter === 'problem' && !hasProblem) return false;
+      if (healthFilter === 'normal' && hasProblem) return false;
+      if (enabledFilter === 'disabled' && file.disabled !== true) return false;
+      if (enabledFilter === 'enabled' && file.disabled === true) return false;
+      if (errorTypeFilter !== 'all') {
+        const errorType = classifyAuthFileErrorType(getFileProblemMessage(file));
+        if (errorType !== errorTypeFilter) return false;
+      }
+      if (codexPlanFilter !== 'all') {
+        if (!isCodexFile(file)) return false;
+        if (
+          resolveCodexPlanFilterValue(file, codexQuota[file.name]?.planType) !== codexPlanFilter
+        ) {
+          return false;
         }
-        return true;
-      });
-      return filterAuthFilesBySuccessCount(statusFilteredFiles, successCountFilter);
-    },
-    [
-      enabledFilter,
-      errorTypeFilter,
-      files,
-      getFileProblemMessage,
-      healthFilter,
-      successCountFilter,
-    ]
-  );
+      }
+      return true;
+    });
+    return filterAuthFilesBySuccessCount(statusFilteredFiles, successCountFilter);
+  }, [
+    codexPlanFilter,
+    codexQuota,
+    enabledFilter,
+    errorTypeFilter,
+    files,
+    getFileProblemMessage,
+    healthFilter,
+    successCountFilter,
+  ]);
 
   const sortOptions = useMemo(
     () => [
@@ -532,6 +547,15 @@ export function AuthFilesPage() {
       { value: 'all', label: t('auth_files.success_count_filter_all') },
       { value: 'positive', label: t('auth_files.success_count_filter_positive') },
       { value: 'zero', label: t('auth_files.success_count_filter_zero') },
+    ],
+    [t]
+  );
+  const codexPlanFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: t('auth_files.codex_plan_filter_all') },
+      { value: 'pro20x', label: t('auth_files.codex_plan_filter_pro20x') },
+      { value: 'non_pro20x', label: t('auth_files.codex_plan_filter_non_pro20x') },
+      { value: 'unknown', label: t('auth_files.codex_plan_filter_unknown') },
     ],
     [t]
   );
@@ -1016,6 +1040,19 @@ export function AuthFilesPage() {
                       setPage(1);
                     }}
                     ariaLabel={t('auth_files.success_count_filter_label')}
+                    fullWidth
+                  />
+                </div>
+                <div className={styles.filterItem}>
+                  <label>{t('auth_files.codex_plan_filter_label')}</label>
+                  <Select
+                    value={codexPlanFilter}
+                    options={codexPlanFilterOptions}
+                    onChange={(value) => {
+                      setCodexPlanFilter(value as AuthFilesCodexPlanFilter);
+                      setPage(1);
+                    }}
+                    ariaLabel={t('auth_files.codex_plan_filter_label')}
                     fullWidth
                   />
                 </div>
