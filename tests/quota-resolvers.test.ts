@@ -2,6 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import type { AuthFileItem } from '../src/types';
 import { resolveCodexPlanFilterValue } from '../src/utils/quota/resolvers';
 
+const createJwt = (payload: Record<string, unknown>): string => {
+  const encode = (value: Record<string, unknown>) =>
+    Buffer.from(JSON.stringify(value)).toString('base64url');
+  return `${encode({ alg: 'none' })}.${encode(payload)}.signature`;
+};
+
 describe('resolveCodexPlanFilterValue', () => {
   test('does not infer Pro 20x from the imported filename', () => {
     const file: AuthFileItem = {
@@ -10,6 +16,30 @@ describe('resolveCodexPlanFilterValue', () => {
     };
 
     expect(resolveCodexPlanFilterValue(file)).toBe('unknown');
+  });
+
+  test('does not classify a raw id token string as a plan type', () => {
+    const file: AuthFileItem = {
+      name: 'codex-account.json',
+      type: 'codex',
+      id_token: createJwt({ sub: 'account-id' }),
+    };
+
+    expect(resolveCodexPlanFilterValue(file)).toBe('unknown');
+  });
+
+  test('classifies plan type from decoded id token auth payload', () => {
+    const file: AuthFileItem = {
+      name: 'codex-account.json',
+      type: 'codex',
+      id_token: createJwt({
+        'https://api.openai.com/auth': {
+          plan_type: 'pro',
+        },
+      }),
+    };
+
+    expect(resolveCodexPlanFilterValue(file)).toBe('pro20x');
   });
 
   test('uses refreshed quota plan type before auth file metadata', () => {
