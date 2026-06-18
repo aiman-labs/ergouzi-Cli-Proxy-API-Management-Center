@@ -71,6 +71,7 @@ import {
   parseGeminiCliCodeAssistPayload,
   parseKimiUsagePayload,
   parseXaiBillingPayload,
+  resolveAuthFileEnabledFilterValue,
   resolveCodexChatgptAccountId,
   resolveCodexPlanFilterValue,
   resolveCodexPlanType,
@@ -162,6 +163,8 @@ export interface QuotaConfig<TState, TData> {
   quotaFilterOptions?: QuotaFilterOption<TState>[];
   planFilterLabelKey?: string;
   planFilterOptions?: QuotaFilterOption<TState>[];
+  enabledFilterLabelKey?: string;
+  enabledFilterOptions?: QuotaFilterOption<TState>[];
   cardClassName: string;
   controlsClassName: string;
   controlClassName: string;
@@ -1752,6 +1755,30 @@ export const CODEX_CONFIG: QuotaConfig<
       emptyDescKey: 'quota_management.no_codex_plan_unknown_desc',
       matches: ({ file, quota }) =>
         resolveCodexPlanFilterValue(file, quota?.planType) === 'unknown',
+    },
+  ],
+  enabledFilterLabelKey: 'quota_management.enabled_filter_label',
+  enabledFilterOptions: [
+    {
+      value: 'all',
+      labelKey: 'quota_management.enabled_filter_all',
+      emptyTitleKey: 'quota_management.no_enabled_filter_title',
+      emptyDescKey: 'quota_management.no_enabled_filter_desc',
+      matches: () => true,
+    },
+    {
+      value: 'enabled',
+      labelKey: 'quota_management.enabled_filter_enabled',
+      emptyTitleKey: 'quota_management.no_enabled_accounts_title',
+      emptyDescKey: 'quota_management.no_enabled_accounts_desc',
+      matches: ({ file }) => resolveAuthFileEnabledFilterValue(file) === 'enabled',
+    },
+    {
+      value: 'disabled',
+      labelKey: 'quota_management.enabled_filter_disabled',
+      emptyTitleKey: 'quota_management.no_disabled_accounts_title',
+      emptyDescKey: 'quota_management.no_disabled_accounts_desc',
+      matches: ({ file }) => resolveAuthFileEnabledFilterValue(file) === 'disabled',
     },
   ],
   cardClassName: styles.codexCard,

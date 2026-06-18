@@ -168,6 +168,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [viewMode, setViewMode] = useState<ViewMode>('paged');
   const [issueFilter, setIssueFilter] = useState<QuotaFilterValue>('all');
   const [planFilter, setPlanFilter] = useState<QuotaFilterValue>('all');
+  const [enabledFilter, setEnabledFilter] = useState<QuotaFilterValue>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showTooManyWarning, setShowTooManyWarning] = useState(false);
   const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
@@ -186,6 +187,10 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     () => new Set((config.planFilterOptions ?? []).map((option) => option.value)),
     [config.planFilterOptions]
   );
+  const configuredEnabledFilterOptionValues = useMemo(
+    () => new Set((config.enabledFilterOptions ?? []).map((option) => option.value)),
+    [config.enabledFilterOptions]
+  );
 
   useEffect(() => {
     if (!config.quotaFilterOptions) return;
@@ -198,6 +203,12 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     if (configuredPlanFilterOptionValues.has(planFilter)) return;
     setPlanFilter('all');
   }, [config.planFilterOptions, configuredPlanFilterOptionValues, planFilter]);
+
+  useEffect(() => {
+    if (!config.enabledFilterOptions) return;
+    if (configuredEnabledFilterOptionValues.has(enabledFilter)) return;
+    setEnabledFilter('all');
+  }, [config.enabledFilterOptions, configuredEnabledFilterOptionValues, enabledFilter]);
 
   const hasProblem = useCallback(
     (file: AuthFileItem): boolean => {
@@ -242,11 +253,18 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
           if (option && !option.matches({ file, quota: quota[file.name] })) return false;
         }
 
+        if (config.enabledFilterOptions) {
+          const option = config.enabledFilterOptions.find((item) => item.value === enabledFilter);
+          if (option && !option.matches({ file, quota: quota[file.name] })) return false;
+        }
+
         return true;
       }),
     [
+      config.enabledFilterOptions,
       config.planFilterOptions,
       config.quotaFilterOptions,
+      enabledFilter,
       hasProblem,
       issueFilter,
       planFilter,
@@ -257,6 +275,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   );
   const hasActiveSearch = searchQuery.trim().length > 0;
   const hasActivePlanFilter = planFilter !== 'all';
+  const hasActiveEnabledFilter = enabledFilter !== 'all';
   const showAllAllowed = filteredFiles.length <= MAX_SHOW_ALL_THRESHOLD;
   const effectiveViewMode: ViewMode = viewMode === 'all' && !showAllAllowed ? 'paged' : viewMode;
 
@@ -415,7 +434,10 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       <span>{t(`${config.i18nPrefix}.title`)}</span>
       {providerFiles.length > 0 && (
         <span className={styles.countBadge}>
-          {issueFilter === 'all' && !hasActiveSearch && !hasActivePlanFilter
+          {issueFilter === 'all' &&
+          !hasActiveSearch &&
+          !hasActivePlanFilter &&
+          !hasActiveEnabledFilter
             ? filteredFiles.length
             : `${filteredFiles.length}/${providerFiles.length}`}
         </span>
@@ -443,16 +465,30 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     value: option.value,
     label: t(option.labelKey),
   }));
+  const enabledFilterOptions = config.enabledFilterOptions?.map((option) => ({
+    value: option.value,
+    label: t(option.labelKey),
+  }));
   const activeQuotaFilter = config.quotaFilterOptions?.find(
     (option) => option.value === issueFilter
   );
   const activePlanFilter = config.planFilterOptions?.find((option) => option.value === planFilter);
+  const activeEnabledFilter = config.enabledFilterOptions?.find(
+    (option) => option.value === enabledFilter
+  );
   const activeConfiguredFilter =
-    activePlanFilter && planFilter !== 'all'
-      ? activePlanFilter
-      : activeQuotaFilter && issueFilter !== 'all'
-        ? activeQuotaFilter
-        : (activeQuotaFilter ?? activePlanFilter);
+    activeEnabledFilter && enabledFilter !== 'all'
+      ? activeEnabledFilter
+      : activePlanFilter && planFilter !== 'all'
+        ? activePlanFilter
+        : activeQuotaFilter && issueFilter !== 'all'
+          ? activeQuotaFilter
+          : (activeQuotaFilter ?? activePlanFilter ?? activeEnabledFilter);
+  const hasActiveConfiguredFilter = Boolean(
+    (activeEnabledFilter && enabledFilter !== 'all') ||
+      (activePlanFilter && planFilter !== 'all') ||
+      (activeQuotaFilter && issueFilter !== 'all')
+  );
 
   return (
     <Card title={titleNode}>
@@ -498,6 +534,27 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 aria-label={t(config.planFilterLabelKey ?? 'quota_management.plan_filter_label')}
               >
                 {planFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {enabledFilterOptions && (
+            <label className={styles.sectionFilter}>
+              <span>
+                {t(config.enabledFilterLabelKey ?? 'quota_management.enabled_filter_label')}
+              </span>
+              <select
+                className={styles.sectionFilterSelect}
+                value={enabledFilter}
+                onChange={(event) => setEnabledFilter(event.currentTarget.value)}
+                aria-label={t(
+                  config.enabledFilterLabelKey ?? 'quota_management.enabled_filter_label'
+                )}
+              >
+                {enabledFilterOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -600,7 +657,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             title={
               hasActiveSearch && providerFiles.length > 0
                 ? t('quota_management.no_search_title')
-                : activeConfiguredFilter && issueFilter !== 'all' && providerFiles.length > 0
+                : activeConfiguredFilter && hasActiveConfiguredFilter && providerFiles.length > 0
                   ? t(activeConfiguredFilter.emptyTitleKey)
                   : issueFilter === 'problem' && providerFiles.length > 0
                     ? t('quota_management.no_problem_title')
@@ -611,7 +668,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             description={
               hasActiveSearch && providerFiles.length > 0
                 ? t('quota_management.no_search_desc')
-                : activeConfiguredFilter && issueFilter !== 'all' && providerFiles.length > 0
+                : activeConfiguredFilter && hasActiveConfiguredFilter && providerFiles.length > 0
                   ? t(activeConfiguredFilter.emptyDescKey)
                   : issueFilter === 'problem' && providerFiles.length > 0
                     ? t('quota_management.no_problem_desc')

@@ -9,8 +9,10 @@ import {
   normalizePlanType,
   parseIdTokenPayload,
 } from './parsers';
+import { isDisabledAuthFile } from './validators';
 
 export type CodexPlanFilterValue = 'all' | 'pro20x' | 'non_pro20x' | 'unknown';
+export type AuthFileEnabledFilterValue = 'all' | 'enabled' | 'disabled';
 
 const toRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -106,6 +108,12 @@ export function resolveCodexPlanFilterValue(
   const planType = normalizePlanType(quotaPlanType) ?? resolveCodexPlanType(file);
   if (!planType) return 'unknown';
   return planType === 'pro' ? 'pro20x' : 'non_pro20x';
+}
+
+export function resolveAuthFileEnabledFilterValue(
+  file: AuthFileItem
+): Exclude<AuthFileEnabledFilterValue, 'all'> {
+  return isDisabledAuthFile(file) ? 'disabled' : 'enabled';
 }
 
 const normalizeDateLikeValue = (value: unknown): string | number | null => {
