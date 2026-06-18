@@ -42,6 +42,44 @@ describe('resolveCodexPlanFilterValue', () => {
     expect(resolveCodexPlanFilterValue(file)).toBe('pro20x');
   });
 
+  test('classifies ChatGPT-prefixed plan type from decoded token payloads', () => {
+    const directTokenFile: AuthFileItem = {
+      name: 'direct-token.json',
+      type: 'codex',
+      id_token: createJwt({
+        'https://api.openai.com/auth': {
+          chatgpt_plan_type: 'pro',
+        },
+      }),
+    };
+    const metadataTokenFile: AuthFileItem = {
+      name: 'metadata-token.json',
+      type: 'codex',
+      metadata: {
+        id_token: createJwt({
+          'https://api.openai.com/auth': {
+            chatgptPlanType: 'free',
+          },
+        }),
+      },
+    };
+    const attributesTokenFile: AuthFileItem = {
+      name: 'attributes-token.json',
+      type: 'codex',
+      attributes: {
+        id_token: createJwt({
+          'https://api.openai.com/auth': {
+            chatgpt_plan_type: 'pro',
+          },
+        }),
+      },
+    };
+
+    expect(resolveCodexPlanFilterValue(directTokenFile)).toBe('pro20x');
+    expect(resolveCodexPlanFilterValue(metadataTokenFile)).toBe('non_pro20x');
+    expect(resolveCodexPlanFilterValue(attributesTokenFile)).toBe('pro20x');
+  });
+
   test('uses refreshed quota plan type before auth file metadata', () => {
     const file: AuthFileItem = {
       name: 'random-name.json',
