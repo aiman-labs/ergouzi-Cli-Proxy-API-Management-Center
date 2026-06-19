@@ -285,5 +285,79 @@ Result:
   - served `/management.html` size is `2231405` bytes
   - served `/management.html` SHA-256 matches the release asset
   - UI markers `健康状态`, `启用状态`, and `搜索账号` are present
-  - unauthenticated `https://cpa.ergouzi.life/management.html` returns
-    Cloudflare Access `302`
+- unauthenticated `https://cpa.ergouzi.life/management.html` returns
+  Cloudflare Access `302`
+
+## 2026-06-19 Upstream `v1.17.0` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi main before sync | `65e4745` |
+| Sync branch | `sync/upstream-v1.17.0` |
+| Upstream previous baseline | `v1.16.11` / `069eaf2` |
+| Upstream target tag | `v1.17.0` |
+| Upstream target commit | `32699c9` |
+| Upstream commits adopted | `7` |
+| Changed files from `v1.16.11` to `v1.17.0` | `8` |
+| Pre-merge latest release recheck | `v1.17.0` |
+| Sync status | `local worktree branch; not released; not deployed` |
+
+Upstream release commits:
+
+```text
+32699c9 Merge pull request #321 from router-for-me/feat/config-editor-simple-full-mode
+1a8e059 fix(config): improve handling of jump requests and enhance collapsible component state management
+a1d2e11 feat(search): enhance keyboard navigation and highlight for search results
+96e41f5 fix(config): jump correctly across horizontally snapped sections
+aa114b2 feat: add search index for visual config editor and update i18n translations
+b5344a7 refactor(config): flatten advanced section and card-style simple-mode fields
+9a154c7 feat(config): add simple/full editor modes and task-oriented sections
+```
+
+Sync findings:
+
+- The merge conflicted in `src/components/config/VisualConfigEditor.tsx`
+  because Ergouzi previously changed the visual config panel and upstream
+  introduced simple/full editor modes plus global config search in the same
+  component.
+- Resolved the conflict by using upstream `v1.17.0` as the structural base,
+  preserving upstream simple/full mode, search index, keyboard navigation, and
+  collapsible behavior.
+- Kept Ergouzi's preferred visual-config default by opening the upstream
+  simple/full editor in `full` mode when the browser has no saved preference.
+- Re-applied Ergouzi Codex quota auto-disable controls inside the upstream quota
+  section, including enable toggle, interval field, threshold field, validation
+  errors, section error count, and search-index entries.
+
+Protected Ergouzi surfaces checked:
+
+| Area | Result |
+|---|---|
+| Release contract | `management.html` single-file build still succeeds through `vite-plugin-singlefile` |
+| Config panel | Upstream simple/full/search behavior is adopted; Ergouzi default remains full left-nav mode, and quota auto-disable controls remain configurable |
+| Search | Upstream config search can find Ergouzi quota auto-disable fields |
+| Deployment | No production deployment has been performed for this sync |
+
+Verification:
+
+```bash
+bun install --frozen-lockfile
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+git diff --cached --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- `bun install --frozen-lockfile` installed the worktree dependencies without
+  changing tracked files.
+- `bun run type-check` passed.
+- `bun run build` passed and produced a single-file `dist/index.html`.
+- `bun run lint` passed.
+- `git diff --check` passed.
+- `git diff --cached --check` passed.
+- Conflict-marker scan returned no matches.
+- No release or production deployment has been performed for this sync.
