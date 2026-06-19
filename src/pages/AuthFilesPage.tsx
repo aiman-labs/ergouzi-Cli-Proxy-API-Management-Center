@@ -89,6 +89,17 @@ type QuotaIssueState = {
 
 type KnownAuthFileErrorType = Exclude<AuthFilesErrorTypeFilter, 'all'>;
 
+const AUTH_FILE_AUTHENTICATION_ERROR_PATTERNS = [
+  /\b401\b/,
+  /authentication[_\s-]*error/,
+  /unauthori[sz]ed/,
+  /auth[_\s-]*unavailable/,
+  /authentication token has been invalidated/,
+  /please try signing in again/,
+  /\binvalid(?:ated)?\s+(?:auth(?:entication)?\s+)?token\b/,
+  /\btoken\s+(?:has\s+been\s+)?invalidated\b/,
+];
+
 const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildWildcardSearch = (value: string): RegExp | null => {
@@ -132,11 +143,7 @@ const classifyAuthFileErrorType = (message: string): KnownAuthFileErrorType | nu
     return 'usage_limit';
   }
 
-  if (
-    normalized.includes('authentication_error') ||
-    normalized.includes('unauthorized') ||
-    normalized.includes('auth_unavailable')
-  ) {
+  if (AUTH_FILE_AUTHENTICATION_ERROR_PATTERNS.some((pattern) => pattern.test(normalized))) {
     return 'authentication_error';
   }
 
