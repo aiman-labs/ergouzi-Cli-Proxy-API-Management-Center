@@ -226,6 +226,15 @@ export function getVisualConfigValidationErrors(
       values.quotaAutoDisableIntervalSeconds
     ),
     quotaAutoDisableThresholdPercent: getPercentRangeError(values.quotaAutoDisableThresholdPercent),
+    quotaAutoDisableWeeklyThresholdPercent: getPercentRangeError(
+      values.quotaAutoDisableWeeklyThresholdPercent
+    ),
+    quotaAutoDisableResumeFiveHourThresholdPercent: getPercentRangeError(
+      values.quotaAutoDisableResumeFiveHourThresholdPercent
+    ),
+    quotaAutoDisableResumeWeeklyThresholdPercent: getPercentRangeError(
+      values.quotaAutoDisableResumeWeeklyThresholdPercent
+    ),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
     'streaming.nonstreamKeepaliveInterval': getNonNegativeIntegerError(
@@ -813,8 +822,13 @@ function getNextDirtyFields(
       'quotaSwitchPreviewModel',
       'quotaAntigravityCredits',
       'quotaAutoDisableEnabled',
+      'quotaAutoDisableAutoEnable',
+      'quotaAutoDisableProOnly',
       'quotaAutoDisableIntervalSeconds',
       'quotaAutoDisableThresholdPercent',
+      'quotaAutoDisableWeeklyThresholdPercent',
+      'quotaAutoDisableResumeFiveHourThresholdPercent',
+      'quotaAutoDisableResumeWeeklyThresholdPercent',
       'routingStrategy',
       'routingSessionAffinity',
       'routingSessionAffinityTTL',
@@ -1027,8 +1041,23 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
     quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
     quotaAutoDisableEnabled: Boolean(quotaAutoDisable?.enabled ?? false),
+    quotaAutoDisableAutoEnable: Boolean(quotaAutoDisable?.['auto-enable'] ?? true),
+    quotaAutoDisableProOnly: Boolean(quotaAutoDisable?.['pro-only'] ?? true),
     quotaAutoDisableIntervalSeconds: String(quotaAutoDisable?.['interval-seconds'] ?? '300'),
-    quotaAutoDisableThresholdPercent: String(quotaAutoDisable?.['threshold-percent'] ?? '5'),
+    quotaAutoDisableThresholdPercent: String(
+      quotaAutoDisable?.['five-hour-threshold-percent'] ??
+        quotaAutoDisable?.['threshold-percent'] ??
+        '5'
+    ),
+    quotaAutoDisableWeeklyThresholdPercent: String(
+      quotaAutoDisable?.['weekly-threshold-percent'] ?? '3'
+    ),
+    quotaAutoDisableResumeFiveHourThresholdPercent: String(
+      quotaAutoDisable?.['resume-five-hour-threshold-percent'] ?? '10'
+    ),
+    quotaAutoDisableResumeWeeklyThresholdPercent: String(
+      quotaAutoDisable?.['resume-weekly-threshold-percent'] ?? '6'
+    ),
 
     routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
     routingSessionAffinity: Boolean(
@@ -1280,11 +1309,18 @@ export function applyVisualConfigValuesToYaml(
     if (
       docHas(doc, ['quota-auto-disable']) ||
       dirtyFields.has('quotaAutoDisableEnabled') ||
+      dirtyFields.has('quotaAutoDisableAutoEnable') ||
+      dirtyFields.has('quotaAutoDisableProOnly') ||
       dirtyFields.has('quotaAutoDisableIntervalSeconds') ||
-      dirtyFields.has('quotaAutoDisableThresholdPercent')
+      dirtyFields.has('quotaAutoDisableThresholdPercent') ||
+      dirtyFields.has('quotaAutoDisableWeeklyThresholdPercent') ||
+      dirtyFields.has('quotaAutoDisableResumeFiveHourThresholdPercent') ||
+      dirtyFields.has('quotaAutoDisableResumeWeeklyThresholdPercent')
     ) {
       ensureMapInDoc(doc, ['quota-auto-disable']);
       doc.setIn(['quota-auto-disable', 'enabled'], values.quotaAutoDisableEnabled);
+      doc.setIn(['quota-auto-disable', 'auto-enable'], values.quotaAutoDisableAutoEnable);
+      doc.setIn(['quota-auto-disable', 'pro-only'], values.quotaAutoDisableProOnly);
       setIntFromStringInDoc(
         doc,
         ['quota-auto-disable', 'interval-seconds'],
@@ -1294,6 +1330,26 @@ export function applyVisualConfigValuesToYaml(
         doc,
         ['quota-auto-disable', 'threshold-percent'],
         values.quotaAutoDisableThresholdPercent
+      );
+      setIntFromStringInDoc(
+        doc,
+        ['quota-auto-disable', 'five-hour-threshold-percent'],
+        values.quotaAutoDisableThresholdPercent
+      );
+      setIntFromStringInDoc(
+        doc,
+        ['quota-auto-disable', 'weekly-threshold-percent'],
+        values.quotaAutoDisableWeeklyThresholdPercent
+      );
+      setIntFromStringInDoc(
+        doc,
+        ['quota-auto-disable', 'resume-five-hour-threshold-percent'],
+        values.quotaAutoDisableResumeFiveHourThresholdPercent
+      );
+      setIntFromStringInDoc(
+        doc,
+        ['quota-auto-disable', 'resume-weekly-threshold-percent'],
+        values.quotaAutoDisableResumeWeeklyThresholdPercent
       );
       deleteIfMapEmpty(doc, ['quota-auto-disable']);
     }

@@ -16,6 +16,9 @@ export type VisualConfigFieldPath =
   | 'authAutoRefreshWorkers'
   | 'quotaAutoDisableIntervalSeconds'
   | 'quotaAutoDisableThresholdPercent'
+  | 'quotaAutoDisableWeeklyThresholdPercent'
+  | 'quotaAutoDisableResumeFiveHourThresholdPercent'
+  | 'quotaAutoDisableResumeWeeklyThresholdPercent'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
   | 'streaming.nonstreamKeepaliveInterval';
@@ -109,8 +112,13 @@ export type VisualConfigValues = {
   quotaSwitchPreviewModel: boolean;
   quotaAntigravityCredits: boolean;
   quotaAutoDisableEnabled: boolean;
+  quotaAutoDisableAutoEnable: boolean;
+  quotaAutoDisableProOnly: boolean;
   quotaAutoDisableIntervalSeconds: string;
   quotaAutoDisableThresholdPercent: string;
+  quotaAutoDisableWeeklyThresholdPercent: string;
+  quotaAutoDisableResumeFiveHourThresholdPercent: string;
+  quotaAutoDisableResumeWeeklyThresholdPercent: string;
   routingStrategy: 'round-robin' | 'fill-first';
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
@@ -177,8 +185,13 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaSwitchPreviewModel: true,
   quotaAntigravityCredits: false,
   quotaAutoDisableEnabled: false,
+  quotaAutoDisableAutoEnable: true,
+  quotaAutoDisableProOnly: true,
   quotaAutoDisableIntervalSeconds: '300',
   quotaAutoDisableThresholdPercent: '5',
+  quotaAutoDisableWeeklyThresholdPercent: '3',
+  quotaAutoDisableResumeFiveHourThresholdPercent: '10',
+  quotaAutoDisableResumeWeeklyThresholdPercent: '6',
   routingStrategy: 'round-robin',
   routingSessionAffinity: false,
   routingSessionAffinityTTL: '',
