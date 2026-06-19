@@ -202,6 +202,9 @@ export function VisualConfigEditor({
   const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
   const quotaAutoDisableIntervalInputId = useId();
   const quotaAutoDisableThresholdInputId = useId();
+  const quotaAutoDisableWeeklyThresholdInputId = useId();
+  const quotaAutoDisableResumeFiveHourThresholdInputId = useId();
+  const quotaAutoDisableResumeWeeklyThresholdInputId = useId();
   const [mode, setMode] = useState<EditorMode>(() => {
     const saved = localStorage.getItem(EDITOR_MODE_STORAGE_KEY);
     return saved === 'simple' ? 'simple' : 'full';
@@ -265,15 +268,13 @@ export function VisualConfigEditor({
     handledJumpRef.current = jumpRequest; // handle each request once, even if deps re-fire
     const { fieldId, sectionId } = jumpRequest;
     const targetFieldId =
-      (fieldId === 'tlsCert' || fieldId === 'tlsKey') && !values.tlsEnable
-        ? 'tlsEnable'
-        : fieldId;
+      (fieldId === 'tlsCert' || fieldId === 'tlsKey') && !values.tlsEnable ? 'tlsEnable' : fieldId;
 
     const el = document.getElementById(configFieldDomId(targetFieldId));
     if (!el) {
       // Field not rendered right now (e.g. TLS cert while TLS is disabled) — fall back to
-      // bringing its section into view horizontally.
-      sectionRefs.current[sectionId]?.scrollIntoView({ block: 'nearest', inline: 'start' });
+      // the top of the active configuration panel.
+      sectionRefs.current[sectionId]?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -289,13 +290,8 @@ export function VisualConfigEditor({
       highlightedElRef.current?.classList.remove(styles.fieldHighlightActive);
     }
 
-    // Full-mode sections live in a horizontal scroll-snap container (`scroll-snap-type: x
-    // mandatory`). A single field-level scrollIntoView() tries to do the horizontal section
-    // switch AND the vertical field scroll at once, which the snap pulls back / lands wrong.
-    // So: (1) switch to the target section horizontally and instantly (no smooth → no snap
-    // fight), then (2) next frame, scroll the field vertically with inline:'nearest' so it
-    // can't re-trigger horizontal snapping.
-    sectionRefs.current[sectionId]?.scrollIntoView({ block: 'nearest', inline: 'start' });
+    // The full editor now keeps one active section mounted in a fixed content panel.
+    // Defer the field scroll until after the section switch has painted.
     requestAnimationFrame(() => {
       el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
       el.classList.add(styles.fieldHighlightActive);
@@ -373,6 +369,18 @@ export function VisualConfigEditor({
   const quotaAutoDisableThresholdError = getValidationMessage(
     t,
     validationErrors?.quotaAutoDisableThresholdPercent
+  );
+  const quotaAutoDisableWeeklyThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableWeeklyThresholdPercent
+  );
+  const quotaAutoDisableResumeFiveHourThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableResumeFiveHourThresholdPercent
+  );
+  const quotaAutoDisableResumeWeeklyThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableResumeWeeklyThresholdPercent
   );
 
   const handleApiKeysTextChange = useCallback(
@@ -463,6 +471,9 @@ export function VisualConfigEditor({
         errorCount: countErrors([
           'quotaAutoDisableIntervalSeconds',
           'quotaAutoDisableThresholdPercent',
+          'quotaAutoDisableWeeklyThresholdPercent',
+          'quotaAutoDisableResumeFiveHourThresholdPercent',
+          'quotaAutoDisableResumeWeeklyThresholdPercent',
         ]),
       },
       {
@@ -500,34 +511,11 @@ export function VisualConfigEditor({
     ) || hasPayloadValidationErrors;
   const payloadValidationKey = hasPayloadValidationErrors ? 'payload-errors' : 'payload-ok';
   const activeSection = sections.find((section) => section.id === activeSectionId) ?? sections[0];
-
-  useEffect(() => {
-    if (mode !== 'full') return undefined;
-    if (!isCurrentLayer) return undefined;
-    if (typeof IntersectionObserver === 'undefined') return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio);
-
-        if (visibleEntries.length === 0) return;
-        setActiveSectionId(visibleEntries[0].target.id as VisualSectionId);
-      },
-      {
-        rootMargin: '-18% 0px -58% 0px',
-        threshold: [0.12, 0.3, 0.55],
-      }
-    );
-
-    for (const section of sections) {
-      const element = sectionRefs.current[section.id];
-      if (element) observer.observe(element);
-    }
-
-    return () => observer.disconnect();
-  }, [isCurrentLayer, mode, sections]);
+  const sectionVisibilityClass = useCallback(
+    (sectionId: VisualSectionId) =>
+      activeSectionId === sectionId ? undefined : styles.sectionHidden,
+    [activeSectionId]
+  );
 
   useEffect(() => {
     if (mode !== 'full' || !isCurrentLayer || !isMobile) return;
@@ -552,10 +540,8 @@ export function VisualConfigEditor({
 
   const handleSectionJump = useCallback((sectionId: VisualSectionId) => {
     setActiveSectionId(sectionId);
-    sectionRefs.current[sectionId]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'start',
+    requestAnimationFrame(() => {
+      sectionRefs.current[sectionId]?.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }, []);
 
@@ -920,6 +906,7 @@ export function VisualConfigEditor({
           <div className={styles.sections}>
             <ConfigSection
               id="connectivity"
+              className={sectionVisibilityClass('connectivity')}
               ref={(node) => {
                 sectionRefs.current.connectivity = node;
               }}
@@ -1066,6 +1053,7 @@ export function VisualConfigEditor({
 
             <ConfigSection
               id="network"
+              className={sectionVisibilityClass('network')}
               ref={(node) => {
                 sectionRefs.current.network = node;
               }}
@@ -1284,6 +1272,7 @@ export function VisualConfigEditor({
 
             <ConfigSection
               id="logging"
+              className={sectionVisibilityClass('logging')}
               ref={(node) => {
                 sectionRefs.current.logging = node;
               }}
@@ -1368,6 +1357,7 @@ export function VisualConfigEditor({
 
             <ConfigSection
               id="quota"
+              className={sectionVisibilityClass('quota')}
               ref={(node) => {
                 sectionRefs.current.quota = node;
               }}
@@ -1409,6 +1399,26 @@ export function VisualConfigEditor({
                       />
                     </FieldAnchor>
                     <SectionGrid>
+                      <ToggleRow
+                        title={t('config_management.visual.sections.quota.auto_enable')}
+                        description={t('config_management.visual.sections.quota.auto_enable_desc')}
+                        checked={values.quotaAutoDisableAutoEnable}
+                        disabled={disabled}
+                        onChange={(quotaAutoDisableAutoEnable) =>
+                          onChange({ quotaAutoDisableAutoEnable })
+                        }
+                      />
+                      <ToggleRow
+                        title={t('config_management.visual.sections.quota.pro_only')}
+                        description={t('config_management.visual.sections.quota.pro_only_desc')}
+                        checked={values.quotaAutoDisableProOnly}
+                        disabled={disabled}
+                        onChange={(quotaAutoDisableProOnly) =>
+                          onChange({ quotaAutoDisableProOnly })
+                        }
+                      />
+                    </SectionGrid>
+                    <SectionGrid>
                       <FieldAnchor fieldId="quotaAutoDisableIntervalSeconds">
                         <Input
                           id={quotaAutoDisableIntervalInputId}
@@ -1431,7 +1441,7 @@ export function VisualConfigEditor({
                         <Input
                           id={quotaAutoDisableThresholdInputId}
                           label={t(
-                            'config_management.visual.sections.quota.auto_disable_threshold'
+                            'config_management.visual.sections.quota.auto_disable_five_hour_threshold'
                           )}
                           type="number"
                           min={1}
@@ -1443,9 +1453,76 @@ export function VisualConfigEditor({
                           }
                           disabled={disabled}
                           hint={t(
-                            'config_management.visual.sections.quota.auto_disable_threshold_hint'
+                            'config_management.visual.sections.quota.auto_disable_five_hour_threshold_hint'
                           )}
                           error={quotaAutoDisableThresholdError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableWeeklyThresholdPercent">
+                        <Input
+                          id={quotaAutoDisableWeeklyThresholdInputId}
+                          label={t(
+                            'config_management.visual.sections.quota.auto_disable_weekly_threshold'
+                          )}
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="3"
+                          value={values.quotaAutoDisableWeeklyThresholdPercent}
+                          onChange={(e) =>
+                            onChange({ quotaAutoDisableWeeklyThresholdPercent: e.target.value })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.auto_disable_weekly_threshold_hint'
+                          )}
+                          error={quotaAutoDisableWeeklyThresholdError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableResumeFiveHourThresholdPercent">
+                        <Input
+                          id={quotaAutoDisableResumeFiveHourThresholdInputId}
+                          label={t(
+                            'config_management.visual.sections.quota.auto_enable_five_hour_threshold'
+                          )}
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="10"
+                          value={values.quotaAutoDisableResumeFiveHourThresholdPercent}
+                          onChange={(e) =>
+                            onChange({
+                              quotaAutoDisableResumeFiveHourThresholdPercent: e.target.value,
+                            })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.auto_enable_five_hour_threshold_hint'
+                          )}
+                          error={quotaAutoDisableResumeFiveHourThresholdError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableResumeWeeklyThresholdPercent">
+                        <Input
+                          id={quotaAutoDisableResumeWeeklyThresholdInputId}
+                          label={t(
+                            'config_management.visual.sections.quota.auto_enable_weekly_threshold'
+                          )}
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="6"
+                          value={values.quotaAutoDisableResumeWeeklyThresholdPercent}
+                          onChange={(e) =>
+                            onChange({
+                              quotaAutoDisableResumeWeeklyThresholdPercent: e.target.value,
+                            })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.auto_enable_weekly_threshold_hint'
+                          )}
+                          error={quotaAutoDisableResumeWeeklyThresholdError}
                         />
                       </FieldAnchor>
                     </SectionGrid>
@@ -1456,6 +1533,7 @@ export function VisualConfigEditor({
 
             <ConfigSection
               id="streaming"
+              className={sectionVisibilityClass('streaming')}
               ref={(node) => {
                 sectionRefs.current.streaming = node;
               }}
@@ -1565,6 +1643,7 @@ export function VisualConfigEditor({
 
             <ConfigSection
               id="advanced"
+              className={sectionVisibilityClass('advanced')}
               ref={(node) => {
                 sectionRefs.current.advanced = node;
               }}
@@ -1796,6 +1875,7 @@ export function VisualConfigEditor({
 
             <ConfigSection
               id="payload"
+              className={sectionVisibilityClass('payload')}
               ref={(node) => {
                 sectionRefs.current.payload = node;
               }}
