@@ -16,6 +16,10 @@ changed.
 
 ## Ergouzi Workflow Skills
 
+- When the user says `刷新 Ergouzi 工作上下文`,
+  `同步二狗工作流上下文`, `Ergouzi context refresh`, or asks a thread to
+  catch up with recent Ergouzi repo/workflow changes, use
+  `ergouzi:workspace-context-refresh` before continuing.
 - For upstream synchronization, baseline selection, conflict DEC records, and
   sync PR preparation, use `ergouzi:fork-upstream-sync` first.
 - For CPAMC release, tag, `management.html` asset publication, production panel
