@@ -12,6 +12,7 @@ export const AUTH_FILES_CODEX_PLAN_FILTERS = [
   'all',
   'plus',
   'pro',
+  'pro_lite',
   'team',
   'free',
   'unknown',

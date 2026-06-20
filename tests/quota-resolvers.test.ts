@@ -123,8 +123,20 @@ describe('resolveCodexPlanFilterValue', () => {
         },
       }),
     };
+    const proLiteFiles: AuthFileItem[] = ['prolite', 'pro-lite', 'pro_lite'].map((planType) => ({
+      name: `${planType}.json`,
+      type: 'codex',
+      id_token: createJwt({
+        'https://api.openai.com/auth': {
+          plan_type: planType,
+        },
+      }),
+    }));
 
     expect(resolveCodexPlanFilterValue(plusFile)).toBe('plus');
+    for (const file of proLiteFiles) {
+      expect(resolveCodexPlanFilterValue(file)).toBe('pro_lite');
+    }
     expect(resolveCodexPlanFilterValue(proFile)).toBe('pro');
     expect(resolveCodexPlanFilterValue(freeFile)).toBe('free');
     expect(resolveCodexPlanFilterValue(teamFile)).toBe('team');

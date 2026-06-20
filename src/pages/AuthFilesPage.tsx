@@ -561,6 +561,7 @@ export function AuthFilesPage() {
       { value: 'all', label: t('auth_files.codex_plan_filter_all') },
       { value: 'plus', label: t('auth_files.codex_plan_filter_plus') },
       { value: 'pro', label: t('auth_files.codex_plan_filter_pro') },
+      { value: 'pro_lite', label: t('auth_files.codex_plan_filter_pro_lite') },
       { value: 'team', label: t('auth_files.codex_plan_filter_team') },
       { value: 'free', label: t('auth_files.codex_plan_filter_free') },
       { value: 'unknown', label: t('auth_files.codex_plan_filter_unknown') },

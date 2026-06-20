@@ -1748,6 +1748,14 @@ export const CODEX_CONFIG: QuotaConfig<
       matches: ({ file, quota }) => resolveCodexPlanFilterValue(file, quota?.planType) === 'pro',
     },
     {
+      value: 'pro_lite',
+      labelKey: 'quota_management.codex_plan_filter_pro_lite',
+      emptyTitleKey: 'quota_management.no_codex_plan_pro_lite_title',
+      emptyDescKey: 'quota_management.no_codex_plan_pro_lite_desc',
+      matches: ({ file, quota }) =>
+        resolveCodexPlanFilterValue(file, quota?.planType) === 'pro_lite',
+    },
+    {
       value: 'team',
       labelKey: 'quota_management.codex_plan_filter_team',
       emptyTitleKey: 'quota_management.no_codex_plan_team_title',
