@@ -148,6 +148,20 @@ function setIntFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown
   }
 }
 
+function setNumberFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown): void {
+  const safe = typeof value === 'string' ? value : '';
+  const trimmed = safe.trim();
+  if (trimmed === '') {
+    if (docHas(doc, path)) doc.deleteIn(path);
+    return;
+  }
+
+  const parsed = Number(trimmed);
+  if (Number.isFinite(parsed)) {
+    doc.setIn(path, parsed);
+  }
+}
+
 function setDisableImageGenerationInDoc(
   doc: YamlDocument,
   path: YamlPath,
@@ -183,6 +197,13 @@ function getNonNegativeIntegerError(value: string): 'non_negative_integer' | und
   if (!trimmed) return undefined;
   if (!/^-?\d+$/.test(trimmed)) return 'non_negative_integer';
   return Number(trimmed) >= 0 ? undefined : 'non_negative_integer';
+}
+
+function getNonNegativeNumberError(value: string): 'non_negative_number' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? undefined : 'non_negative_number';
 }
 
 function getPositiveIntegerError(value: string): 'positive_integer' | undefined {
@@ -234,6 +255,9 @@ export function getVisualConfigValidationErrors(
     ),
     quotaAutoDisableResumeWeeklyThresholdPercent: getPercentRangeError(
       values.quotaAutoDisableResumeWeeklyThresholdPercent
+    ),
+    quotaAutoDisableProFiveHourCapacityAlertThreshold: getNonNegativeNumberError(
+      values.quotaAutoDisableProFiveHourCapacityAlertThreshold
     ),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
@@ -829,6 +853,7 @@ function getNextDirtyFields(
       'quotaAutoDisableWeeklyThresholdPercent',
       'quotaAutoDisableResumeFiveHourThresholdPercent',
       'quotaAutoDisableResumeWeeklyThresholdPercent',
+      'quotaAutoDisableProFiveHourCapacityAlertThreshold',
       'routingStrategy',
       'routingSessionAffinity',
       'routingSessionAffinityTTL',
@@ -1057,6 +1082,9 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     ),
     quotaAutoDisableResumeWeeklyThresholdPercent: String(
       quotaAutoDisable?.['resume-weekly-threshold-percent'] ?? '6'
+    ),
+    quotaAutoDisableProFiveHourCapacityAlertThreshold: String(
+      quotaAutoDisable?.['pro-five-hour-capacity-alert-threshold'] ?? '0'
     ),
 
     routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
@@ -1315,7 +1343,8 @@ export function applyVisualConfigValuesToYaml(
       dirtyFields.has('quotaAutoDisableThresholdPercent') ||
       dirtyFields.has('quotaAutoDisableWeeklyThresholdPercent') ||
       dirtyFields.has('quotaAutoDisableResumeFiveHourThresholdPercent') ||
-      dirtyFields.has('quotaAutoDisableResumeWeeklyThresholdPercent')
+      dirtyFields.has('quotaAutoDisableResumeWeeklyThresholdPercent') ||
+      dirtyFields.has('quotaAutoDisableProFiveHourCapacityAlertThreshold')
     ) {
       ensureMapInDoc(doc, ['quota-auto-disable']);
       doc.setIn(['quota-auto-disable', 'enabled'], values.quotaAutoDisableEnabled);
@@ -1350,6 +1379,11 @@ export function applyVisualConfigValuesToYaml(
         doc,
         ['quota-auto-disable', 'resume-weekly-threshold-percent'],
         values.quotaAutoDisableResumeWeeklyThresholdPercent
+      );
+      setNumberFromStringInDoc(
+        doc,
+        ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold'],
+        values.quotaAutoDisableProFiveHourCapacityAlertThreshold
       );
       deleteIfMapEmpty(doc, ['quota-auto-disable']);
     }

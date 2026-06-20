@@ -205,6 +205,7 @@ export function VisualConfigEditor({
   const quotaAutoDisableWeeklyThresholdInputId = useId();
   const quotaAutoDisableResumeFiveHourThresholdInputId = useId();
   const quotaAutoDisableResumeWeeklyThresholdInputId = useId();
+  const quotaAutoDisableProFiveHourCapacityAlertThresholdInputId = useId();
   const [mode, setMode] = useState<EditorMode>(() => {
     const saved = localStorage.getItem(EDITOR_MODE_STORAGE_KEY);
     return saved === 'simple' ? 'simple' : 'full';
@@ -382,6 +383,10 @@ export function VisualConfigEditor({
     t,
     validationErrors?.quotaAutoDisableResumeWeeklyThresholdPercent
   );
+  const quotaAutoDisableProFiveHourCapacityAlertThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableProFiveHourCapacityAlertThreshold
+  );
 
   const handleApiKeysTextChange = useCallback(
     (apiKeysText: string) => onChange({ apiKeysText }),
@@ -474,6 +479,7 @@ export function VisualConfigEditor({
           'quotaAutoDisableWeeklyThresholdPercent',
           'quotaAutoDisableResumeFiveHourThresholdPercent',
           'quotaAutoDisableResumeWeeklyThresholdPercent',
+          'quotaAutoDisableProFiveHourCapacityAlertThreshold',
         ]),
       },
       {
@@ -1523,6 +1529,29 @@ export function VisualConfigEditor({
                             'config_management.visual.sections.quota.auto_enable_weekly_threshold_hint'
                           )}
                           error={quotaAutoDisableResumeWeeklyThresholdError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableProFiveHourCapacityAlertThreshold">
+                        <Input
+                          id={quotaAutoDisableProFiveHourCapacityAlertThresholdInputId}
+                          label={t(
+                            'config_management.visual.sections.quota.pro_five_hour_capacity_alert_threshold'
+                          )}
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          placeholder="0"
+                          value={values.quotaAutoDisableProFiveHourCapacityAlertThreshold}
+                          onChange={(e) =>
+                            onChange({
+                              quotaAutoDisableProFiveHourCapacityAlertThreshold: e.target.value,
+                            })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.pro_five_hour_capacity_alert_threshold_hint'
+                          )}
+                          error={quotaAutoDisableProFiveHourCapacityAlertThresholdError}
                         />
                       </FieldAnchor>
                     </SectionGrid>

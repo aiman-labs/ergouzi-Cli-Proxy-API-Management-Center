@@ -316,6 +316,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     yamlKeys: ['quota-auto-disable', 'threshold-percent'],
     keywords: ['auto disable threshold', 'codex quota'],
   },
+  {
+    fieldId: 'quotaAutoDisableProFiveHourCapacityAlertThreshold',
+    sectionId: 'quota',
+    labelKey: L('sections.quota.pro_five_hour_capacity_alert_threshold'),
+    hintKey: L('sections.quota.pro_five_hour_capacity_alert_threshold_hint'),
+    yamlKeys: ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold'],
+    keywords: ['capacity alert threshold', 'codex pro quota', '5 hour capacity'],
+  },
   // ── streaming ─────────────────────────────────────────────────────────────
   {
     fieldId: 'streamingKeepaliveSeconds',
