@@ -559,6 +559,7 @@ export function AuthFilesPage() {
   const codexPlanFilterOptions = useMemo(
     () => [
       { value: 'all', label: t('auth_files.codex_plan_filter_all') },
+      { value: 'plus', label: t('auth_files.codex_plan_filter_plus') },
       { value: 'pro', label: t('auth_files.codex_plan_filter_pro') },
       { value: 'team', label: t('auth_files.codex_plan_filter_team') },
       { value: 'free', label: t('auth_files.codex_plan_filter_free') },

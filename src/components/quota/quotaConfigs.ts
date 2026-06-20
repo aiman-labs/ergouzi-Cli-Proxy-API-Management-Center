@@ -1734,6 +1734,13 @@ export const CODEX_CONFIG: QuotaConfig<
       matches: () => true,
     },
     {
+      value: 'plus',
+      labelKey: 'quota_management.codex_plan_filter_plus',
+      emptyTitleKey: 'quota_management.no_codex_plan_plus_title',
+      emptyDescKey: 'quota_management.no_codex_plan_plus_desc',
+      matches: ({ file, quota }) => resolveCodexPlanFilterValue(file, quota?.planType) === 'plus',
+    },
+    {
       value: 'pro',
       labelKey: 'quota_management.codex_plan_filter_pro',
       emptyTitleKey: 'quota_management.no_codex_plan_pro_title',

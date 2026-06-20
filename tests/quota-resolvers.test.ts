@@ -114,7 +114,17 @@ describe('resolveCodexPlanFilterValue', () => {
         },
       }),
     };
+    const plusFile: AuthFileItem = {
+      name: 'plus.json',
+      type: 'codex',
+      id_token: createJwt({
+        'https://api.openai.com/auth': {
+          plan_type: 'plus',
+        },
+      }),
+    };
 
+    expect(resolveCodexPlanFilterValue(plusFile)).toBe('plus');
     expect(resolveCodexPlanFilterValue(proFile)).toBe('pro');
     expect(resolveCodexPlanFilterValue(freeFile)).toBe('free');
     expect(resolveCodexPlanFilterValue(teamFile)).toBe('team');

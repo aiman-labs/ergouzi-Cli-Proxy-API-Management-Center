@@ -11,10 +11,11 @@ import {
 } from './parsers';
 import { isDisabledAuthFile } from './validators';
 
-export type CodexPlanFilterValue = 'all' | 'pro' | 'team' | 'free' | 'unknown';
+export type CodexPlanFilterValue = 'all' | 'plus' | 'pro' | 'team' | 'free' | 'unknown';
 export type AuthFileEnabledFilterValue = 'all' | 'enabled' | 'disabled';
 
 const CODEX_PLAN_FILTER_VALUES = new Set<Exclude<CodexPlanFilterValue, 'all' | 'unknown'>>([
+  'plus',
   'pro',
   'team',
   'free',
