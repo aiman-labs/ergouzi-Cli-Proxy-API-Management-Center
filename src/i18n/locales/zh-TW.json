@@ -1117,8 +1117,8 @@
           "auto_enable_five_hour_threshold_hint": "例如 10 表示 5 小時配額恢復到 10% 以上才允許自動啟用。",
           "auto_enable_weekly_threshold": "Weekly 恢復閾值（%）",
           "auto_enable_weekly_threshold_hint": "例如 6 表示 weekly 配額恢復到 6% 以上才允許自動啟用。",
-          "pro_five_hour_capacity_alert_threshold": "Pro 5 小時容量告警閾值",
-          "pro_five_hour_capacity_alert_threshold_hint": "統計已啟用 Pro 帳號的普通 5 小時剩餘配額，按滿額帳號等效值累加；0 表示關閉巡檢告警。"
+          "pro_five_hour_capacity_alert_threshold": "Pro 5 小時滿額帳號等效閾值",
+          "pro_five_hour_capacity_alert_threshold_hint": "統計已啟用 Pro 帳號的普通 5 小時剩餘配額，按滿額 Pro 帳號等效值累加；例如 0.6 表示低於 1 個滿額 Pro 帳號的 60% 時告警，0 表示關閉巡檢告警。"
         },
         "streaming": {
           "title": "串流傳輸設定",

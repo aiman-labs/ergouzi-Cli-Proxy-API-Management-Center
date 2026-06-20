@@ -1093,8 +1093,8 @@
           "auto_enable_five_hour_threshold_hint": "For example, 10 re-enables only after 5-hour quota recovers above 10%.",
           "auto_enable_weekly_threshold": "Weekly Recovery Threshold (%)",
           "auto_enable_weekly_threshold_hint": "For example, 6 re-enables only after weekly quota recovers above 6%.",
-          "pro_five_hour_capacity_alert_threshold": "Pro 5-Hour Capacity Alert Threshold",
-          "pro_five_hour_capacity_alert_threshold_hint": "Sums enabled Pro accounts' ordinary 5-hour remaining quota as full-account equivalents. 0 disables the patrol alert."
+          "pro_five_hour_capacity_alert_threshold": "Pro 5-Hour Full-Account Equivalent Threshold",
+          "pro_five_hour_capacity_alert_threshold_hint": "Sums enabled Pro accounts' ordinary 5-hour remaining quota as full Pro account equivalents. For example, 0.6 alerts below 60% of one full Pro account; 0 disables the patrol alert."
         },
         "streaming": {
           "title": "Streaming Configuration",
