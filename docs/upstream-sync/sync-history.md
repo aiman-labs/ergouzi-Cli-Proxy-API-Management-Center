@@ -361,3 +361,64 @@ Result:
 - `git diff --cached --check` passed.
 - Conflict-marker scan returned no matches.
 - No release or production deployment has been performed for this sync.
+
+## 2026-06-20 Upstream `v1.17.1` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi main before sync | `4653ae0` |
+| Sync branch | `sync/upstream-v1.17.1` |
+| Upstream previous baseline | `v1.17.0` / `32699c9` |
+| Upstream target tag | `v1.17.1` |
+| Upstream target commit | `ed4124f` |
+| Merge base | `32699c9` |
+| Upstream commits adopted | `1` |
+| Changed files from `v1.17.0` to `v1.17.1` | `30` |
+| Sync status | `local worktree branch; not released; not deployed` |
+
+Upstream release commit:
+
+```text
+ed4124f refactor: remove Gemini CLI references and related code
+```
+
+Sync findings:
+
+- The merge conflicted where Ergouzi had expanded quota management and visual
+  config surfaces around Codex account-pool operations.
+- Resolved by accepting upstream Gemini CLI removal while preserving Ergouzi
+  Codex/Pro quota filters, account search, enabled-state filters, batch refresh
+  counts, visual quota-governor settings, and auth-file batch operation UX.
+- Removed Gemini CLI quota/OAuth/config i18n residues from all maintained
+  locale files so the UI does not advertise removed surfaces.
+- Recorded `DEC-20260620-007` to keep future upstream syncs from resurrecting
+  pre-`v1.17.1` Gemini CLI management code by accident.
+
+Protected Ergouzi surfaces checked:
+
+| Area | Result |
+|---|---|
+| Release contract | `management.html` single-file build still succeeds through `vite-plugin-singlefile` |
+| Auth files | Filtered batch enable/disable/delete, selected-item operations, health/enabled filters, and page size `100` remain present |
+| Quota page | Codex-first ordering, quota search, plan/enabled/problem filters, bounded section scroll, and batch operation counts remain present |
+| Config panel | Codex quota governor settings remain configurable in the visual editor |
+| Deployment | No production deployment has been performed for this sync |
+
+Verification:
+
+```bash
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- `bun run type-check` passed.
+- `bun run build` passed and produced a single-file `dist/index.html`.
+- `bun run lint` passed.
+- `git diff --check` passed.
+- Conflict-marker scan returned no matches.
+- No release or production deployment has been performed for this sync.
