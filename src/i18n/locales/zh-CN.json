@@ -1128,7 +1128,9 @@
           "auto_enable_five_hour_threshold": "5 小时恢复阈值 (%)",
           "auto_enable_five_hour_threshold_hint": "例如 10 表示 5 小时额度恢复到 10% 以上才允许自动启用。",
           "auto_enable_weekly_threshold": "Weekly 恢复阈值 (%)",
-          "auto_enable_weekly_threshold_hint": "例如 6 表示 weekly 额度恢复到 6% 以上才允许自动启用。"
+          "auto_enable_weekly_threshold_hint": "例如 6 表示 weekly 额度恢复到 6% 以上才允许自动启用。",
+          "pro_five_hour_capacity_alert_threshold": "Pro 5 小时容量告警阈值",
+          "pro_five_hour_capacity_alert_threshold_hint": "统计已启用 Pro 账号的普通 5 小时剩余额度，按满额账号等效值累加；0 表示关闭巡检告警。"
         },
         "streaming": {
           "title": "流式传输配置",
@@ -1224,6 +1226,7 @@
         "validation_blocked": "请先修复表单校验错误再保存",
         "port_range": "请输入 1 到 65535 之间的有效端口",
         "non_negative_integer": "请输入非负整数",
+        "non_negative_number": "请输入非负数字",
         "positive_integer": "请输入大于 0 的整数",
         "percent_range": "请输入 1 到 100 之间的百分比整数",
         "payload_invalid_number": "请输入有效数字",

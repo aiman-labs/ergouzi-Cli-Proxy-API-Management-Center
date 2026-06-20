@@ -1115,7 +1115,9 @@
           "auto_enable_five_hour_threshold": "Порог восстановления 5 часов (%)",
           "auto_enable_five_hour_threshold_hint": "Например, 10 включает auth только после восстановления 5-часовой квоты выше 10%.",
           "auto_enable_weekly_threshold": "Недельный порог восстановления (%)",
-          "auto_enable_weekly_threshold_hint": "Например, 6 включает auth только после восстановления недельной квоты выше 6%."
+          "auto_enable_weekly_threshold_hint": "Например, 6 включает auth только после восстановления недельной квоты выше 6%.",
+          "pro_five_hour_capacity_alert_threshold": "Порог тревоги емкости Pro 5 часов",
+          "pro_five_hour_capacity_alert_threshold_hint": "Суммирует обычный 5-часовой остаток включенных Pro аккаунтов как эквивалент полных аккаунтов. 0 отключает тревогу патруля."
         },
         "streaming": {
           "title": "Настройки стриминга",
@@ -1211,6 +1213,7 @@
         "validation_blocked": "Исправьте ошибки валидации перед сохранением",
         "port_range": "Введите корректный порт от 1 до 65535",
         "non_negative_integer": "Введите неотрицательное целое число",
+        "non_negative_number": "Введите неотрицательное число",
         "positive_integer": "Введите целое число больше 0",
         "percent_range": "Введите целый процент от 1 до 100",
         "payload_invalid_number": "Введите корректное число",
