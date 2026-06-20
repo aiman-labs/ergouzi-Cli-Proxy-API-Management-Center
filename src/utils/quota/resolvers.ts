@@ -11,8 +11,14 @@ import {
 } from './parsers';
 import { isDisabledAuthFile } from './validators';
 
-export type CodexPlanFilterValue = 'all' | 'pro20x' | 'non_pro20x' | 'unknown';
+export type CodexPlanFilterValue = 'all' | 'pro' | 'team' | 'free' | 'unknown';
 export type AuthFileEnabledFilterValue = 'all' | 'enabled' | 'disabled';
+
+const CODEX_PLAN_FILTER_VALUES = new Set<Exclude<CodexPlanFilterValue, 'all' | 'unknown'>>([
+  'pro',
+  'team',
+  'free',
+]);
 
 const toRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -107,7 +113,11 @@ export function resolveCodexPlanFilterValue(
 ): Exclude<CodexPlanFilterValue, 'all'> {
   const planType = normalizePlanType(quotaPlanType) ?? resolveCodexPlanType(file);
   if (!planType) return 'unknown';
-  return planType === 'pro' ? 'pro20x' : 'non_pro20x';
+  return CODEX_PLAN_FILTER_VALUES.has(
+    planType as Exclude<CodexPlanFilterValue, 'all' | 'unknown'>
+  )
+    ? (planType as Exclude<CodexPlanFilterValue, 'all' | 'unknown'>)
+    : 'unknown';
 }
 
 export function resolveAuthFileEnabledFilterValue(

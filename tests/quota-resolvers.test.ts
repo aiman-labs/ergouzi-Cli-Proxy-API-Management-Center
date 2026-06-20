@@ -39,7 +39,7 @@ describe('resolveCodexPlanFilterValue', () => {
       }),
     };
 
-    expect(resolveCodexPlanFilterValue(file)).toBe('pro20x');
+    expect(resolveCodexPlanFilterValue(file)).toBe('pro');
   });
 
   test('classifies ChatGPT-prefixed plan type from decoded token payloads', () => {
@@ -75,9 +75,9 @@ describe('resolveCodexPlanFilterValue', () => {
       },
     };
 
-    expect(resolveCodexPlanFilterValue(directTokenFile)).toBe('pro20x');
-    expect(resolveCodexPlanFilterValue(metadataTokenFile)).toBe('non_pro20x');
-    expect(resolveCodexPlanFilterValue(attributesTokenFile)).toBe('pro20x');
+    expect(resolveCodexPlanFilterValue(directTokenFile)).toBe('pro');
+    expect(resolveCodexPlanFilterValue(metadataTokenFile)).toBe('free');
+    expect(resolveCodexPlanFilterValue(attributesTokenFile)).toBe('pro');
   });
 
   test('uses refreshed quota plan type before auth file metadata', () => {
@@ -87,7 +87,7 @@ describe('resolveCodexPlanFilterValue', () => {
       plan_type: 'free',
     };
 
-    expect(resolveCodexPlanFilterValue(file, 'pro')).toBe('pro20x');
+    expect(resolveCodexPlanFilterValue(file, 'team')).toBe('team');
   });
 
   test('classifies structured auth file plan type without filename dependency', () => {
@@ -105,8 +105,32 @@ describe('resolveCodexPlanFilterValue', () => {
         plan_type: 'free',
       },
     };
+    const teamFile: AuthFileItem = {
+      name: 'team.json',
+      type: 'codex',
+      id_token: createJwt({
+        'https://api.openai.com/auth': {
+          plan_type: 'team',
+        },
+      }),
+    };
 
-    expect(resolveCodexPlanFilterValue(proFile)).toBe('pro20x');
-    expect(resolveCodexPlanFilterValue(freeFile)).toBe('non_pro20x');
+    expect(resolveCodexPlanFilterValue(proFile)).toBe('pro');
+    expect(resolveCodexPlanFilterValue(freeFile)).toBe('free');
+    expect(resolveCodexPlanFilterValue(teamFile)).toBe('team');
+  });
+
+  test('does not collapse unknown plan types into Free or Team', () => {
+    const file: AuthFileItem = {
+      name: 'enterprise.json',
+      type: 'codex',
+      id_token: createJwt({
+        'https://api.openai.com/auth': {
+          plan_type: 'enterprise',
+        },
+      }),
+    };
+
+    expect(resolveCodexPlanFilterValue(file)).toBe('unknown');
   });
 });

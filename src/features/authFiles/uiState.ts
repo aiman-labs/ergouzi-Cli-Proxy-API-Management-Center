@@ -8,7 +8,7 @@ export const AUTH_FILES_ERROR_TYPE_FILTERS = [
   'other',
 ] as const;
 export const AUTH_FILES_SUCCESS_COUNT_FILTERS = ['all', 'positive', 'zero'] as const;
-export const AUTH_FILES_CODEX_PLAN_FILTERS = ['all', 'pro20x', 'non_pro20x', 'unknown'] as const;
+export const AUTH_FILES_CODEX_PLAN_FILTERS = ['all', 'pro', 'team', 'free', 'unknown'] as const;
 
 export type AuthFilesSortMode = (typeof AUTH_FILES_SORT_MODES)[number];
 export type AuthFilesHealthFilter = (typeof AUTH_FILES_HEALTH_FILTERS)[number];
