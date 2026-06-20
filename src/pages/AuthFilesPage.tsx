@@ -159,7 +159,6 @@ export function AuthFilesPage() {
   const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
   const claudeQuota = useQuotaStore((state) => state.claudeQuota);
   const codexQuota = useQuotaStore((state) => state.codexQuota);
-  const geminiCliQuota = useQuotaStore((state) => state.geminiCliQuota);
   const kimiQuota = useQuotaStore((state) => state.kimiQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
   const pageTransitionLayer = usePageTransitionLayer();
@@ -283,11 +282,10 @@ export function AuthFilesPage() {
     appendIssues(antigravityQuota);
     appendIssues(claudeQuota);
     appendIssues(codexQuota);
-    appendIssues(geminiCliQuota);
     appendIssues(kimiQuota);
     appendIssues(xaiQuota);
     return issues;
-  }, [antigravityQuota, claudeQuota, codexQuota, geminiCliQuota, kimiQuota, t, xaiQuota]);
+  }, [antigravityQuota, claudeQuota, codexQuota, kimiQuota, t, xaiQuota]);
 
   const getFileProblemMessage = useCallback(
     (file: AuthFileItem) => getAuthFileStatusMessage(file) || quotaIssueByName.get(file.name) || '',

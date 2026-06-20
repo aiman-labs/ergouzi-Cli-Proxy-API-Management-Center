@@ -126,7 +126,6 @@ export type VisualConfigValues = {
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
   wsAuth: boolean;
-  enableGeminiCliEndpoint: boolean;
   antigravitySignatureCacheEnabled: boolean;
   antigravitySignatureBypassStrict: boolean;
   claudeHeaderUserAgent: string;
@@ -200,7 +199,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   routingSessionAffinity: false,
   routingSessionAffinityTTL: '',
   wsAuth: false,
-  enableGeminiCliEndpoint: false,
   antigravitySignatureCacheEnabled: true,
   antigravitySignatureBypassStrict: false,
   claudeHeaderUserAgent: '',

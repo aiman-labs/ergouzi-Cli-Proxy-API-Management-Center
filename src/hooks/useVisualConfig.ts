@@ -808,7 +808,6 @@ function getNextDirtyFields(
       'disableImageGeneration',
       'gptImage2BaseModel',
       'authAutoRefreshWorkers',
-      'enableGeminiCliEndpoint',
       'antigravitySignatureCacheEnabled',
       'antigravitySignatureBypassStrict',
       'claudeHeaderUserAgent',
@@ -1028,7 +1027,6 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
       typeof parsed['gpt-image-2-base-model'] === 'string' ? parsed['gpt-image-2-base-model'] : '',
     authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
     wsAuth: Boolean(parsed['ws-auth']),
-    enableGeminiCliEndpoint: Boolean(parsed['enable-gemini-cli-endpoint']),
     antigravitySignatureCacheEnabled: Boolean(
       parsed['antigravity-signature-cache-enabled'] ?? true
     ),
@@ -1232,7 +1230,6 @@ export function applyVisualConfigValuesToYaml(
     }
     setIntFromStringInDoc(doc, ['auth-auto-refresh-workers'], values.authAutoRefreshWorkers);
     setBooleanInDoc(doc, ['ws-auth'], values.wsAuth);
-    setBooleanInDoc(doc, ['enable-gemini-cli-endpoint'], values.enableGeminiCliEndpoint);
     if (
       docHas(doc, ['antigravity-signature-cache-enabled']) ||
       !values.antigravitySignatureCacheEnabled

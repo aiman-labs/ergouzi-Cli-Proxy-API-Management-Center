@@ -111,3 +111,22 @@ Review notes: If the latest GitHub release is correct but production serves an
 old page, refresh `/CLIProxyAPI/static/management.html` in the CPA container and
 verify the served SHA-256. Do not change `config.yaml` or restart services just
 to pick up a CPAMC UI-only release.
+
+## DEC-20260620-007: Accept upstream Gemini CLI management removal
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | quota / oauth / visual-config |
+| Upstream base | `v1.17.1` / `ed4124f` |
+| Ergouzi source | `4653ae0` |
+
+Final decision: CPAMC adopts upstream `v1.17.1` removal of Gemini CLI
+management surfaces. Do not keep Gemini CLI quota cards, OAuth login labels,
+visual-config endpoint toggles, quota store fields, or auth-file issue
+injection paths when syncing this release.
+
+Review notes: Preserve Ergouzi-owned Codex/Pro quota management and auth-file
+batch operation UX while removing Gemini CLI-specific UI and config residues.
+If CPA reintroduces Gemini CLI as a supported runtime later, treat it as a new
+feature design instead of resurrecting stale pre-`v1.17.1` CPAMC code.
