@@ -17,6 +17,7 @@ import {
   XAI_CONFIG,
 } from '@/components/quota';
 import type { AuthFileItem } from '@/types';
+import { mergeAuthFileSnapshots } from '@/utils/authFiles';
 import styles from './QuotaPage.module.scss';
 
 const QUOTA_PAGE_SIZE_STORAGE_KEY = 'quota-management:page-size';
@@ -62,6 +63,12 @@ export function QuotaPage() {
       setLoading(false);
     }
   }, [t]);
+
+  const syncAuthFilesSnapshot = useCallback(async () => {
+    const data = await authFilesApi.list();
+    const refreshedFiles = data?.files || [];
+    setFiles((currentFiles) => mergeAuthFileSnapshots(currentFiles, refreshedFiles));
+  }, []);
 
   useHeaderRefresh(loadFiles);
 
@@ -158,6 +165,7 @@ export function QuotaPage() {
         pageSizeOverride={pageSize}
         enableStatusActions
         onFilesChange={setFiles}
+        onQuotaRefreshComplete={syncAuthFilesSnapshot}
       />
       <QuotaSection
         config={CLAUDE_CONFIG}

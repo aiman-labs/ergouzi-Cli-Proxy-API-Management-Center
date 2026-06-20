@@ -150,6 +150,7 @@ interface QuotaSectionProps<TState extends QuotaStatusState, TData> {
   pageSizeOverride?: number;
   enableStatusActions?: boolean;
   onFilesChange?: (updater: (files: AuthFileItem[]) => AuthFileItem[]) => void;
+  onQuotaRefreshComplete?: () => Promise<void> | void;
 }
 
 export function QuotaSection<TState extends QuotaStatusState, TData>({
@@ -160,6 +161,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   pageSizeOverride,
   enableStatusActions = false,
   onFilesChange,
+  onQuotaRefreshComplete,
 }: QuotaSectionProps<TState, TData>) {
   const { t } = useTranslation();
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
@@ -326,12 +328,26 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     }
   }, [effectiveViewMode, columns, filteredFiles.length, pageSizeOverride, setPageSize]);
 
+  const syncFilesAfterQuotaRefresh = useCallback(async () => {
+    if (!onQuotaRefreshComplete) return;
+
+    try {
+      await onQuotaRefreshComplete();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t('common.unknown_error');
+      showNotification(`${t('notification.refresh_failed')}: ${message}`, 'warning');
+    }
+  }, [onQuotaRefreshComplete, showNotification, t]);
+
   const refreshQuotaTargets = useCallback(
     (targets: AuthFileItem[], scope: 'page' | 'all') => {
       if (targets.length === 0) return;
-      loadQuota(targets, scope, setLoading);
+      void (async () => {
+        await loadQuota(targets, scope, setLoading);
+        await syncFilesAfterQuotaRefresh();
+      })();
     },
-    [loadQuota, setLoading]
+    [loadQuota, setLoading, syncFilesAfterQuotaRefresh]
   );
 
   const handleRefreshCurrentPage = useCallback(() => {
@@ -398,9 +414,11 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
           t('auth_files.quota_refresh_failed', { name: file.name, message }),
           'error'
         );
+      } finally {
+        await syncFilesAfterQuotaRefresh();
       }
     },
-    [config, disabled, quota, setQuota, showNotification, t]
+    [config, disabled, quota, setQuota, showNotification, syncFilesAfterQuotaRefresh, t]
   );
 
   const resetQuotaForFile = useCallback(
