@@ -67,3 +67,66 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify-discord:
+    name: Notify Discord
+    runs-on: ubuntu-latest
+    if: ${{ always() && startsWith(github.ref, 'refs/tags/v') }}
+    needs:
+      - build-and-release
+    steps:
+      - name: Notify admin channel
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_ADMIN_WEBHOOK_URL }}
+          NEEDS_JSON: ${{ toJson(needs) }}
+          RELEASE_KIND: CPAMC release
+          RELEASE_ARTIFACTS: management.html
+          REPOSITORY: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${DISCORD_WEBHOOK_URL:-}" ]]; then
+            echo "DISCORD_ADMIN_WEBHOOK_URL is not set; skipping Discord notification."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          needs = json.loads(os.environ["NEEDS_JSON"])
+          bad_jobs = {name: data.get("result") for name, data in needs.items() if data.get("result") != "success"}
+          ok = not bad_jobs
+          title = f"{'✅' if ok else '❌'} {os.environ['RELEASE_KIND']} {'完成' if ok else '失败'}"
+          lines = [
+              title,
+              f"仓库：{os.environ['REPOSITORY']}",
+              f"Tag：{os.environ['TAG_NAME']}",
+              f"产物：{os.environ['RELEASE_ARTIFACTS']}",
+              f"Release：{os.environ['RELEASE_URL']}",
+              f"Workflow：{os.environ['RUN_URL']}",
+          ]
+          if bad_jobs:
+              failed = ", ".join(f"{name}={result}" for name, result in sorted(bad_jobs.items()))
+              lines.append(f"异常 job：{failed}")
+
+          payload = {
+              "content": "\n".join(lines),
+              "allowed_mentions": {"parse": []},
+          }
+          request = urllib.request.Request(
+              os.environ["DISCORD_WEBHOOK_URL"],
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=15) as response:
+                  if response.status not in (200, 204):
+                      print(f"Discord notification returned HTTP {response.status}; continuing.", file=sys.stderr)
+          except Exception:
+              print("Discord notification failed; continuing.", file=sys.stderr)
+          PY
