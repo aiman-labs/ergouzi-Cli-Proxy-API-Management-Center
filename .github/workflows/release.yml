@@ -95,6 +95,7 @@ jobs:
           import json
           import os
           import sys
+          import urllib.error
           import urllib.request
 
           needs = json.loads(os.environ["NEEDS_JSON"])
@@ -120,13 +121,22 @@ jobs:
           request = urllib.request.Request(
               os.environ["DISCORD_WEBHOOK_URL"],
               data=json.dumps(payload).encode("utf-8"),
-              headers={"Content-Type": "application/json"},
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "ErgouziReleaseBot/1.0 (+https://github.com/aiman-labs)",
+              },
               method="POST",
           )
           try:
               with urllib.request.urlopen(request, timeout=15) as response:
                   if response.status not in (200, 204):
-                      print(f"Discord notification returned HTTP {response.status}; continuing.", file=sys.stderr)
-          except Exception:
-              print("Discord notification failed; continuing.", file=sys.stderr)
+                      body = response.read().decode("utf-8", "replace")[:500]
+                      raise RuntimeError(f"Discord notification returned HTTP {response.status}: {body}")
+          except urllib.error.HTTPError as exc:
+              body = exc.read().decode("utf-8", "replace")[:500]
+              print(f"Discord notification failed with HTTP {exc.code}: {body}", file=sys.stderr)
+              raise
+          except Exception as exc:
+              print(f"Discord notification failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+              raise
           PY
