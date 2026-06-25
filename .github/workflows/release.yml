@@ -101,22 +101,25 @@ jobs:
           needs = json.loads(os.environ["NEEDS_JSON"])
           bad_jobs = {name: data.get("result") for name, data in needs.items() if data.get("result") != "success"}
           ok = not bad_jobs
-          title = f"{'✅' if ok else '❌'} {os.environ['RELEASE_KIND']} {'完成' if ok else '失败'}"
+          title = f"{'✅' if ok else '❌'} **{os.environ['RELEASE_KIND']} {'完成' if ok else '失败'}**"
           lines = [
+              "@everyone",
               title,
-              f"仓库：{os.environ['REPOSITORY']}",
-              f"Tag：{os.environ['TAG_NAME']}",
-              f"产物：{os.environ['RELEASE_ARTIFACTS']}",
-              f"Release：{os.environ['RELEASE_URL']}",
-              f"Workflow：{os.environ['RUN_URL']}",
+              "",
+              f"- **仓库**：`{os.environ['REPOSITORY']}`",
+              f"- **Tag**：`{os.environ['TAG_NAME']}`",
+              f"- **产物**：{os.environ['RELEASE_ARTIFACTS']}",
+              f"- **Release**：[打开 Release]({os.environ['RELEASE_URL']})",
+              f"- **Workflow**：[查看 Workflow]({os.environ['RUN_URL']})",
           ]
           if bad_jobs:
               failed = ", ".join(f"{name}={result}" for name, result in sorted(bad_jobs.items()))
-              lines.append(f"异常 job：{failed}")
+              lines.append("")
+              lines.append(f"- **异常 job**：`{failed}`")
 
           payload = {
               "content": "\n".join(lines),
-              "allowed_mentions": {"parse": []},
+              "allowed_mentions": {"parse": ["everyone"]},
           }
           request = urllib.request.Request(
               os.environ["DISCORD_WEBHOOK_URL"],
