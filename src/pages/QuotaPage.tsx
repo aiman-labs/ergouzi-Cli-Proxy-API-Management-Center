@@ -163,6 +163,7 @@ export function QuotaPage() {
         disabled={disableControls}
         pageSizeOverride={pageSize}
         enableStatusActions
+        showCodexResetExpiryToggle
         onFilesChange={setFiles}
         onQuotaRefreshComplete={syncAuthFilesSnapshot}
       />

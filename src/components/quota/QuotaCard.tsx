@@ -56,7 +56,10 @@ export function QuotaProgressBar({
 export interface QuotaRenderHelpers {
   styles: typeof styles;
   QuotaProgressBar: (props: QuotaProgressBarProps) => ReactElement;
+  showCodexResetCreditExpiries?: boolean;
 }
+
+type QuotaRenderOptions = Pick<QuotaRenderHelpers, 'showCodexResetCreditExpiries'>;
 
 interface QuotaCardProps<TState extends QuotaStatusState> {
   item: AuthFileItem;
@@ -70,6 +73,7 @@ interface QuotaCardProps<TState extends QuotaStatusState> {
   onRefresh?: () => void;
   resetQuotaAction?: ReactNode;
   statusAction?: ReactNode;
+  renderOptions?: QuotaRenderOptions;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
 }
 
@@ -85,6 +89,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
   onRefresh,
   resetQuotaAction,
   statusAction,
+  renderOptions,
   renderQuotaItems
 }: QuotaCardProps<TState>) {
   const { t } = useTranslation();
@@ -150,7 +155,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
             })}
           </div>
         ) : quota ? (
-          renderQuotaItems(quota, t, { styles, QuotaProgressBar })
+          renderQuotaItems(quota, t, { styles, QuotaProgressBar, ...renderOptions })
         ) : (
           <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
         )}

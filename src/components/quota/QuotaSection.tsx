@@ -149,6 +149,7 @@ interface QuotaSectionProps<TState extends QuotaStatusState, TData> {
   disabled: boolean;
   pageSizeOverride?: number;
   enableStatusActions?: boolean;
+  showCodexResetExpiryToggle?: boolean;
   onFilesChange?: (updater: (files: AuthFileItem[]) => AuthFileItem[]) => void;
   onQuotaRefreshComplete?: () => Promise<void> | void;
 }
@@ -160,6 +161,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   disabled,
   pageSizeOverride,
   enableStatusActions = false,
+  showCodexResetExpiryToggle = false,
   onFilesChange,
   onQuotaRefreshComplete,
 }: QuotaSectionProps<TState, TData>) {
@@ -182,6 +184,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
+  const [showCodexResetCreditExpiries, setShowCodexResetCreditExpiries] = useState(false);
 
   const providerFiles = useMemo(
     () => sortByNewestImport(files.filter((file) => config.filterFn(file))),
@@ -946,6 +949,23 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             </Button>
           </div>
         </div>
+        {showCodexResetExpiryToggle && (
+          <div className={styles.quotaDisplayOptionsBar}>
+            <div className={styles.sectionScopeSummary}>
+              <strong>{t('quota_management.display_options_label')}</strong>
+              <span>{t('quota_management.show_codex_reset_expiry_hint')}</span>
+            </div>
+            <div className={styles.quotaDisplayToggle}>
+              <ToggleSwitch
+                checked={showCodexResetCreditExpiries}
+                onChange={setShowCodexResetCreditExpiries}
+                disabled={disabled}
+                label={t('quota_management.show_codex_reset_expiry')}
+                ariaLabel={t('quota_management.show_codex_reset_expiry')}
+              />
+            </div>
+          </div>
+        )}
       </div>
       <div className={styles.sectionScrollBody}>
         {filteredFiles.length === 0 ? (
@@ -1032,6 +1052,11 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                     onRefresh={() => void refreshQuotaForFile(item)}
                     resetQuotaAction={resetQuotaAction}
                     statusAction={statusAction}
+                    renderOptions={
+                      showCodexResetExpiryToggle
+                        ? { showCodexResetCreditExpiries }
+                        : undefined
+                    }
                     renderQuotaItems={config.renderQuotaItems}
                   />
                 );

@@ -141,6 +141,33 @@
   }
 }
 
+.quotaDisplayOptionsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 14%, var(--border-color));
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--bg-secondary) 58%, transparent);
+
+  @include mobile {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.quotaDisplayToggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+
+  @include mobile {
+    justify-content: flex-start;
+  }
+}
+
 .sectionSearchInput,
 .sectionFilterSelect {
   width: 100%;
