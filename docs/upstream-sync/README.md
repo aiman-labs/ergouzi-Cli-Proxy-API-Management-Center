@@ -21,6 +21,8 @@ future sync becomes large enough to need a pure upstream review base.
 ## Rules
 
 - Publish `management.html` from this fork.
+- Keep this fork public. Production CPA downloads `management.html` from this
+  repository's GitHub latest release without a GitHub token.
 - Never open pull requests against the upstream repository. All Ergouzi sync PRs
   must target `aiman-labs/ergouzi-Cli-Proxy-API-Management-Center`; use explicit
   commands such as
@@ -30,6 +32,11 @@ future sync becomes large enough to need a pure upstream review base.
 - Protect Ergouzi auth-file operations and account-pool UX.
 - Treat CPAMC-only deployments as static asset refreshes; do not restart New API
   or CLIProxyAPI unless the server fork/config changed.
+- Formal Ergouzi CPAMC tags must have GitHub Releases, and the release asset
+  must be named exactly `management.html`.
+- Preserve plugin-store source awareness in the UI. The same plugin ID can
+  appear from official and Ergouzi registries; operators must be able to
+  distinguish by source/repository.
 - Keep i18n keys aligned across zh-CN, zh-TW, en, and ru.
 - Record only non-obvious choices as DEC entries; do not document trivial merges.
 - Before closing a sync, run type-check, build, lint, `git diff --check`, and a conflict-marker scan.
