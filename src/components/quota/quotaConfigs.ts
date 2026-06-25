@@ -1015,7 +1015,7 @@ const renderCodexItems = (
     nodes.push(h('div', { key: 'plan', className: styleMap.codexPlan }, ...planNodes));
   }
 
-  if (rateLimitResetCredits.length > 0) {
+  if (helpers.showCodexResetCreditExpiries && rateLimitResetCredits.length > 0) {
     nodes.push(
       h(
         'div',
@@ -1046,7 +1046,7 @@ const renderCodexItems = (
         )
       )
     );
-  } else if (rateLimitResetCreditsError) {
+  } else if (helpers.showCodexResetCreditExpiries && rateLimitResetCreditsError) {
     nodes.push(
       h(
         'div',
