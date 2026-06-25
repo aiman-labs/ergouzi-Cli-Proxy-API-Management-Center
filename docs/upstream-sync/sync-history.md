@@ -422,3 +422,68 @@ Result:
 - `git diff --check` passed.
 - Conflict-marker scan returned no matches.
 - No release or production deployment has been performed for this sync.
+
+## 2026-06-25 Upstream `v1.17.5` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi main before sync | `5dcd268` |
+| Sync branch | `sync/upstream-v1.17.5` |
+| Upstream previous baseline | `v1.17.1` / `ed4124f` |
+| Upstream target tag | `v1.17.5` |
+| Upstream target commit | `e144cf3` |
+| Merge base | `ed4124f` |
+| Upstream commits adopted | `22` |
+| Changed files from `v1.17.1` to `v1.17.5` | `49` |
+| Sync status | `local worktree branch; not released; not deployed` |
+
+Upstream release themes:
+
+- Added APIKEY.FUN provider management, quick-start UI, sponsor key usage check,
+  and related provider workbench refinements.
+- Added plugin OAuth support and resource UI refinements.
+- Added Codex reset-credit expiry display and GMT+8 expiry label localization.
+- Updated quota config builders, quota types, provider logos, dashboard shortcut
+  cards, and maintained locale files.
+
+Sync findings:
+
+- The merge applied cleanly with no content conflicts.
+- Accepted upstream APIKEY.FUN provider management and plugin OAuth UI changes
+  because they do not replace Ergouzi-owned Codex account-pool operations.
+- Accepted upstream Codex reset-credit expiry display. It is additive to the
+  existing Ergouzi Codex quota cards and does not change batch refresh or
+  auto-governor semantics.
+- Preserved the CPAMC release asset policy documentation added before this sync.
+- No new DEC entry was required because no non-obvious conflict decision was
+  made.
+
+Protected Ergouzi surfaces checked:
+
+| Area | Result |
+|---|---|
+| Release contract | `management.html` single-file build remains the release artifact contract |
+| Auth files | Filtered batch enable/disable/delete, selected-item scope, health/enabled/error filters, and page size `100` remain present |
+| Quota page | Codex-first ordering, account search, plan/enabled/problem filters, bounded section scroll, batch operation counts, and batch refresh remain present |
+| Codex quota cards | Pro 20x / Pro 5x plan labels remain present; upstream reset-credit expiry display is additive |
+| Config panel | Codex quota governor settings remain configurable in the visual editor |
+| Deployment | No production deployment has been performed for this sync |
+
+Verification:
+
+```bash
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- `bun run type-check` passed.
+- `bun run build` passed and produced a single-file `dist/index.html`.
+- `bun run lint` passed.
+- `git diff --check` passed.
+- Conflict-marker scan returned no matches.
+- No release or production deployment has been performed for this sync.
