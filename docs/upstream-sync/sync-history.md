@@ -487,3 +487,73 @@ Result:
 - `git diff --check` passed.
 - Conflict-marker scan returned no matches.
 - No release or production deployment has been performed for this sync.
+
+## 2026-06-26 Upstream `v1.17.6` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `bec0dce` |
+| Sync branch | `sync/upstream-v1.17.6` |
+| Upstream previous baseline | `v1.17.5` / `e144cf3` |
+| Upstream target tag | `v1.17.6` |
+| Upstream target commit | `d7847da` |
+| Merge base | `e144cf3` |
+| Upstream commits adopted | `1` |
+| Changed files from `v1.17.5` to `v1.17.6` | `1` |
+| Local sync working diff | `1 file changed, 11 insertions(+), 2 deletions(-)` |
+| Pre-merge latest release recheck | `v1.17.6` |
+| Sync status | `local sync prepared; not released; not deployed` |
+
+Upstream release commit:
+
+```text
+d7847da feat: enhance plugin normalization to support legacy OAuth providers
+```
+
+Sync findings:
+
+- Accepted upstream's legacy OAuth provider normalization in
+  `src/services/api/plugins.ts`, which lets older plugin list payloads infer the
+  OAuth provider from plugin ID when `supports_oauth` is true and
+  `oauth_provider` is absent.
+- The tag merge conflicted with Ergouzi's current Codex reset-credit UI changes
+  in quota config, reset-credit parsing, and locale files because the previous
+  Ergouzi release had already modified those surfaces. The final sync keeps
+  Ergouzi's current behavior unchanged:
+  - Codex reset consumes the first available reset credit and reports
+    `reset_credits_unavailable` when none exists.
+  - Codex reset-credit expiry rows remain hidden by default unless
+    `showCodexResetCreditExpiries` is enabled.
+  - Reset-credit parser still rejects available credits without an ID.
+- No new DEC entry was required because the only upstream functional change
+  adopted was narrow and the Codex conflict resolution followed the already
+  released Ergouzi CPAMC `v1.17.5-ergouzi.2` behavior.
+
+Protected Ergouzi surfaces checked:
+
+| Area | Result |
+|---|---|
+| Release contract | `management.html` single-file build remains the release artifact contract |
+| Auth files | Filtered batch enable/disable/delete, selected-item scope, health/enabled/error filters, and page size `100` remain present |
+| Quota page | Codex-first ordering, account search, plan/enabled/problem filters, bounded section scroll, batch operation counts, and batch refresh remain present |
+| Codex quota cards | Reset-credit expiry details remain hidden by default behind the display switch |
+| Deployment | No production deployment has been performed for this sync |
+
+Verification:
+
+```bash
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- `bun run type-check` passed.
+- `bun run build` passed and produced a single-file `dist/index.html`.
+- `bun run lint` passed.
+- `git diff --check` passed.
+- Conflict-marker scan returned no matches.
+- No release or production deployment has been performed for this sync.
