@@ -62,8 +62,11 @@ const normalizeCredit = (value: unknown): CodexResetCredit | null => {
   const expiresAt = normalizeStringValue(record.expires_at ?? record.expiresAt);
   if (!expiresAt) return null;
 
+  const id = normalizeStringValue(record.id);
+  if (!id) return null;
+
   return {
-    id: normalizeStringValue(record.id) ?? '',
+    id,
     status: normalizeStringValue(record.status) ?? '',
     grantedAt: normalizeStringValue(record.granted_at ?? record.grantedAt) ?? '',
     expiresAt,

@@ -538,6 +538,7 @@
     "reset_credit_number": "第 {{index}} 次",
     "reset_credits_expiry_failed": "主動重置過期時間取得失敗：{{message}}",
     "reset_credits_invalid_payload": "主動重置過期時間回應格式無效",
+    "reset_credits_unavailable": "沒有可用的主動重置次數",
     "reset_button": "重置配額",
     "reset_confirm_title": "重置 Codex 配額",
     "reset_confirm_message": "將消耗 1 次主動重置次數來重置「{{name}}」的 Codex 配額。是否繼續？",

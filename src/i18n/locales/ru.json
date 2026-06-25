@@ -534,6 +534,7 @@
     "reset_credit_number": "Сброс {{index}}",
     "reset_credits_expiry_failed": "Не удалось загрузить срок действия ручных сбросов: {{message}}",
     "reset_credits_invalid_payload": "Недопустимый ответ о сроке действия ручных сбросов",
+    "reset_credits_unavailable": "Нет доступного ручного сброса",
     "plan_plus": "Plus",
     "plan_team": "Team",
     "plan_free": "Free",

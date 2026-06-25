@@ -702,6 +702,15 @@ const consumeCodexRateLimitResetCredit = async (
   }
 
   const requestHeader = buildCodexRequestHeader(file);
+  const resetCreditsData = await fetchCodexResetCredits(authIndex, requestHeader, t);
+  if (resetCreditsData.error) {
+    throw new Error(resetCreditsData.error);
+  }
+
+  const resetCreditId = resetCreditsData.credits[0]?.id;
+  if (!resetCreditId) {
+    throw new Error(t('codex_quota.reset_credits_unavailable'));
+  }
 
   const result = await apiCallApi.request({
     authIndex,
@@ -709,6 +718,7 @@ const consumeCodexRateLimitResetCredit = async (
     url: CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
     header: requestHeader,
     data: JSON.stringify({
+      credit_id: resetCreditId,
       redeem_request_id: createCodexRedeemRequestId(),
     }),
   });
