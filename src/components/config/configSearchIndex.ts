@@ -315,7 +315,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     labelKey: L('sections.quota.pro_five_hour_capacity_alert_threshold'),
     hintKey: L('sections.quota.pro_five_hour_capacity_alert_threshold_hint'),
     yamlKeys: ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold'],
-    keywords: ['capacity alert threshold', 'codex pro plus quota', '5 hour capacity'],
+    keywords: ['capacity alert threshold', 'codex pro quota', 'codex plus quota', '5 hour capacity'],
   },
   // ── streaming ─────────────────────────────────────────────────────────────
   {
