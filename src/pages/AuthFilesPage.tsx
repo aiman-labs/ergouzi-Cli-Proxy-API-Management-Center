@@ -28,7 +28,6 @@ import { copyToClipboard } from '@/utils/clipboard';
 import {
   MAX_CARD_PAGE_SIZE,
   MIN_CARD_PAGE_SIZE,
-  QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
   getAuthFileIcon,
   getAuthFileStatusMessage,
@@ -37,7 +36,6 @@ import {
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   parsePriorityValue,
-  type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
@@ -172,6 +170,7 @@ export function AuthFilesPage() {
   const [successCountFilter, setSuccessCountFilter] = useState<AuthFilesSuccessCountFilter>('all');
   const [codexPlanFilter, setCodexPlanFilter] = useState<AuthFilesCodexPlanFilter>('all');
   const [compactMode, setCompactMode] = useState(false);
+  const [showQuotaDetails, setShowQuotaDetails] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSizeByMode, setPageSizeByMode] = useState({
@@ -258,11 +257,6 @@ export function AuthFilesPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const normalizedFilter = normalizeProviderKey(String(filter));
-  const quotaFilterType: QuotaProviderType | null = QUOTA_PROVIDER_TYPES.has(
-    normalizedFilter as QuotaProviderType
-  )
-    ? (normalizedFilter as QuotaProviderType)
-    : null;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
 
   const quotaIssueByName = useMemo(() => {
@@ -325,6 +319,9 @@ export function AuthFilesPage() {
       if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
+      if (typeof persisted.showQuotaDetails === 'boolean') {
+        setShowQuotaDetails(persisted.showQuotaDetails);
+      }
       if (typeof persisted.search === 'string') {
         setSearch(persisted.search);
       }
@@ -366,6 +363,7 @@ export function AuthFilesPage() {
       successCountFilter,
       codexPlanFilter,
       compactMode,
+      showQuotaDetails,
       search,
       page,
       pageSize,
@@ -385,6 +383,7 @@ export function AuthFilesPage() {
     pageSize,
     pageSizeByMode,
     search,
+    showQuotaDetails,
     sortMode,
     successCountFilter,
     uiStateHydrated,
@@ -1090,6 +1089,18 @@ export function AuthFilesPage() {
                         }
                       />
                     </div>
+                    <div className={styles.filterToggleCard}>
+                      <ToggleSwitch
+                        checked={showQuotaDetails}
+                        onChange={setShowQuotaDetails}
+                        ariaLabel={t('auth_files.show_quota_details_label')}
+                        label={
+                          <span className={styles.filterToggleLabel}>
+                            {t('auth_files.show_quota_details_label')}
+                          </span>
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1231,7 +1242,7 @@ export function AuthFilesPage() {
               />
             ) : (
               <div
-                className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''} ${compactMode ? styles.fileGridCompact : ''}`}
+                className={`${styles.fileGrid} ${showQuotaDetails ? styles.fileGridQuotaManaged : ''} ${compactMode ? styles.fileGridCompact : ''}`}
               >
                 {displayPageItems.map((file) => (
                   <AuthFileCard
@@ -1243,7 +1254,7 @@ export function AuthFilesPage() {
                     disableControls={disableControls}
                     deleting={deleting}
                     statusUpdating={statusUpdating}
-                    quotaFilterType={quotaFilterType}
+                    showQuotaDetails={showQuotaDetails}
                     statusBarCache={statusBarCache}
                     onShowModels={showModels}
                     onDownload={handleDownload}

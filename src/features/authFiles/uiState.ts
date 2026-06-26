@@ -35,6 +35,7 @@ export type AuthFilesUiState = {
   successCountFilter?: AuthFilesSuccessCountFilter;
   codexPlanFilter?: AuthFilesCodexPlanFilter;
   compactMode?: boolean;
+  showQuotaDetails?: boolean;
   search?: string;
   page?: number;
   pageSize?: number;

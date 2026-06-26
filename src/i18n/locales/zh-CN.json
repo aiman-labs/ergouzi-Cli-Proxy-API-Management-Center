@@ -308,6 +308,7 @@
     "enabled_filter_disabled": "已停用",
     "display_options_label": "显示选项",
     "compact_mode_label": "简略模式",
+    "show_quota_details_label": "显示卡片额度",
     "sort_label": "排序",
     "sort_default": "默认",
     "sort_az": "A-Z 名称",

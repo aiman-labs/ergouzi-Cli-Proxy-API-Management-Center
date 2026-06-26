@@ -307,6 +307,7 @@
     "enabled_filter_disabled": "Отключено",
     "display_options_label": "Параметры отображения",
     "compact_mode_label": "Компактный режим",
+    "show_quota_details_label": "Показывать квоты карточек",
     "sort_label": "Сортировка",
     "sort_default": "По умолчанию",
     "sort_az": "A-Z Имя",

@@ -47,7 +47,7 @@ export type AuthFileCardProps = {
   disableControls: boolean;
   deleting: string | null;
   statusUpdating: Record<string, boolean>;
-  quotaFilterType: QuotaProviderType | null;
+  showQuotaDetails: boolean;
   statusBarCache: Map<string, AuthFileStatusBarData>;
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
@@ -73,7 +73,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     disableControls,
     deleting,
     statusUpdating,
-    quotaFilterType,
+    showQuotaDetails,
     statusBarCache,
     onShowModels,
     onDownload,
@@ -96,10 +96,10 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const typeLabel = getTypeLabel(t, providerKey);
   const providerIcon = getAuthFileIcon(providerKey, resolvedTheme);
 
-  const quotaType =
-    quotaFilterType && resolveQuotaType(file) === quotaFilterType ? quotaFilterType : null;
+  const resolvedQuotaType = resolveQuotaType(file);
+  const quotaType = showQuotaDetails ? resolvedQuotaType : null;
 
-  const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly && !compact;
+  const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly;
 
   const providerCardClass =
     quotaType === 'antigravity'
