@@ -423,6 +423,79 @@ Result:
 - Conflict-marker scan returned no matches.
 - No release or production deployment has been performed for this sync.
 
+## 2026-06-26 Upstream `v1.17.7` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `138d0a3` |
+| Sync branch | `sync/upstream-v1.17.7` |
+| Upstream previous baseline | `v1.17.6` / `d7847da` |
+| Upstream target tag | `v1.17.7` |
+| Upstream target commit | `acf432b` |
+| Merge base | `d7847da` |
+| Upstream commits adopted | `4` |
+| Changed files from `v1.17.6` to `v1.17.7` | `105` |
+| Local sync working diff | `97 files changed, 2523 insertions(+), 1341 deletions(-)` |
+| Pre-merge latest release recheck | `v1.17.7` |
+| Sync status | `local sync prepared; not released; not deployed` |
+
+Upstream release commits:
+
+```text
+c37b026 Refactor code for improved readability and consistency
+2ec1a71 feat: update AuthFiles status filter modes and localization for improved functionality
+213671b Refactor AuthFilesStatusFilterCard and related components for improved styling and functionality
+acf432b feat: update trackWrapper styles for improved thumb positioning
+```
+
+Sync findings:
+
+- Accepted upstream's shared UI, provider-workbench, API client, i18n bootstrap,
+  style, recent-request, quota utility, and layout refinements.
+- Accepted the new upstream `AuthFilesStatusFilterCard` source files as unused
+  upstream assets, but did not wire them into Ergouzi's auth-file page.
+- Resolved conflicts in `AuthFilesPage.tsx`,
+  `AuthFilesPage.module.scss`, and `src/features/authFiles/uiState.ts` by
+  preserving Ergouzi's current auth-file search and filter model. Upstream
+  `v1.17.7` collapses the page around a single status-filter mode, which would
+  remove Ergouzi-owned health, enabled, error-type, success-count, Codex plan,
+  selected-item, and filtered-result batch-operation surfaces.
+- Resolved quota conflicts by preserving Ergouzi's Codex quota card and section
+  behavior, including Codex-first ordering, quota search, plan/enabled/problem
+  filters, batch operation counts, and the reset-credit expiry display switch.
+- Resolved locale conflicts by keeping Ergouzi's richer search placeholders and
+  detailed filter labels, while adding upstream's new status-filter translation
+  keys so the upstream component files remain internally complete.
+
+Protected Ergouzi surfaces checked:
+
+| Area | Result |
+|---|---|
+| Release contract | `management.html` single-file build remains the release artifact contract |
+| Auth files | Filtered batch enable/disable/delete, selected-item scope, health/enabled/error filters, success-count filter, Codex plan filter, and page size `100` remain present |
+| Quota page | Codex-first ordering, account search, plan/enabled/problem filters, bounded section scroll, batch operation counts, and batch refresh remain present |
+| Codex quota cards | Reset-credit expiry details remain hidden by default behind the display switch |
+| Deployment | No production deployment has been performed for this sync |
+
+Verification:
+
+```bash
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- `bun run type-check` passed.
+- `bun run build` passed and produced a single-file `dist/index.html`.
+- `bun run lint` passed.
+- `git diff --check` passed.
+- Conflict-marker scan returned no matches.
+- No release or production deployment has been performed for this sync.
+
 ## 2026-06-25 Upstream `v1.17.5` Sync
 
 | Item | Value |
