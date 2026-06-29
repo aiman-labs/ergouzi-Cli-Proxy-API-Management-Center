@@ -317,6 +317,30 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     yamlKeys: ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold'],
     keywords: ['capacity alert threshold', 'codex pro quota', 'codex plus quota', '5 hour capacity'],
   },
+  {
+    fieldId: 'quotaAutoDisableProPlanThresholdPercent',
+    sectionId: 'quota',
+    labelKey: L('sections.quota.plan_policies_title'),
+    hintKey: L('sections.quota.plan_policies_desc'),
+    yamlKeys: ['quota-auto-disable', 'plan-policies', 'pro'],
+    keywords: ['codex pro quota policy', 'plan policy'],
+  },
+  {
+    fieldId: 'quotaAutoDisablePlusPlanThresholdPercent',
+    sectionId: 'quota',
+    labelKey: L('sections.quota.plan_policies_title'),
+    hintKey: L('sections.quota.plan_policies_desc'),
+    yamlKeys: ['quota-auto-disable', 'plan-policies', 'plus'],
+    keywords: ['codex plus quota policy', 'plan policy'],
+  },
+  {
+    fieldId: 'quotaAutoDisableTeamPlanThresholdPercent',
+    sectionId: 'quota',
+    labelKey: L('sections.quota.plan_policies_title'),
+    hintKey: L('sections.quota.team_plan_enabled_desc'),
+    yamlKeys: ['quota-auto-disable', 'plan-policies', 'team'],
+    keywords: ['codex team quota policy', 'k12 team', 'plan policy'],
+  },
   // ── streaming ─────────────────────────────────────────────────────────────
   {
     fieldId: 'streamingKeepaliveSeconds',
