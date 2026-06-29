@@ -19,6 +19,12 @@ export type VisualConfigFieldPath =
   | 'quotaAutoDisableWeeklyThresholdPercent'
   | 'quotaAutoDisableResumeFiveHourThresholdPercent'
   | 'quotaAutoDisableResumeWeeklyThresholdPercent'
+  | 'quotaAutoDisableProPlanThresholdPercent'
+  | 'quotaAutoDisableProPlanResumeThresholdPercent'
+  | 'quotaAutoDisablePlusPlanThresholdPercent'
+  | 'quotaAutoDisablePlusPlanResumeThresholdPercent'
+  | 'quotaAutoDisableTeamPlanThresholdPercent'
+  | 'quotaAutoDisableTeamPlanResumeThresholdPercent'
   | 'quotaAutoDisableProFiveHourCapacityAlertThreshold'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
@@ -121,6 +127,15 @@ export type VisualConfigValues = {
   quotaAutoDisableWeeklyThresholdPercent: string;
   quotaAutoDisableResumeFiveHourThresholdPercent: string;
   quotaAutoDisableResumeWeeklyThresholdPercent: string;
+  quotaAutoDisableProPlanEnabled: boolean;
+  quotaAutoDisableProPlanThresholdPercent: string;
+  quotaAutoDisableProPlanResumeThresholdPercent: string;
+  quotaAutoDisablePlusPlanEnabled: boolean;
+  quotaAutoDisablePlusPlanThresholdPercent: string;
+  quotaAutoDisablePlusPlanResumeThresholdPercent: string;
+  quotaAutoDisableTeamPlanEnabled: boolean;
+  quotaAutoDisableTeamPlanThresholdPercent: string;
+  quotaAutoDisableTeamPlanResumeThresholdPercent: string;
   quotaAutoDisableProFiveHourCapacityAlertThreshold: string;
   routingStrategy: 'round-robin' | 'fill-first';
   routingSessionAffinity: boolean;
@@ -194,6 +209,15 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaAutoDisableWeeklyThresholdPercent: '3',
   quotaAutoDisableResumeFiveHourThresholdPercent: '10',
   quotaAutoDisableResumeWeeklyThresholdPercent: '6',
+  quotaAutoDisableProPlanEnabled: true,
+  quotaAutoDisableProPlanThresholdPercent: '5',
+  quotaAutoDisableProPlanResumeThresholdPercent: '10',
+  quotaAutoDisablePlusPlanEnabled: true,
+  quotaAutoDisablePlusPlanThresholdPercent: '4',
+  quotaAutoDisablePlusPlanResumeThresholdPercent: '8',
+  quotaAutoDisableTeamPlanEnabled: true,
+  quotaAutoDisableTeamPlanThresholdPercent: '3',
+  quotaAutoDisableTeamPlanResumeThresholdPercent: '6',
   quotaAutoDisableProFiveHourCapacityAlertThreshold: '0',
   routingStrategy: 'round-robin',
   routingSessionAffinity: false,

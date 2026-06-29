@@ -205,6 +205,12 @@ export function VisualConfigEditor({
   const quotaAutoDisableWeeklyThresholdInputId = useId();
   const quotaAutoDisableResumeFiveHourThresholdInputId = useId();
   const quotaAutoDisableResumeWeeklyThresholdInputId = useId();
+  const quotaAutoDisableProPlanThresholdInputId = useId();
+  const quotaAutoDisableProPlanResumeThresholdInputId = useId();
+  const quotaAutoDisablePlusPlanThresholdInputId = useId();
+  const quotaAutoDisablePlusPlanResumeThresholdInputId = useId();
+  const quotaAutoDisableTeamPlanThresholdInputId = useId();
+  const quotaAutoDisableTeamPlanResumeThresholdInputId = useId();
   const quotaAutoDisableProFiveHourCapacityAlertThresholdInputId = useId();
   const [mode, setMode] = useState<EditorMode>(() => {
     const saved = localStorage.getItem(EDITOR_MODE_STORAGE_KEY);
@@ -382,6 +388,30 @@ export function VisualConfigEditor({
   const quotaAutoDisableResumeWeeklyThresholdError = getValidationMessage(
     t,
     validationErrors?.quotaAutoDisableResumeWeeklyThresholdPercent
+  );
+  const quotaAutoDisableProPlanThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableProPlanThresholdPercent
+  );
+  const quotaAutoDisableProPlanResumeThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableProPlanResumeThresholdPercent
+  );
+  const quotaAutoDisablePlusPlanThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisablePlusPlanThresholdPercent
+  );
+  const quotaAutoDisablePlusPlanResumeThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisablePlusPlanResumeThresholdPercent
+  );
+  const quotaAutoDisableTeamPlanThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableTeamPlanThresholdPercent
+  );
+  const quotaAutoDisableTeamPlanResumeThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableTeamPlanResumeThresholdPercent
   );
   const quotaAutoDisableProFiveHourCapacityAlertThresholdError = getValidationMessage(
     t,
@@ -1518,6 +1548,176 @@ export function VisualConfigEditor({
                           error={quotaAutoDisableResumeWeeklyThresholdError}
                         />
                       </FieldAnchor>
+                    </SectionGrid>
+                    <SectionSubsection
+                      title={t('config_management.visual.sections.quota.plan_policies_title')}
+                      description={t(
+                        'config_management.visual.sections.quota.plan_policies_desc'
+                      )}
+                    >
+                      <SectionStack>
+                        <ToggleRow
+                          title={t('config_management.visual.sections.quota.pro_plan_enabled')}
+                          checked={values.quotaAutoDisableProPlanEnabled}
+                          disabled={disabled}
+                          onChange={(quotaAutoDisableProPlanEnabled) =>
+                            onChange({ quotaAutoDisableProPlanEnabled })
+                          }
+                        />
+                        <SectionGrid>
+                          <FieldAnchor fieldId="quotaAutoDisableProPlanThresholdPercent">
+                            <Input
+                              id={quotaAutoDisableProPlanThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.plan_disable_threshold',
+                                { plan: 'Pro' }
+                              )}
+                              type="number"
+                              min={1}
+                              max={100}
+                              placeholder="5"
+                              value={values.quotaAutoDisableProPlanThresholdPercent}
+                              onChange={(e) =>
+                                onChange({
+                                  quotaAutoDisableProPlanThresholdPercent: e.target.value,
+                                })
+                              }
+                              disabled={disabled}
+                              error={quotaAutoDisableProPlanThresholdError}
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaAutoDisableProPlanResumeThresholdPercent">
+                            <Input
+                              id={quotaAutoDisableProPlanResumeThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.plan_resume_threshold',
+                                { plan: 'Pro' }
+                              )}
+                              type="number"
+                              min={1}
+                              max={100}
+                              placeholder="10"
+                              value={values.quotaAutoDisableProPlanResumeThresholdPercent}
+                              onChange={(e) =>
+                                onChange({
+                                  quotaAutoDisableProPlanResumeThresholdPercent: e.target.value,
+                                })
+                              }
+                              disabled={disabled}
+                              error={quotaAutoDisableProPlanResumeThresholdError}
+                            />
+                          </FieldAnchor>
+                        </SectionGrid>
+                        <ToggleRow
+                          title={t('config_management.visual.sections.quota.plus_plan_enabled')}
+                          checked={values.quotaAutoDisablePlusPlanEnabled}
+                          disabled={disabled}
+                          onChange={(quotaAutoDisablePlusPlanEnabled) =>
+                            onChange({ quotaAutoDisablePlusPlanEnabled })
+                          }
+                        />
+                        <SectionGrid>
+                          <FieldAnchor fieldId="quotaAutoDisablePlusPlanThresholdPercent">
+                            <Input
+                              id={quotaAutoDisablePlusPlanThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.plan_disable_threshold',
+                                { plan: 'Plus' }
+                              )}
+                              type="number"
+                              min={1}
+                              max={100}
+                              placeholder="4"
+                              value={values.quotaAutoDisablePlusPlanThresholdPercent}
+                              onChange={(e) =>
+                                onChange({
+                                  quotaAutoDisablePlusPlanThresholdPercent: e.target.value,
+                                })
+                              }
+                              disabled={disabled}
+                              error={quotaAutoDisablePlusPlanThresholdError}
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaAutoDisablePlusPlanResumeThresholdPercent">
+                            <Input
+                              id={quotaAutoDisablePlusPlanResumeThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.plan_resume_threshold',
+                                { plan: 'Plus' }
+                              )}
+                              type="number"
+                              min={1}
+                              max={100}
+                              placeholder="8"
+                              value={values.quotaAutoDisablePlusPlanResumeThresholdPercent}
+                              onChange={(e) =>
+                                onChange({
+                                  quotaAutoDisablePlusPlanResumeThresholdPercent: e.target.value,
+                                })
+                              }
+                              disabled={disabled}
+                              error={quotaAutoDisablePlusPlanResumeThresholdError}
+                            />
+                          </FieldAnchor>
+                        </SectionGrid>
+                        <ToggleRow
+                          title={t('config_management.visual.sections.quota.team_plan_enabled')}
+                          description={t(
+                            'config_management.visual.sections.quota.team_plan_enabled_desc'
+                          )}
+                          checked={values.quotaAutoDisableTeamPlanEnabled}
+                          disabled={disabled}
+                          onChange={(quotaAutoDisableTeamPlanEnabled) =>
+                            onChange({ quotaAutoDisableTeamPlanEnabled })
+                          }
+                        />
+                        <SectionGrid>
+                          <FieldAnchor fieldId="quotaAutoDisableTeamPlanThresholdPercent">
+                            <Input
+                              id={quotaAutoDisableTeamPlanThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.plan_disable_threshold',
+                                { plan: 'Team / K12 Team' }
+                              )}
+                              type="number"
+                              min={1}
+                              max={100}
+                              placeholder="3"
+                              value={values.quotaAutoDisableTeamPlanThresholdPercent}
+                              onChange={(e) =>
+                                onChange({
+                                  quotaAutoDisableTeamPlanThresholdPercent: e.target.value,
+                                })
+                              }
+                              disabled={disabled}
+                              error={quotaAutoDisableTeamPlanThresholdError}
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaAutoDisableTeamPlanResumeThresholdPercent">
+                            <Input
+                              id={quotaAutoDisableTeamPlanResumeThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.plan_resume_threshold',
+                                { plan: 'Team / K12 Team' }
+                              )}
+                              type="number"
+                              min={1}
+                              max={100}
+                              placeholder="6"
+                              value={values.quotaAutoDisableTeamPlanResumeThresholdPercent}
+                              onChange={(e) =>
+                                onChange({
+                                  quotaAutoDisableTeamPlanResumeThresholdPercent: e.target.value,
+                                })
+                              }
+                              disabled={disabled}
+                              error={quotaAutoDisableTeamPlanResumeThresholdError}
+                            />
+                          </FieldAnchor>
+                        </SectionGrid>
+                      </SectionStack>
+                    </SectionSubsection>
+                    <SectionGrid>
                       <FieldAnchor fieldId="quotaAutoDisableProFiveHourCapacityAlertThreshold">
                         <Input
                           id={quotaAutoDisableProFiveHourCapacityAlertThresholdInputId}
