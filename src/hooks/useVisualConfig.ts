@@ -1472,63 +1472,78 @@ export function applyVisualConfigValuesToYaml(
         ['quota-auto-disable', 'resume-weekly-threshold-percent'],
         values.quotaAutoDisableResumeWeeklyThresholdPercent
       );
-      const writePlanPolicies =
-        docHas(doc, ['quota-auto-disable', 'plan-policies']) ||
+      const writeProPlanPolicy =
+        docHas(doc, ['quota-auto-disable', 'plan-policies', 'pro']) ||
         dirtyFields.has('quotaAutoDisableProPlanEnabled') ||
         dirtyFields.has('quotaAutoDisableProPlanThresholdPercent') ||
-        dirtyFields.has('quotaAutoDisableProPlanResumeThresholdPercent') ||
+        dirtyFields.has('quotaAutoDisableProPlanResumeThresholdPercent');
+      const writePlusPlanPolicy =
+        docHas(doc, ['quota-auto-disable', 'plan-policies', 'plus']) ||
         dirtyFields.has('quotaAutoDisablePlusPlanEnabled') ||
         dirtyFields.has('quotaAutoDisablePlusPlanThresholdPercent') ||
-        dirtyFields.has('quotaAutoDisablePlusPlanResumeThresholdPercent') ||
+        dirtyFields.has('quotaAutoDisablePlusPlanResumeThresholdPercent');
+      const writeTeamPlanPolicy =
+        docHas(doc, ['quota-auto-disable', 'plan-policies', 'team']) ||
         dirtyFields.has('quotaAutoDisableTeamPlanEnabled') ||
         dirtyFields.has('quotaAutoDisableTeamPlanThresholdPercent') ||
         dirtyFields.has('quotaAutoDisableTeamPlanResumeThresholdPercent');
+      const writePlanPolicies =
+        docHas(doc, ['quota-auto-disable', 'plan-policies']) ||
+        writeProPlanPolicy ||
+        writePlusPlanPolicy ||
+        writeTeamPlanPolicy;
       if (writePlanPolicies) {
         ensureMapInDoc(doc, ['quota-auto-disable', 'plan-policies']);
-        doc.setIn(
-          ['quota-auto-disable', 'plan-policies', 'pro', 'enabled'],
-          values.quotaAutoDisableProPlanEnabled
-        );
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'plan-policies', 'pro', 'threshold-percent'],
-          values.quotaAutoDisableProPlanThresholdPercent
-        );
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'plan-policies', 'pro', 'resume-threshold-percent'],
-          values.quotaAutoDisableProPlanResumeThresholdPercent
-        );
-        doc.setIn(
-          ['quota-auto-disable', 'plan-policies', 'plus', 'enabled'],
-          values.quotaAutoDisablePlusPlanEnabled
-        );
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'plan-policies', 'plus', 'threshold-percent'],
-          values.quotaAutoDisablePlusPlanThresholdPercent
-        );
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'plan-policies', 'plus', 'resume-threshold-percent'],
-          values.quotaAutoDisablePlusPlanResumeThresholdPercent
-        );
-        doc.setIn(
-          ['quota-auto-disable', 'plan-policies', 'team', 'enabled'],
-          values.quotaAutoDisableTeamPlanEnabled
-        );
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'plan-policies', 'team', 'threshold-percent'],
-          values.quotaAutoDisableTeamPlanThresholdPercent
-        );
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'plan-policies', 'team', 'resume-threshold-percent'],
-          values.quotaAutoDisableTeamPlanResumeThresholdPercent
-        );
-        doc.setIn(['quota-auto-disable', 'plan-policies', 'team', 'require-five-hour-window'], true);
-        doc.setIn(['quota-auto-disable', 'plan-policies', 'team', 'require-weekly-window'], true);
+        if (writeProPlanPolicy) {
+          doc.setIn(
+            ['quota-auto-disable', 'plan-policies', 'pro', 'enabled'],
+            values.quotaAutoDisableProPlanEnabled
+          );
+          setIntFromStringInDoc(
+            doc,
+            ['quota-auto-disable', 'plan-policies', 'pro', 'threshold-percent'],
+            values.quotaAutoDisableProPlanThresholdPercent
+          );
+          setIntFromStringInDoc(
+            doc,
+            ['quota-auto-disable', 'plan-policies', 'pro', 'resume-threshold-percent'],
+            values.quotaAutoDisableProPlanResumeThresholdPercent
+          );
+        }
+        if (writePlusPlanPolicy) {
+          doc.setIn(
+            ['quota-auto-disable', 'plan-policies', 'plus', 'enabled'],
+            values.quotaAutoDisablePlusPlanEnabled
+          );
+          setIntFromStringInDoc(
+            doc,
+            ['quota-auto-disable', 'plan-policies', 'plus', 'threshold-percent'],
+            values.quotaAutoDisablePlusPlanThresholdPercent
+          );
+          setIntFromStringInDoc(
+            doc,
+            ['quota-auto-disable', 'plan-policies', 'plus', 'resume-threshold-percent'],
+            values.quotaAutoDisablePlusPlanResumeThresholdPercent
+          );
+        }
+        if (writeTeamPlanPolicy) {
+          doc.setIn(
+            ['quota-auto-disable', 'plan-policies', 'team', 'enabled'],
+            values.quotaAutoDisableTeamPlanEnabled
+          );
+          setIntFromStringInDoc(
+            doc,
+            ['quota-auto-disable', 'plan-policies', 'team', 'threshold-percent'],
+            values.quotaAutoDisableTeamPlanThresholdPercent
+          );
+          setIntFromStringInDoc(
+            doc,
+            ['quota-auto-disable', 'plan-policies', 'team', 'resume-threshold-percent'],
+            values.quotaAutoDisableTeamPlanResumeThresholdPercent
+          );
+          doc.setIn(['quota-auto-disable', 'plan-policies', 'team', 'require-five-hour-window'], true);
+          doc.setIn(['quota-auto-disable', 'plan-policies', 'team', 'require-weekly-window'], true);
+        }
       }
       setNumberFromStringInDoc(
         doc,
