@@ -26,11 +26,16 @@ const CODEX_PLAN_FILTER_VALUES: Record<string, Exclude<CodexPlanFilterValue, 'al
     plus: 'plus',
     pro: 'pro',
     prolite: 'pro_lite',
-    'pro-lite': 'pro_lite',
-    pro_lite: 'pro_lite',
     team: 'team',
+    k12: 'team',
+    k12team: 'team',
+    chatgptk12: 'team',
+    chatgptk12team: 'team',
     free: 'free',
   };
+
+const normalizeCodexPlanFilterKey = (value: string): string =>
+  value.replace(/[-_\s]+/g, '');
 
 const toRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -125,7 +130,7 @@ export function resolveCodexPlanFilterValue(
 ): Exclude<CodexPlanFilterValue, 'all'> {
   const planType = normalizePlanType(quotaPlanType) ?? resolveCodexPlanType(file);
   if (!planType) return 'unknown';
-  return CODEX_PLAN_FILTER_VALUES[planType] ?? 'unknown';
+  return CODEX_PLAN_FILTER_VALUES[normalizeCodexPlanFilterKey(planType)] ?? 'unknown';
 }
 
 export function resolveAuthFileEnabledFilterValue(
