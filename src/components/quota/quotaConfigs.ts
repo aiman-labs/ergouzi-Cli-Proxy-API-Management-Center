@@ -943,6 +943,15 @@ const renderAntigravityItems = (
 };
 
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
+const TEAM_CODEX_PLAN_TYPES = new Set([
+  'team',
+  'k12',
+  'k12team',
+  'chatgptk12',
+  'chatgptk12team',
+]);
+const normalizeCodexPlanCategoryKey = (value?: string | null): string =>
+  normalizePlanType(value)?.replace(/[-_\s]+/g, '') ?? '';
 
 const renderCodexItems = (
   quota: CodexQuotaState,
@@ -961,18 +970,19 @@ const renderCodexItems = (
   const getPlanLabel = (pt?: string | null): string | null => {
     const normalized = normalizePlanType(pt);
     if (!normalized) return null;
+    const planKey = normalizeCodexPlanCategoryKey(normalized);
     if (normalized === 'pro') return t('codex_quota.plan_pro');
-    if (PREMIUM_CODEX_PLAN_TYPES.has(normalized) && normalized !== 'pro') {
+    if (PREMIUM_CODEX_PLAN_TYPES.has(planKey) && planKey !== 'pro') {
       return t('codex_quota.plan_prolite');
     }
     if (normalized === 'plus') return t('codex_quota.plan_plus');
-    if (normalized === 'team') return t('codex_quota.plan_team');
+    if (TEAM_CODEX_PLAN_TYPES.has(planKey)) return t('codex_quota.plan_team');
     if (normalized === 'free') return t('codex_quota.plan_free');
     return pt || normalized;
   };
 
   const planLabel = getPlanLabel(planType);
-  const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizePlanType(planType) ?? '');
+  const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizeCodexPlanCategoryKey(planType));
   const expiryLabel = subscriptionActiveUntil ? formatDateTimeValue(subscriptionActiveUntil) : '';
   const nodes: ReactNode[] = [];
 

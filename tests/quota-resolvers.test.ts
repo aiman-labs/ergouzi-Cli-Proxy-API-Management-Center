@@ -90,6 +90,28 @@ describe('resolveCodexPlanFilterValue', () => {
     expect(resolveCodexPlanFilterValue(file, 'team')).toBe('team');
   });
 
+  test('classifies K12 plan variants as Team', () => {
+    const variants = [
+      'k12',
+      'K12',
+      'k12-team',
+      'k12_team',
+      'K12 Team',
+      'chatgpt-k12',
+      'chatgpt k12 team',
+    ];
+
+    for (const planType of variants) {
+      const file: AuthFileItem = {
+        name: `${planType}.json`,
+        type: 'codex',
+        plan_type: planType,
+      };
+
+      expect(resolveCodexPlanFilterValue(file)).toBe('team');
+    }
+  });
+
   test('classifies structured auth file plan type without filename dependency', () => {
     const proFile: AuthFileItem = {
       name: 'anything.json',
