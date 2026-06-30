@@ -83,6 +83,57 @@ quota-auto-disable:
     expect(parsed['quota-auto-disable']).toBeUndefined();
   });
 
+  test('writes capacity alert settings to the new nested YAML structure', () => {
+    const output = applyVisualConfigValuesToYaml(
+      '',
+      {
+        ...DEFAULT_VISUAL_VALUES,
+        quotaAutoDisableEnabled: true,
+        quotaCapacityAlertsEnabled: true,
+        quotaCapacitySnapshotsIncluded: true,
+        quotaCapacityProFiveHourThreshold: '0.6',
+        quotaCapacityProWeeklyThreshold: '1.2',
+        quotaCapacityPlusFiveHourThreshold: '0.4',
+        quotaCapacityPlusWeeklyThreshold: '0.8',
+        quotaCapacityTeamFiveHourThreshold: '0.3',
+        quotaCapacityTeamWeeklyThreshold: '1.5',
+      },
+      new Set([
+        'quotaAutoDisableEnabled',
+        'quotaCapacityAlertsEnabled',
+        'quotaCapacitySnapshotsIncluded',
+        'quotaCapacityProFiveHourThreshold',
+        'quotaCapacityProWeeklyThreshold',
+        'quotaCapacityPlusFiveHourThreshold',
+        'quotaCapacityPlusWeeklyThreshold',
+        'quotaCapacityTeamFiveHourThreshold',
+        'quotaCapacityTeamWeeklyThreshold',
+      ])
+    );
+    const parsed = parseYaml(output) as Record<string, Record<string, unknown>>;
+    const quotaAutoDisable = parsed['quota-auto-disable'];
+
+    expect(quotaAutoDisable['capacity-alerts']).toEqual({
+      enabled: true,
+      'include-snapshots': true,
+      plans: {
+        pro: {
+          'five-hour-threshold-equivalent': 0.6,
+          'weekly-threshold-equivalent': 1.2,
+        },
+        plus: {
+          'five-hour-threshold-equivalent': 0.4,
+          'weekly-threshold-equivalent': 0.8,
+        },
+        team: {
+          'five-hour-threshold-equivalent': 0.3,
+          'weekly-threshold-equivalent': 1.5,
+        },
+      },
+    });
+    expect(quotaAutoDisable['pro-five-hour-capacity-alert-threshold']).toBeUndefined();
+  });
+
   test('rejects zero quota auto-disable polling interval', () => {
     const errors = getVisualConfigValidationErrors({
       ...DEFAULT_VISUAL_VALUES,

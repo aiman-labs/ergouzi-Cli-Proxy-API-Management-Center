@@ -1207,7 +1207,7 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     ),
     quotaCapacityAlertsEnabled: Boolean(
       quotaCapacityAlerts?.enabled ??
-        Number(quotaAutoDisable?.['pro-five-hour-capacity-alert-threshold'] ?? 0) > 0
+      Number(quotaAutoDisable?.['pro-five-hour-capacity-alert-threshold'] ?? 0) > 0
     ),
     quotaCapacitySnapshotsIncluded: Boolean(quotaCapacityAlerts?.['include-snapshots'] ?? true),
     quotaCapacityProFiveHourThreshold: quotaCapacityPlanValue(
@@ -1711,10 +1711,15 @@ export function applyVisualConfigValuesToYaml(
         docHas(doc, ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold']) ||
         dirtyFields.has('quotaAutoDisableProFiveHourCapacityAlertThreshold')
       ) {
+        const legacyCapacityThresholdValue = dirtyFields.has(
+          'quotaAutoDisableProFiveHourCapacityAlertThreshold'
+        )
+          ? values.quotaAutoDisableProFiveHourCapacityAlertThreshold
+          : values.quotaCapacityProFiveHourThreshold;
         setNumberFromStringInDoc(
           doc,
           ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold'],
-          values.quotaCapacityProFiveHourThreshold
+          legacyCapacityThresholdValue
         );
       }
       deleteIfMapEmpty(doc, ['quota-auto-disable']);
