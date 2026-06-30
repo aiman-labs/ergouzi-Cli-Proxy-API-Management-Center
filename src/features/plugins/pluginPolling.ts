@@ -14,6 +14,8 @@ const wait = (ms: number) =>
     window.setTimeout(resolve, ms);
   });
 
+const normalizePluginVersion = (version: string) => version.trim().replace(/^v/i, '');
+
 export interface PluginStateWaitResult {
   response: PluginListResponse;
   plugin: PluginListEntry | null;
@@ -33,8 +35,11 @@ export function isPluginStoreInstallSettled(
   if (!plugin.installed || !plugin.configured) return false;
   if (!options.isUpdate) return true;
 
-  const expectedVersion = options.expectedVersion?.trim();
-  return (expectedVersion ? plugin.installedVersion === expectedVersion : false) || !plugin.updateAvailable;
+  const expectedVersion = options.expectedVersion
+    ? normalizePluginVersion(options.expectedVersion)
+    : '';
+  const installedVersion = normalizePluginVersion(plugin.installedVersion);
+  return (expectedVersion ? installedVersion === expectedVersion : false) || !plugin.updateAvailable;
 }
 
 export async function waitForPluginState(
