@@ -211,7 +211,12 @@ export function VisualConfigEditor({
   const quotaAutoDisablePlusPlanResumeThresholdInputId = useId();
   const quotaAutoDisableTeamPlanThresholdInputId = useId();
   const quotaAutoDisableTeamPlanResumeThresholdInputId = useId();
-  const quotaAutoDisableProFiveHourCapacityAlertThresholdInputId = useId();
+  const quotaCapacityProFiveHourThresholdInputId = useId();
+  const quotaCapacityProWeeklyThresholdInputId = useId();
+  const quotaCapacityPlusFiveHourThresholdInputId = useId();
+  const quotaCapacityPlusWeeklyThresholdInputId = useId();
+  const quotaCapacityTeamFiveHourThresholdInputId = useId();
+  const quotaCapacityTeamWeeklyThresholdInputId = useId();
   const [mode, setMode] = useState<EditorMode>(() => {
     const saved = localStorage.getItem(EDITOR_MODE_STORAGE_KEY);
     return saved === 'simple' ? 'simple' : 'full';
@@ -413,9 +418,29 @@ export function VisualConfigEditor({
     t,
     validationErrors?.quotaAutoDisableTeamPlanResumeThresholdPercent
   );
-  const quotaAutoDisableProFiveHourCapacityAlertThresholdError = getValidationMessage(
+  const quotaCapacityProFiveHourThresholdError = getValidationMessage(
     t,
-    validationErrors?.quotaAutoDisableProFiveHourCapacityAlertThreshold
+    validationErrors?.quotaCapacityProFiveHourThreshold
+  );
+  const quotaCapacityProWeeklyThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaCapacityProWeeklyThreshold
+  );
+  const quotaCapacityPlusFiveHourThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaCapacityPlusFiveHourThreshold
+  );
+  const quotaCapacityPlusWeeklyThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaCapacityPlusWeeklyThreshold
+  );
+  const quotaCapacityTeamFiveHourThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaCapacityTeamFiveHourThreshold
+  );
+  const quotaCapacityTeamWeeklyThresholdError = getValidationMessage(
+    t,
+    validationErrors?.quotaCapacityTeamWeeklyThreshold
   );
 
   const handleApiKeysTextChange = useCallback(
@@ -509,7 +534,12 @@ export function VisualConfigEditor({
           'quotaAutoDisableWeeklyThresholdPercent',
           'quotaAutoDisableResumeFiveHourThresholdPercent',
           'quotaAutoDisableResumeWeeklyThresholdPercent',
-          'quotaAutoDisableProFiveHourCapacityAlertThreshold',
+          'quotaCapacityProFiveHourThreshold',
+          'quotaCapacityProWeeklyThreshold',
+          'quotaCapacityPlusFiveHourThreshold',
+          'quotaCapacityPlusWeeklyThreshold',
+          'quotaCapacityTeamFiveHourThreshold',
+          'quotaCapacityTeamWeeklyThreshold',
         ]),
       },
       {
@@ -1390,18 +1420,25 @@ export function VisualConfigEditor({
               description={t('config_management.visual.sections.quota.description')}
             >
               <SectionStack>
-                <SectionGrid>
-                  {quotaSwitchProjectToggle}
-                  {quotaSwitchPreviewModelToggle}
-                  <FieldAnchor fieldId="quotaAntigravityCredits">
-                    <ToggleRow
-                      title={t('config_management.visual.sections.quota.antigravity_credits')}
-                      checked={values.quotaAntigravityCredits}
-                      disabled={disabled}
-                      onChange={(quotaAntigravityCredits) => onChange({ quotaAntigravityCredits })}
-                    />
-                  </FieldAnchor>
-                </SectionGrid>
+                <SectionSubsection
+                  title={t('config_management.visual.sections.quota.request_fallback_title')}
+                  description={t('config_management.visual.sections.quota.request_fallback_desc')}
+                >
+                  <SectionGrid>
+                    {quotaSwitchProjectToggle}
+                    {quotaSwitchPreviewModelToggle}
+                    <FieldAnchor fieldId="quotaAntigravityCredits">
+                      <ToggleRow
+                        title={t('config_management.visual.sections.quota.antigravity_credits')}
+                        checked={values.quotaAntigravityCredits}
+                        disabled={disabled}
+                        onChange={(quotaAntigravityCredits) =>
+                          onChange({ quotaAntigravityCredits })
+                        }
+                      />
+                    </FieldAnchor>
+                  </SectionGrid>
+                </SectionSubsection>
 
                 <SectionSubsection
                   title={t('config_management.visual.sections.quota.auto_disable_title')}
@@ -1551,9 +1588,7 @@ export function VisualConfigEditor({
                     </SectionGrid>
                     <SectionSubsection
                       title={t('config_management.visual.sections.quota.plan_policies_title')}
-                      description={t(
-                        'config_management.visual.sections.quota.plan_policies_desc'
-                      )}
+                      description={t('config_management.visual.sections.quota.plan_policies_desc')}
                     >
                       <SectionStack>
                         <ToggleRow
@@ -1717,31 +1752,166 @@ export function VisualConfigEditor({
                         </SectionGrid>
                       </SectionStack>
                     </SectionSubsection>
-                    <SectionGrid>
-                      <FieldAnchor fieldId="quotaAutoDisableProFiveHourCapacityAlertThreshold">
-                        <Input
-                          id={quotaAutoDisableProFiveHourCapacityAlertThresholdInputId}
-                          label={t(
-                            'config_management.visual.sections.quota.pro_five_hour_capacity_alert_threshold'
-                          )}
-                          type="number"
-                          min={0}
-                          step="0.1"
-                          placeholder="0"
-                          value={values.quotaAutoDisableProFiveHourCapacityAlertThreshold}
-                          onChange={(e) =>
-                            onChange({
-                              quotaAutoDisableProFiveHourCapacityAlertThreshold: e.target.value,
-                            })
-                          }
-                          disabled={disabled}
-                          hint={t(
-                            'config_management.visual.sections.quota.pro_five_hour_capacity_alert_threshold_hint'
-                          )}
-                          error={quotaAutoDisableProFiveHourCapacityAlertThresholdError}
-                        />
-                      </FieldAnchor>
-                    </SectionGrid>
+                    <SectionSubsection
+                      title={t('config_management.visual.sections.quota.capacity_alerts_title')}
+                      description={t(
+                        'config_management.visual.sections.quota.capacity_alerts_desc'
+                      )}
+                    >
+                      <SectionStack>
+                        <SectionGrid>
+                          <FieldAnchor fieldId="quotaCapacityAlertsEnabled">
+                            <ToggleRow
+                              title={t(
+                                'config_management.visual.sections.quota.capacity_alerts_enabled'
+                              )}
+                              description={t(
+                                'config_management.visual.sections.quota.capacity_alerts_enabled_desc'
+                              )}
+                              checked={values.quotaCapacityAlertsEnabled}
+                              disabled={disabled}
+                              onChange={(quotaCapacityAlertsEnabled) =>
+                                onChange({ quotaCapacityAlertsEnabled })
+                              }
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaCapacitySnapshotsIncluded">
+                            <ToggleRow
+                              title={t(
+                                'config_management.visual.sections.quota.capacity_snapshots_included'
+                              )}
+                              description={t(
+                                'config_management.visual.sections.quota.capacity_snapshots_included_desc'
+                              )}
+                              checked={values.quotaCapacitySnapshotsIncluded}
+                              disabled={disabled}
+                              onChange={(quotaCapacitySnapshotsIncluded) =>
+                                onChange({ quotaCapacitySnapshotsIncluded })
+                              }
+                            />
+                          </FieldAnchor>
+                        </SectionGrid>
+                        <SectionGrid>
+                          <FieldAnchor fieldId="quotaCapacityProFiveHourThreshold">
+                            <Input
+                              id={quotaCapacityProFiveHourThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.capacity_five_hour_threshold',
+                                { plan: 'Pro' }
+                              )}
+                              type="number"
+                              min={0}
+                              step="0.1"
+                              placeholder="0.6"
+                              value={values.quotaCapacityProFiveHourThreshold}
+                              onChange={(e) =>
+                                onChange({ quotaCapacityProFiveHourThreshold: e.target.value })
+                              }
+                              disabled={disabled}
+                              error={quotaCapacityProFiveHourThresholdError}
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaCapacityProWeeklyThreshold">
+                            <Input
+                              id={quotaCapacityProWeeklyThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.capacity_weekly_threshold',
+                                { plan: 'Pro' }
+                              )}
+                              type="number"
+                              min={0}
+                              step="0.1"
+                              placeholder="0"
+                              value={values.quotaCapacityProWeeklyThreshold}
+                              onChange={(e) =>
+                                onChange({ quotaCapacityProWeeklyThreshold: e.target.value })
+                              }
+                              disabled={disabled}
+                              error={quotaCapacityProWeeklyThresholdError}
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaCapacityPlusFiveHourThreshold">
+                            <Input
+                              id={quotaCapacityPlusFiveHourThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.capacity_five_hour_threshold',
+                                { plan: 'Plus' }
+                              )}
+                              type="number"
+                              min={0}
+                              step="0.1"
+                              placeholder="0"
+                              value={values.quotaCapacityPlusFiveHourThreshold}
+                              onChange={(e) =>
+                                onChange({ quotaCapacityPlusFiveHourThreshold: e.target.value })
+                              }
+                              disabled={disabled}
+                              error={quotaCapacityPlusFiveHourThresholdError}
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaCapacityPlusWeeklyThreshold">
+                            <Input
+                              id={quotaCapacityPlusWeeklyThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.capacity_weekly_threshold',
+                                { plan: 'Plus' }
+                              )}
+                              type="number"
+                              min={0}
+                              step="0.1"
+                              placeholder="0"
+                              value={values.quotaCapacityPlusWeeklyThreshold}
+                              onChange={(e) =>
+                                onChange({ quotaCapacityPlusWeeklyThreshold: e.target.value })
+                              }
+                              disabled={disabled}
+                              error={quotaCapacityPlusWeeklyThresholdError}
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaCapacityTeamFiveHourThreshold">
+                            <Input
+                              id={quotaCapacityTeamFiveHourThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.capacity_five_hour_threshold',
+                                { plan: 'Team / K12 Team' }
+                              )}
+                              type="number"
+                              min={0}
+                              step="0.1"
+                              placeholder="0"
+                              value={values.quotaCapacityTeamFiveHourThreshold}
+                              onChange={(e) =>
+                                onChange({ quotaCapacityTeamFiveHourThreshold: e.target.value })
+                              }
+                              disabled={disabled}
+                              error={quotaCapacityTeamFiveHourThresholdError}
+                            />
+                          </FieldAnchor>
+                          <FieldAnchor fieldId="quotaCapacityTeamWeeklyThreshold">
+                            <Input
+                              id={quotaCapacityTeamWeeklyThresholdInputId}
+                              label={t(
+                                'config_management.visual.sections.quota.capacity_weekly_threshold',
+                                { plan: 'Team / K12 Team' }
+                              )}
+                              type="number"
+                              min={0}
+                              step="0.1"
+                              placeholder="0"
+                              value={values.quotaCapacityTeamWeeklyThreshold}
+                              onChange={(e) =>
+                                onChange({ quotaCapacityTeamWeeklyThreshold: e.target.value })
+                              }
+                              disabled={disabled}
+                              hint={t(
+                                'config_management.visual.sections.quota.capacity_threshold_hint'
+                              )}
+                              error={quotaCapacityTeamWeeklyThresholdError}
+                            />
+                          </FieldAnchor>
+                        </SectionGrid>
+                      </SectionStack>
+                    </SectionSubsection>
                   </SectionStack>
                 </SectionSubsection>
               </SectionStack>
