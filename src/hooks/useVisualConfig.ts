@@ -274,8 +274,23 @@ export function getVisualConfigValidationErrors(
     quotaAutoDisableTeamPlanResumeThresholdPercent: getPercentRangeError(
       values.quotaAutoDisableTeamPlanResumeThresholdPercent
     ),
-    quotaAutoDisableProFiveHourCapacityAlertThreshold: getNonNegativeNumberError(
-      values.quotaAutoDisableProFiveHourCapacityAlertThreshold
+    quotaCapacityProFiveHourThreshold: getNonNegativeNumberError(
+      values.quotaCapacityProFiveHourThreshold
+    ),
+    quotaCapacityProWeeklyThreshold: getNonNegativeNumberError(
+      values.quotaCapacityProWeeklyThreshold
+    ),
+    quotaCapacityPlusFiveHourThreshold: getNonNegativeNumberError(
+      values.quotaCapacityPlusFiveHourThreshold
+    ),
+    quotaCapacityPlusWeeklyThreshold: getNonNegativeNumberError(
+      values.quotaCapacityPlusWeeklyThreshold
+    ),
+    quotaCapacityTeamFiveHourThreshold: getNonNegativeNumberError(
+      values.quotaCapacityTeamFiveHourThreshold
+    ),
+    quotaCapacityTeamWeeklyThreshold: getNonNegativeNumberError(
+      values.quotaCapacityTeamWeeklyThreshold
     ),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
@@ -880,6 +895,14 @@ function getNextDirtyFields(
       'quotaAutoDisableTeamPlanThresholdPercent',
       'quotaAutoDisableTeamPlanResumeThresholdPercent',
       'quotaAutoDisableProFiveHourCapacityAlertThreshold',
+      'quotaCapacityAlertsEnabled',
+      'quotaCapacitySnapshotsIncluded',
+      'quotaCapacityProFiveHourThreshold',
+      'quotaCapacityProWeeklyThreshold',
+      'quotaCapacityPlusFiveHourThreshold',
+      'quotaCapacityPlusWeeklyThreshold',
+      'quotaCapacityTeamFiveHourThreshold',
+      'quotaCapacityTeamWeeklyThreshold',
       'routingStrategy',
       'routingSessionAffinity',
       'routingSessionAffinityTTL',
@@ -1008,6 +1031,16 @@ function quotaPlanPolicyEnabled(
   return Boolean(policy?.enabled ?? fallback);
 }
 
+function quotaCapacityPlanValue(
+  plans: Record<string, unknown> | null,
+  plan: 'pro' | 'plus' | 'team',
+  key: 'five-hour-threshold-equivalent' | 'weekly-threshold-equivalent',
+  fallback: string
+): string {
+  const policy = asRecord(plans?.[plan]);
+  return String(policy?.[key] ?? fallback);
+}
+
 export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConfigValues {
   const document = parseDocument(yamlContent);
   if (document.errors.length > 0) {
@@ -1021,6 +1054,8 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
   const quotaExceeded = asRecord(parsed['quota-exceeded']);
   const quotaAutoDisable = asRecord(parsed['quota-auto-disable']);
   const quotaAutoDisablePlanPolicies = asRecord(quotaAutoDisable?.['plan-policies']);
+  const quotaCapacityAlerts = asRecord(quotaAutoDisable?.['capacity-alerts']);
+  const quotaCapacityPlans = asRecord(quotaCapacityAlerts?.plans);
   const routing = asRecord(parsed.routing);
   const payload = asRecord(parsed.payload);
   const streaming = asRecord(parsed.streaming);
@@ -1169,6 +1204,47 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     ),
     quotaAutoDisableProFiveHourCapacityAlertThreshold: String(
       quotaAutoDisable?.['pro-five-hour-capacity-alert-threshold'] ?? '0'
+    ),
+    quotaCapacityAlertsEnabled: Boolean(
+      quotaCapacityAlerts?.enabled ??
+      Number(quotaAutoDisable?.['pro-five-hour-capacity-alert-threshold'] ?? 0) > 0
+    ),
+    quotaCapacitySnapshotsIncluded: Boolean(quotaCapacityAlerts?.['include-snapshots'] ?? true),
+    quotaCapacityProFiveHourThreshold: quotaCapacityPlanValue(
+      quotaCapacityPlans,
+      'pro',
+      'five-hour-threshold-equivalent',
+      String(quotaAutoDisable?.['pro-five-hour-capacity-alert-threshold'] ?? '0')
+    ),
+    quotaCapacityProWeeklyThreshold: quotaCapacityPlanValue(
+      quotaCapacityPlans,
+      'pro',
+      'weekly-threshold-equivalent',
+      '0'
+    ),
+    quotaCapacityPlusFiveHourThreshold: quotaCapacityPlanValue(
+      quotaCapacityPlans,
+      'plus',
+      'five-hour-threshold-equivalent',
+      '0'
+    ),
+    quotaCapacityPlusWeeklyThreshold: quotaCapacityPlanValue(
+      quotaCapacityPlans,
+      'plus',
+      'weekly-threshold-equivalent',
+      '0'
+    ),
+    quotaCapacityTeamFiveHourThreshold: quotaCapacityPlanValue(
+      quotaCapacityPlans,
+      'team',
+      'five-hour-threshold-equivalent',
+      '0'
+    ),
+    quotaCapacityTeamWeeklyThreshold: quotaCapacityPlanValue(
+      quotaCapacityPlans,
+      'team',
+      'weekly-threshold-equivalent',
+      '0'
     ),
 
     routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
@@ -1436,7 +1512,15 @@ export function applyVisualConfigValuesToYaml(
       dirtyFields.has('quotaAutoDisableTeamPlanEnabled') ||
       dirtyFields.has('quotaAutoDisableTeamPlanThresholdPercent') ||
       dirtyFields.has('quotaAutoDisableTeamPlanResumeThresholdPercent') ||
-      dirtyFields.has('quotaAutoDisableProFiveHourCapacityAlertThreshold')
+      dirtyFields.has('quotaAutoDisableProFiveHourCapacityAlertThreshold') ||
+      dirtyFields.has('quotaCapacityAlertsEnabled') ||
+      dirtyFields.has('quotaCapacitySnapshotsIncluded') ||
+      dirtyFields.has('quotaCapacityProFiveHourThreshold') ||
+      dirtyFields.has('quotaCapacityProWeeklyThreshold') ||
+      dirtyFields.has('quotaCapacityPlusFiveHourThreshold') ||
+      dirtyFields.has('quotaCapacityPlusWeeklyThreshold') ||
+      dirtyFields.has('quotaCapacityTeamFiveHourThreshold') ||
+      dirtyFields.has('quotaCapacityTeamWeeklyThreshold')
     ) {
       ensureMapInDoc(doc, ['quota-auto-disable']);
       doc.setIn(['quota-auto-disable', 'enabled'], values.quotaAutoDisableEnabled);
@@ -1541,15 +1625,103 @@ export function applyVisualConfigValuesToYaml(
             ['quota-auto-disable', 'plan-policies', 'team', 'resume-threshold-percent'],
             values.quotaAutoDisableTeamPlanResumeThresholdPercent
           );
-          doc.setIn(['quota-auto-disable', 'plan-policies', 'team', 'require-five-hour-window'], true);
+          doc.setIn(
+            ['quota-auto-disable', 'plan-policies', 'team', 'require-five-hour-window'],
+            true
+          );
           doc.setIn(['quota-auto-disable', 'plan-policies', 'team', 'require-weekly-window'], true);
         }
       }
-      setNumberFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold'],
-        values.quotaAutoDisableProFiveHourCapacityAlertThreshold
-      );
+      const writeCapacityAlerts =
+        docHas(doc, ['quota-auto-disable', 'capacity-alerts']) ||
+        dirtyFields.has('quotaCapacityAlertsEnabled') ||
+        dirtyFields.has('quotaCapacitySnapshotsIncluded') ||
+        dirtyFields.has('quotaCapacityProFiveHourThreshold') ||
+        dirtyFields.has('quotaCapacityProWeeklyThreshold') ||
+        dirtyFields.has('quotaCapacityPlusFiveHourThreshold') ||
+        dirtyFields.has('quotaCapacityPlusWeeklyThreshold') ||
+        dirtyFields.has('quotaCapacityTeamFiveHourThreshold') ||
+        dirtyFields.has('quotaCapacityTeamWeeklyThreshold');
+      if (writeCapacityAlerts) {
+        ensureMapInDoc(doc, ['quota-auto-disable', 'capacity-alerts']);
+        doc.setIn(
+          ['quota-auto-disable', 'capacity-alerts', 'enabled'],
+          values.quotaCapacityAlertsEnabled
+        );
+        doc.setIn(
+          ['quota-auto-disable', 'capacity-alerts', 'include-snapshots'],
+          values.quotaCapacitySnapshotsIncluded
+        );
+        ensureMapInDoc(doc, ['quota-auto-disable', 'capacity-alerts', 'plans']);
+        setNumberFromStringInDoc(
+          doc,
+          [
+            'quota-auto-disable',
+            'capacity-alerts',
+            'plans',
+            'pro',
+            'five-hour-threshold-equivalent',
+          ],
+          values.quotaCapacityProFiveHourThreshold
+        );
+        setNumberFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'capacity-alerts', 'plans', 'pro', 'weekly-threshold-equivalent'],
+          values.quotaCapacityProWeeklyThreshold
+        );
+        setNumberFromStringInDoc(
+          doc,
+          [
+            'quota-auto-disable',
+            'capacity-alerts',
+            'plans',
+            'plus',
+            'five-hour-threshold-equivalent',
+          ],
+          values.quotaCapacityPlusFiveHourThreshold
+        );
+        setNumberFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'capacity-alerts', 'plans', 'plus', 'weekly-threshold-equivalent'],
+          values.quotaCapacityPlusWeeklyThreshold
+        );
+        setNumberFromStringInDoc(
+          doc,
+          [
+            'quota-auto-disable',
+            'capacity-alerts',
+            'plans',
+            'team',
+            'five-hour-threshold-equivalent',
+          ],
+          values.quotaCapacityTeamFiveHourThreshold
+        );
+        setNumberFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'capacity-alerts', 'plans', 'team', 'weekly-threshold-equivalent'],
+          values.quotaCapacityTeamWeeklyThreshold
+        );
+        deleteIfMapEmpty(doc, ['quota-auto-disable', 'capacity-alerts', 'plans', 'pro']);
+        deleteIfMapEmpty(doc, ['quota-auto-disable', 'capacity-alerts', 'plans', 'plus']);
+        deleteIfMapEmpty(doc, ['quota-auto-disable', 'capacity-alerts', 'plans', 'team']);
+        deleteIfMapEmpty(doc, ['quota-auto-disable', 'capacity-alerts', 'plans']);
+        deleteIfMapEmpty(doc, ['quota-auto-disable', 'capacity-alerts']);
+      }
+      if (
+        docHas(doc, ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold']) ||
+        dirtyFields.has('quotaAutoDisableProFiveHourCapacityAlertThreshold')
+      ) {
+        const legacyCapacityThresholdValue = dirtyFields.has(
+          'quotaAutoDisableProFiveHourCapacityAlertThreshold'
+        )
+          ? values.quotaAutoDisableProFiveHourCapacityAlertThreshold
+          : values.quotaCapacityProFiveHourThreshold;
+        setNumberFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'pro-five-hour-capacity-alert-threshold'],
+          legacyCapacityThresholdValue
+        );
+      }
       deleteIfMapEmpty(doc, ['quota-auto-disable']);
     }
 

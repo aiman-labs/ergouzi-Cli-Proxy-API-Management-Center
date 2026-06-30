@@ -26,6 +26,14 @@ export type VisualConfigFieldPath =
   | 'quotaAutoDisableTeamPlanThresholdPercent'
   | 'quotaAutoDisableTeamPlanResumeThresholdPercent'
   | 'quotaAutoDisableProFiveHourCapacityAlertThreshold'
+  | 'quotaCapacityAlertsEnabled'
+  | 'quotaCapacitySnapshotsIncluded'
+  | 'quotaCapacityProFiveHourThreshold'
+  | 'quotaCapacityProWeeklyThreshold'
+  | 'quotaCapacityPlusFiveHourThreshold'
+  | 'quotaCapacityPlusWeeklyThreshold'
+  | 'quotaCapacityTeamFiveHourThreshold'
+  | 'quotaCapacityTeamWeeklyThreshold'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
   | 'streaming.nonstreamKeepaliveInterval';
@@ -137,6 +145,14 @@ export type VisualConfigValues = {
   quotaAutoDisableTeamPlanThresholdPercent: string;
   quotaAutoDisableTeamPlanResumeThresholdPercent: string;
   quotaAutoDisableProFiveHourCapacityAlertThreshold: string;
+  quotaCapacityAlertsEnabled: boolean;
+  quotaCapacitySnapshotsIncluded: boolean;
+  quotaCapacityProFiveHourThreshold: string;
+  quotaCapacityProWeeklyThreshold: string;
+  quotaCapacityPlusFiveHourThreshold: string;
+  quotaCapacityPlusWeeklyThreshold: string;
+  quotaCapacityTeamFiveHourThreshold: string;
+  quotaCapacityTeamWeeklyThreshold: string;
   routingStrategy: 'round-robin' | 'fill-first';
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
@@ -219,6 +235,14 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaAutoDisableTeamPlanThresholdPercent: '3',
   quotaAutoDisableTeamPlanResumeThresholdPercent: '6',
   quotaAutoDisableProFiveHourCapacityAlertThreshold: '0',
+  quotaCapacityAlertsEnabled: false,
+  quotaCapacitySnapshotsIncluded: true,
+  quotaCapacityProFiveHourThreshold: '0',
+  quotaCapacityProWeeklyThreshold: '0',
+  quotaCapacityPlusFiveHourThreshold: '0',
+  quotaCapacityPlusWeeklyThreshold: '0',
+  quotaCapacityTeamFiveHourThreshold: '0',
+  quotaCapacityTeamWeeklyThreshold: '0',
   routingStrategy: 'round-robin',
   routingSessionAffinity: false,
   routingSessionAffinityTTL: '',
