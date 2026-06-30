@@ -302,14 +302,6 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     keywords: ['auto disable interval', 'codex quota'],
   },
   {
-    fieldId: 'quotaAutoDisableThresholdPercent',
-    sectionId: 'quota',
-    labelKey: L('sections.quota.auto_disable_threshold'),
-    hintKey: L('sections.quota.auto_disable_threshold_hint'),
-    yamlKeys: ['quota-auto-disable', 'threshold-percent'],
-    keywords: ['auto disable threshold', 'codex quota'],
-  },
-  {
     fieldId: 'quotaCapacityAlertsEnabled',
     sectionId: 'quota',
     labelKey: L('sections.quota.capacity_alerts_enabled'),

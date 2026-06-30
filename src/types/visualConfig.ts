@@ -17,10 +17,6 @@ export type VisualConfigFieldPath =
   | 'maxRetryInterval'
   | 'authAutoRefreshWorkers'
   | 'quotaAutoDisableIntervalSeconds'
-  | 'quotaAutoDisableThresholdPercent'
-  | 'quotaAutoDisableWeeklyThresholdPercent'
-  | 'quotaAutoDisableResumeFiveHourThresholdPercent'
-  | 'quotaAutoDisableResumeWeeklyThresholdPercent'
   | 'quotaAutoDisableProPlanThresholdPercent'
   | 'quotaAutoDisableProPlanResumeThresholdPercent'
   | 'quotaAutoDisablePlusPlanThresholdPercent'
@@ -145,12 +141,7 @@ export type VisualConfigValues = {
   quotaAntigravityCredits: boolean;
   quotaAutoDisableEnabled: boolean;
   quotaAutoDisableAutoEnable: boolean;
-  quotaAutoDisableProOnly: boolean;
   quotaAutoDisableIntervalSeconds: string;
-  quotaAutoDisableThresholdPercent: string;
-  quotaAutoDisableWeeklyThresholdPercent: string;
-  quotaAutoDisableResumeFiveHourThresholdPercent: string;
-  quotaAutoDisableResumeWeeklyThresholdPercent: string;
   quotaAutoDisableProPlanEnabled: boolean;
   quotaAutoDisableProPlanThresholdPercent: string;
   quotaAutoDisableProPlanResumeThresholdPercent: string;
@@ -236,12 +227,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaAntigravityCredits: false,
   quotaAutoDisableEnabled: false,
   quotaAutoDisableAutoEnable: true,
-  quotaAutoDisableProOnly: true,
   quotaAutoDisableIntervalSeconds: '300',
-  quotaAutoDisableThresholdPercent: '5',
-  quotaAutoDisableWeeklyThresholdPercent: '3',
-  quotaAutoDisableResumeFiveHourThresholdPercent: '10',
-  quotaAutoDisableResumeWeeklyThresholdPercent: '6',
   quotaAutoDisableProPlanEnabled: true,
   quotaAutoDisableProPlanThresholdPercent: '5',
   quotaAutoDisableProPlanResumeThresholdPercent: '10',

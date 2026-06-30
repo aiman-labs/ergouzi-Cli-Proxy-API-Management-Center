@@ -249,16 +249,6 @@ export function getVisualConfigValidationErrors(
     quotaAutoDisableIntervalSeconds: getPositiveIntegerError(
       values.quotaAutoDisableIntervalSeconds
     ),
-    quotaAutoDisableThresholdPercent: getPercentRangeError(values.quotaAutoDisableThresholdPercent),
-    quotaAutoDisableWeeklyThresholdPercent: getPercentRangeError(
-      values.quotaAutoDisableWeeklyThresholdPercent
-    ),
-    quotaAutoDisableResumeFiveHourThresholdPercent: getPercentRangeError(
-      values.quotaAutoDisableResumeFiveHourThresholdPercent
-    ),
-    quotaAutoDisableResumeWeeklyThresholdPercent: getPercentRangeError(
-      values.quotaAutoDisableResumeWeeklyThresholdPercent
-    ),
     quotaAutoDisableProPlanThresholdPercent: getPercentRangeError(
       values.quotaAutoDisableProPlanThresholdPercent
     ),
@@ -996,12 +986,7 @@ function getNextDirtyFields(
       'quotaAntigravityCredits',
       'quotaAutoDisableEnabled',
       'quotaAutoDisableAutoEnable',
-      'quotaAutoDisableProOnly',
       'quotaAutoDisableIntervalSeconds',
-      'quotaAutoDisableThresholdPercent',
-      'quotaAutoDisableWeeklyThresholdPercent',
-      'quotaAutoDisableResumeFiveHourThresholdPercent',
-      'quotaAutoDisableResumeWeeklyThresholdPercent',
       'quotaAutoDisableProPlanEnabled',
       'quotaAutoDisableProPlanThresholdPercent',
       'quotaAutoDisableProPlanResumeThresholdPercent',
@@ -1271,22 +1256,7 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
     quotaAutoDisableEnabled: Boolean(quotaAutoDisable?.enabled ?? false),
     quotaAutoDisableAutoEnable: Boolean(quotaAutoDisable?.['auto-enable'] ?? true),
-    quotaAutoDisableProOnly: Boolean(quotaAutoDisable?.['pro-only'] ?? true),
     quotaAutoDisableIntervalSeconds: String(quotaAutoDisable?.['interval-seconds'] ?? '300'),
-    quotaAutoDisableThresholdPercent: String(
-      quotaAutoDisable?.['five-hour-threshold-percent'] ??
-        quotaAutoDisable?.['threshold-percent'] ??
-        '5'
-    ),
-    quotaAutoDisableWeeklyThresholdPercent: String(
-      quotaAutoDisable?.['weekly-threshold-percent'] ?? '3'
-    ),
-    quotaAutoDisableResumeFiveHourThresholdPercent: String(
-      quotaAutoDisable?.['resume-five-hour-threshold-percent'] ?? '10'
-    ),
-    quotaAutoDisableResumeWeeklyThresholdPercent: String(
-      quotaAutoDisable?.['resume-weekly-threshold-percent'] ?? '6'
-    ),
     quotaAutoDisableProPlanEnabled: quotaPlanPolicyEnabled(quotaAutoDisablePlanPolicies, 'pro'),
     quotaAutoDisableProPlanThresholdPercent: quotaPlanPolicyValue(
       quotaAutoDisablePlanPolicies,
@@ -1634,12 +1604,7 @@ export function applyVisualConfigValuesToYaml(
       docHas(doc, ['quota-auto-disable']) ||
       dirtyFields.has('quotaAutoDisableEnabled') ||
       dirtyFields.has('quotaAutoDisableAutoEnable') ||
-      dirtyFields.has('quotaAutoDisableProOnly') ||
       dirtyFields.has('quotaAutoDisableIntervalSeconds') ||
-      dirtyFields.has('quotaAutoDisableThresholdPercent') ||
-      dirtyFields.has('quotaAutoDisableWeeklyThresholdPercent') ||
-      dirtyFields.has('quotaAutoDisableResumeFiveHourThresholdPercent') ||
-      dirtyFields.has('quotaAutoDisableResumeWeeklyThresholdPercent') ||
       dirtyFields.has('quotaAutoDisableProPlanEnabled') ||
       dirtyFields.has('quotaAutoDisableProPlanThresholdPercent') ||
       dirtyFields.has('quotaAutoDisableProPlanResumeThresholdPercent') ||
@@ -1662,36 +1627,16 @@ export function applyVisualConfigValuesToYaml(
       ensureMapInDoc(doc, ['quota-auto-disable']);
       doc.setIn(['quota-auto-disable', 'enabled'], values.quotaAutoDisableEnabled);
       doc.setIn(['quota-auto-disable', 'auto-enable'], values.quotaAutoDisableAutoEnable);
-      doc.setIn(['quota-auto-disable', 'pro-only'], values.quotaAutoDisableProOnly);
+      doc.deleteIn(['quota-auto-disable', 'pro-only']);
+      doc.deleteIn(['quota-auto-disable', 'threshold-percent']);
+      doc.deleteIn(['quota-auto-disable', 'five-hour-threshold-percent']);
+      doc.deleteIn(['quota-auto-disable', 'weekly-threshold-percent']);
+      doc.deleteIn(['quota-auto-disable', 'resume-five-hour-threshold-percent']);
+      doc.deleteIn(['quota-auto-disable', 'resume-weekly-threshold-percent']);
       setIntFromStringInDoc(
         doc,
         ['quota-auto-disable', 'interval-seconds'],
         values.quotaAutoDisableIntervalSeconds
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'threshold-percent'],
-        values.quotaAutoDisableThresholdPercent
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'five-hour-threshold-percent'],
-        values.quotaAutoDisableThresholdPercent
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'weekly-threshold-percent'],
-        values.quotaAutoDisableWeeklyThresholdPercent
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'resume-five-hour-threshold-percent'],
-        values.quotaAutoDisableResumeFiveHourThresholdPercent
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'resume-weekly-threshold-percent'],
-        values.quotaAutoDisableResumeWeeklyThresholdPercent
       );
       const writeProPlanPolicy =
         docHas(doc, ['quota-auto-disable', 'plan-policies', 'pro']) ||

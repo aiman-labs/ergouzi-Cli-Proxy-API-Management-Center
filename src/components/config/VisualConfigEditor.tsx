@@ -203,10 +203,6 @@ export function VisualConfigEditor({
   const nonstreamKeepaliveHintId = `${nonstreamKeepaliveInputId}-hint`;
   const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
   const quotaAutoDisableIntervalInputId = useId();
-  const quotaAutoDisableThresholdInputId = useId();
-  const quotaAutoDisableWeeklyThresholdInputId = useId();
-  const quotaAutoDisableResumeFiveHourThresholdInputId = useId();
-  const quotaAutoDisableResumeWeeklyThresholdInputId = useId();
   const quotaAutoDisableProPlanThresholdInputId = useId();
   const quotaAutoDisableProPlanResumeThresholdInputId = useId();
   const quotaAutoDisablePlusPlanThresholdInputId = useId();
@@ -380,22 +376,6 @@ export function VisualConfigEditor({
     t,
     validationErrors?.quotaAutoDisableIntervalSeconds
   );
-  const quotaAutoDisableThresholdError = getValidationMessage(
-    t,
-    validationErrors?.quotaAutoDisableThresholdPercent
-  );
-  const quotaAutoDisableWeeklyThresholdError = getValidationMessage(
-    t,
-    validationErrors?.quotaAutoDisableWeeklyThresholdPercent
-  );
-  const quotaAutoDisableResumeFiveHourThresholdError = getValidationMessage(
-    t,
-    validationErrors?.quotaAutoDisableResumeFiveHourThresholdPercent
-  );
-  const quotaAutoDisableResumeWeeklyThresholdError = getValidationMessage(
-    t,
-    validationErrors?.quotaAutoDisableResumeWeeklyThresholdPercent
-  );
   const quotaAutoDisableProPlanThresholdError = getValidationMessage(
     t,
     validationErrors?.quotaAutoDisableProPlanThresholdPercent
@@ -536,10 +516,6 @@ export function VisualConfigEditor({
         icon: IconTimer,
         errorCount: countErrors([
           'quotaAutoDisableIntervalSeconds',
-          'quotaAutoDisableThresholdPercent',
-          'quotaAutoDisableWeeklyThresholdPercent',
-          'quotaAutoDisableResumeFiveHourThresholdPercent',
-          'quotaAutoDisableResumeWeeklyThresholdPercent',
           'quotaCapacityProFiveHourThreshold',
           'quotaCapacityProWeeklyThreshold',
           'quotaCapacityPlusFiveHourThreshold',
@@ -1474,17 +1450,6 @@ export function VisualConfigEditor({
                           onChange({ quotaAutoDisableAutoEnable })
                         }
                       />
-                      <ToggleRow
-                        title={t('config_management.visual.sections.quota.pro_only')}
-                        description={t('config_management.visual.sections.quota.pro_only_desc')}
-                        checked={values.quotaAutoDisableProOnly}
-                        disabled={disabled}
-                        onChange={(quotaAutoDisableProOnly) =>
-                          onChange({ quotaAutoDisableProOnly })
-                        }
-                      />
-                    </SectionGrid>
-                    <SectionGrid>
                       <FieldAnchor fieldId="quotaAutoDisableIntervalSeconds">
                         <Input
                           id={quotaAutoDisableIntervalInputId}
@@ -1501,94 +1466,6 @@ export function VisualConfigEditor({
                             'config_management.visual.sections.quota.auto_disable_interval_hint'
                           )}
                           error={quotaAutoDisableIntervalError}
-                        />
-                      </FieldAnchor>
-                      <FieldAnchor fieldId="quotaAutoDisableThresholdPercent">
-                        <Input
-                          id={quotaAutoDisableThresholdInputId}
-                          label={t(
-                            'config_management.visual.sections.quota.auto_disable_five_hour_threshold'
-                          )}
-                          type="number"
-                          min={1}
-                          max={100}
-                          placeholder="5"
-                          value={values.quotaAutoDisableThresholdPercent}
-                          onChange={(e) =>
-                            onChange({ quotaAutoDisableThresholdPercent: e.target.value })
-                          }
-                          disabled={disabled}
-                          hint={t(
-                            'config_management.visual.sections.quota.auto_disable_five_hour_threshold_hint'
-                          )}
-                          error={quotaAutoDisableThresholdError}
-                        />
-                      </FieldAnchor>
-                      <FieldAnchor fieldId="quotaAutoDisableWeeklyThresholdPercent">
-                        <Input
-                          id={quotaAutoDisableWeeklyThresholdInputId}
-                          label={t(
-                            'config_management.visual.sections.quota.auto_disable_weekly_threshold'
-                          )}
-                          type="number"
-                          min={1}
-                          max={100}
-                          placeholder="3"
-                          value={values.quotaAutoDisableWeeklyThresholdPercent}
-                          onChange={(e) =>
-                            onChange({ quotaAutoDisableWeeklyThresholdPercent: e.target.value })
-                          }
-                          disabled={disabled}
-                          hint={t(
-                            'config_management.visual.sections.quota.auto_disable_weekly_threshold_hint'
-                          )}
-                          error={quotaAutoDisableWeeklyThresholdError}
-                        />
-                      </FieldAnchor>
-                      <FieldAnchor fieldId="quotaAutoDisableResumeFiveHourThresholdPercent">
-                        <Input
-                          id={quotaAutoDisableResumeFiveHourThresholdInputId}
-                          label={t(
-                            'config_management.visual.sections.quota.auto_enable_five_hour_threshold'
-                          )}
-                          type="number"
-                          min={1}
-                          max={100}
-                          placeholder="10"
-                          value={values.quotaAutoDisableResumeFiveHourThresholdPercent}
-                          onChange={(e) =>
-                            onChange({
-                              quotaAutoDisableResumeFiveHourThresholdPercent: e.target.value,
-                            })
-                          }
-                          disabled={disabled}
-                          hint={t(
-                            'config_management.visual.sections.quota.auto_enable_five_hour_threshold_hint'
-                          )}
-                          error={quotaAutoDisableResumeFiveHourThresholdError}
-                        />
-                      </FieldAnchor>
-                      <FieldAnchor fieldId="quotaAutoDisableResumeWeeklyThresholdPercent">
-                        <Input
-                          id={quotaAutoDisableResumeWeeklyThresholdInputId}
-                          label={t(
-                            'config_management.visual.sections.quota.auto_enable_weekly_threshold'
-                          )}
-                          type="number"
-                          min={1}
-                          max={100}
-                          placeholder="6"
-                          value={values.quotaAutoDisableResumeWeeklyThresholdPercent}
-                          onChange={(e) =>
-                            onChange({
-                              quotaAutoDisableResumeWeeklyThresholdPercent: e.target.value,
-                            })
-                          }
-                          disabled={disabled}
-                          hint={t(
-                            'config_management.visual.sections.quota.auto_enable_weekly_threshold_hint'
-                          )}
-                          error={quotaAutoDisableResumeWeeklyThresholdError}
                         />
                       </FieldAnchor>
                     </SectionGrid>

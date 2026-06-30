@@ -13,23 +13,37 @@ describe('visual config quota auto-disable YAML mapping', () => {
 quota-auto-disable:
   enabled: true
   auto-enable: false
-  pro-only: false
   interval-seconds: 240
-  five-hour-threshold-percent: 5
-  weekly-threshold-percent: 2
-  resume-five-hour-threshold-percent: 12
-  resume-weekly-threshold-percent: 8
+  plan-policies:
+    pro:
+      enabled: true
+      threshold-percent: 5
+      resume-threshold-percent: 12
+    plus:
+      enabled: false
+      threshold-percent: 4
+      resume-threshold-percent: 8
+    team:
+      enabled: true
+      threshold-percent: 3
+      resume-threshold-percent: 6
+      require-five-hour-window: true
+      require-weekly-window: true
   pro-five-hour-capacity-alert-threshold: 0.75
 `);
 
     expect(values.quotaAutoDisableEnabled).toBe(true);
     expect(values.quotaAutoDisableAutoEnable).toBe(false);
-    expect(values.quotaAutoDisableProOnly).toBe(false);
     expect(values.quotaAutoDisableIntervalSeconds).toBe('240');
-    expect(values.quotaAutoDisableThresholdPercent).toBe('5');
-    expect(values.quotaAutoDisableWeeklyThresholdPercent).toBe('2');
-    expect(values.quotaAutoDisableResumeFiveHourThresholdPercent).toBe('12');
-    expect(values.quotaAutoDisableResumeWeeklyThresholdPercent).toBe('8');
+    expect(values.quotaAutoDisableProPlanEnabled).toBe(true);
+    expect(values.quotaAutoDisableProPlanThresholdPercent).toBe('5');
+    expect(values.quotaAutoDisableProPlanResumeThresholdPercent).toBe('12');
+    expect(values.quotaAutoDisablePlusPlanEnabled).toBe(false);
+    expect(values.quotaAutoDisablePlusPlanThresholdPercent).toBe('4');
+    expect(values.quotaAutoDisablePlusPlanResumeThresholdPercent).toBe('8');
+    expect(values.quotaAutoDisableTeamPlanEnabled).toBe(true);
+    expect(values.quotaAutoDisableTeamPlanThresholdPercent).toBe('3');
+    expect(values.quotaAutoDisableTeamPlanResumeThresholdPercent).toBe('6');
     expect(values.quotaAutoDisableProFiveHourCapacityAlertThreshold).toBe('0.75');
   });
 
@@ -40,23 +54,31 @@ quota-auto-disable:
         ...DEFAULT_VISUAL_VALUES,
         quotaAutoDisableEnabled: true,
         quotaAutoDisableAutoEnable: false,
-        quotaAutoDisableProOnly: false,
         quotaAutoDisableIntervalSeconds: '180',
-        quotaAutoDisableThresholdPercent: '3',
-        quotaAutoDisableWeeklyThresholdPercent: '2',
-        quotaAutoDisableResumeFiveHourThresholdPercent: '12',
-        quotaAutoDisableResumeWeeklyThresholdPercent: '8',
+        quotaAutoDisableProPlanEnabled: true,
+        quotaAutoDisableProPlanThresholdPercent: '5',
+        quotaAutoDisableProPlanResumeThresholdPercent: '10',
+        quotaAutoDisablePlusPlanEnabled: true,
+        quotaAutoDisablePlusPlanThresholdPercent: '4',
+        quotaAutoDisablePlusPlanResumeThresholdPercent: '8',
+        quotaAutoDisableTeamPlanEnabled: true,
+        quotaAutoDisableTeamPlanThresholdPercent: '3',
+        quotaAutoDisableTeamPlanResumeThresholdPercent: '6',
         quotaAutoDisableProFiveHourCapacityAlertThreshold: '0.75',
       },
       new Set([
         'quotaAutoDisableEnabled',
         'quotaAutoDisableAutoEnable',
-        'quotaAutoDisableProOnly',
         'quotaAutoDisableIntervalSeconds',
-        'quotaAutoDisableThresholdPercent',
-        'quotaAutoDisableWeeklyThresholdPercent',
-        'quotaAutoDisableResumeFiveHourThresholdPercent',
-        'quotaAutoDisableResumeWeeklyThresholdPercent',
+        'quotaAutoDisableProPlanEnabled',
+        'quotaAutoDisableProPlanThresholdPercent',
+        'quotaAutoDisableProPlanResumeThresholdPercent',
+        'quotaAutoDisablePlusPlanEnabled',
+        'quotaAutoDisablePlusPlanThresholdPercent',
+        'quotaAutoDisablePlusPlanResumeThresholdPercent',
+        'quotaAutoDisableTeamPlanEnabled',
+        'quotaAutoDisableTeamPlanThresholdPercent',
+        'quotaAutoDisableTeamPlanResumeThresholdPercent',
         'quotaAutoDisableProFiveHourCapacityAlertThreshold',
       ])
     );
@@ -65,14 +87,73 @@ quota-auto-disable:
     expect(parsed['quota-auto-disable']).toEqual({
       enabled: true,
       'auto-enable': false,
-      'pro-only': false,
       'interval-seconds': 180,
-      'five-hour-threshold-percent': 3,
-      'threshold-percent': 3,
-      'weekly-threshold-percent': 2,
-      'resume-five-hour-threshold-percent': 12,
-      'resume-weekly-threshold-percent': 8,
+      'plan-policies': {
+        pro: {
+          enabled: true,
+          'threshold-percent': 5,
+          'resume-threshold-percent': 10,
+        },
+        plus: {
+          enabled: true,
+          'threshold-percent': 4,
+          'resume-threshold-percent': 8,
+        },
+        team: {
+          enabled: true,
+          'threshold-percent': 3,
+          'resume-threshold-percent': 6,
+          'require-five-hour-window': true,
+          'require-weekly-window': true,
+        },
+      },
       'pro-five-hour-capacity-alert-threshold': 0.75,
+    });
+  });
+
+  test('removes legacy top-level quota-auto-disable thresholds when saving', () => {
+    const output = applyVisualConfigValuesToYaml(
+      `
+quota-auto-disable:
+  enabled: true
+  auto-enable: true
+  pro-only: true
+  interval-seconds: 240
+  threshold-percent: 5
+  five-hour-threshold-percent: 5
+  weekly-threshold-percent: 3
+  resume-five-hour-threshold-percent: 10
+  resume-weekly-threshold-percent: 6
+  plan-policies:
+    pro:
+      enabled: true
+      threshold-percent: 5
+      resume-threshold-percent: 10
+`,
+      {
+        ...DEFAULT_VISUAL_VALUES,
+        quotaAutoDisableEnabled: true,
+        quotaAutoDisableAutoEnable: true,
+        quotaAutoDisableIntervalSeconds: '200',
+      },
+      new Set(['quotaAutoDisableIntervalSeconds'])
+    );
+    const parsed = parseYaml(output) as Record<string, Record<string, unknown>>;
+    const quotaAutoDisable = parsed['quota-auto-disable'];
+
+    expect(quotaAutoDisable['interval-seconds']).toBe(200);
+    expect(quotaAutoDisable['pro-only']).toBeUndefined();
+    expect(quotaAutoDisable['threshold-percent']).toBeUndefined();
+    expect(quotaAutoDisable['five-hour-threshold-percent']).toBeUndefined();
+    expect(quotaAutoDisable['weekly-threshold-percent']).toBeUndefined();
+    expect(quotaAutoDisable['resume-five-hour-threshold-percent']).toBeUndefined();
+    expect(quotaAutoDisable['resume-weekly-threshold-percent']).toBeUndefined();
+    expect(quotaAutoDisable['plan-policies']).toEqual({
+      pro: {
+        enabled: true,
+        'threshold-percent': 5,
+        'resume-threshold-percent': 10,
+      },
     });
   });
 
