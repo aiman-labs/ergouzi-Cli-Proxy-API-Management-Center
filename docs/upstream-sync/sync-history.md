@@ -423,6 +423,72 @@ Result:
 - Conflict-marker scan returned no matches.
 - No release or production deployment has been performed for this sync.
 
+## 2026-06-30 Upstream `v1.17.8` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `d5735e6` |
+| Sync branch | `sync/upstream-v1.17.8` |
+| Upstream previous baseline | `v1.17.7` / `acf432b` |
+| Upstream target tag | `v1.17.8` |
+| Upstream target commit | `e9817a8` |
+| Merge base | `acf432b` |
+| Upstream commits adopted | `4` |
+| Changed files from `v1.17.7` to `v1.17.8` | `18` |
+| Local sync working diff | `18 files changed, 1065 insertions(+), 57 deletions(-)` |
+| Pre-PR latest release recheck | `v1.17.8` |
+| Sync status | `local sync prepared; not released; not deployed` |
+
+Upstream release themes:
+
+- Added Antigravity client configuration and user agent builder settings.
+- Added WebSocket support in the auth-files prefix proxy editor and related
+  localization.
+- Added plugin store authentication configuration in visual config.
+- Improved plugin store authentication handling in `useVisualConfig`.
+
+Sync findings:
+
+- The merge had content conflicts in:
+  - `src/features/plugins/PluginStorePage.tsx`
+  - `src/hooks/useVisualConfig.ts`
+- Resolved `PluginStorePage.tsx` by keeping upstream's versioned install request
+  shape and pre-restart install-state wait while preserving Ergouzi's
+  `isPluginStoreInstallSettled` helper.
+- Resolved `useVisualConfig.ts` by preserving Ergouzi's extracted YAML
+  parse/apply helper structure and adding upstream `plugins.store-auth` parsing
+  and serialization into those helpers. This avoids regressing the recently
+  added Pro/Plus/Team quota policy and capacity alert fields.
+- Protected Ergouzi surfaces remain intact after the merge:
+  - `management.html` remains the single-file release artifact contract.
+  - Auth-file filtered batch actions, selected-item scope, plan filter, quota
+    display switch, and page size `100` remain present.
+  - Quota page Codex-first ordering, plan/enabled/problem filters, plan-policy
+    config, and capacity alert config remain present.
+  - Codex quota card reset-credit expiry details remain hidden by default behind
+    the display switch.
+
+Verification:
+
+```bash
+bun install --frozen-lockfile
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- `bun install --frozen-lockfile` completed for the isolated worktree.
+- `bun run type-check` passed.
+- `bun run build` passed and produced a single-file `dist/index.html`.
+- `bun run lint` passed.
+- `git diff --check` passed.
+- Conflict-marker scan returned no matches.
+- No release or production deployment has been performed for this sync.
+
 ## 2026-06-26 Upstream `v1.17.7` Sync
 
 | Item | Value |
