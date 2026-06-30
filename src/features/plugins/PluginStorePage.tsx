@@ -366,6 +366,18 @@ export function PluginStorePage() {
         });
         clearConfigCache();
         const sourceId = result.sourceId || entry.sourceId;
+        if (result.restartRequired) {
+          setRestartRequiredKeys((current) =>
+            current.includes(entryKey) ? current : [...current, entryKey]
+          );
+          showNotification(
+            isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
+            'success'
+          );
+          showNotification(t('plugin_store.restart_required_notice'), 'warning');
+          return;
+        }
+
         const installedState = await waitForPluginStoreState(
           entry.id,
           sourceId,
@@ -382,18 +394,6 @@ export function PluginStorePage() {
           !installedState.plugin.configured
         ) {
           showNotification(t('plugin_store.status_pending'), 'warning');
-          return;
-        }
-
-        if (result.restartRequired) {
-          setRestartRequiredKeys((current) =>
-            current.includes(entryKey) ? current : [...current, entryKey]
-          );
-          showNotification(
-            isUpdate ? t('plugin_store.update_success') : t('plugin_store.install_success'),
-            'success'
-          );
-          showNotification(t('plugin_store.restart_required_notice'), 'warning');
           return;
         }
 
