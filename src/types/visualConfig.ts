@@ -32,6 +32,9 @@ export type VisualConfigFieldPath =
   | 'quotaCapacityPlusWeeklyThreshold'
   | 'quotaCapacityTeamFiveHourThreshold'
   | 'quotaCapacityTeamWeeklyThreshold'
+  | 'routingCodexProPlanPriority'
+  | 'routingCodexPlusPlanPriority'
+  | 'routingCodexTeamPlanPriority'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
   | 'streaming.nonstreamKeepaliveInterval';
@@ -161,6 +164,9 @@ export type VisualConfigValues = {
   quotaCapacityTeamFiveHourThreshold: string;
   quotaCapacityTeamWeeklyThreshold: string;
   routingStrategy: 'round-robin' | 'fill-first';
+  routingCodexProPlanPriority: string;
+  routingCodexPlusPlanPriority: string;
+  routingCodexTeamPlanPriority: string;
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
   wsAuth: boolean;
@@ -247,6 +253,9 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaCapacityTeamFiveHourThreshold: '0',
   quotaCapacityTeamWeeklyThreshold: '0',
   routingStrategy: 'round-robin',
+  routingCodexProPlanPriority: '',
+  routingCodexPlusPlanPriority: '',
+  routingCodexTeamPlanPriority: '',
   routingSessionAffinity: false,
   routingSessionAffinityTTL: '',
   wsAuth: false,

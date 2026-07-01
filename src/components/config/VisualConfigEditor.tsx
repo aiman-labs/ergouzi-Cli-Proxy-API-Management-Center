@@ -194,6 +194,9 @@ export function VisualConfigEditor({
   const isMobile = useMediaQuery('(max-width: 768px)');
   const routingStrategyLabelId = useId();
   const routingStrategyHintId = `${routingStrategyLabelId}-hint`;
+  const routingCodexProPlanPriorityInputId = useId();
+  const routingCodexPlusPlanPriorityInputId = useId();
+  const routingCodexTeamPlanPriorityInputId = useId();
   const disableImageGenerationLabelId = useId();
   const disableImageGenerationHintId = `${disableImageGenerationLabelId}-hint`;
   const keepaliveInputId = useId();
@@ -423,6 +426,18 @@ export function VisualConfigEditor({
   const quotaCapacityTeamWeeklyThresholdError = getValidationMessage(
     t,
     validationErrors?.quotaCapacityTeamWeeklyThreshold
+  );
+  const routingCodexProPlanPriorityError = getValidationMessage(
+    t,
+    validationErrors?.routingCodexProPlanPriority
+  );
+  const routingCodexPlusPlanPriorityError = getValidationMessage(
+    t,
+    validationErrors?.routingCodexPlusPlanPriority
+  );
+  const routingCodexTeamPlanPriorityError = getValidationMessage(
+    t,
+    validationErrors?.routingCodexTeamPlanPriority
   );
 
   const handleApiKeysTextChange = useCallback(
@@ -1199,6 +1214,60 @@ export function VisualConfigEditor({
                         }
                       />
                     </FieldShell>
+                  </FieldAnchor>
+                  <FieldAnchor fieldId="routingCodexProPlanPriority">
+                    <Input
+                      id={routingCodexProPlanPriorityInputId}
+                      label={t('config_management.visual.sections.network.codex_plan_priority', {
+                        plan: 'Pro',
+                      })}
+                      type="number"
+                      min={0}
+                      placeholder="30"
+                      value={values.routingCodexProPlanPriority}
+                      onChange={(e) =>
+                        onChange({ routingCodexProPlanPriority: e.target.value })
+                      }
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.codex_plan_priority_hint')}
+                      error={routingCodexProPlanPriorityError}
+                    />
+                  </FieldAnchor>
+                  <FieldAnchor fieldId="routingCodexPlusPlanPriority">
+                    <Input
+                      id={routingCodexPlusPlanPriorityInputId}
+                      label={t('config_management.visual.sections.network.codex_plan_priority', {
+                        plan: 'Plus',
+                      })}
+                      type="number"
+                      min={0}
+                      placeholder="20"
+                      value={values.routingCodexPlusPlanPriority}
+                      onChange={(e) =>
+                        onChange({ routingCodexPlusPlanPriority: e.target.value })
+                      }
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.codex_plan_priority_hint')}
+                      error={routingCodexPlusPlanPriorityError}
+                    />
+                  </FieldAnchor>
+                  <FieldAnchor fieldId="routingCodexTeamPlanPriority">
+                    <Input
+                      id={routingCodexTeamPlanPriorityInputId}
+                      label={t('config_management.visual.sections.network.codex_plan_priority', {
+                        plan: 'Team / K12 Team',
+                      })}
+                      type="number"
+                      min={0}
+                      placeholder="10"
+                      value={values.routingCodexTeamPlanPriority}
+                      onChange={(e) =>
+                        onChange({ routingCodexTeamPlanPriority: e.target.value })
+                      }
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.codex_plan_priority_hint')}
+                      error={routingCodexTeamPlanPriorityError}
+                    />
                   </FieldAnchor>
                   <FieldAnchor fieldId="disableImageGeneration">
                     <FieldShell

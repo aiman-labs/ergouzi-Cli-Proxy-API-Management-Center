@@ -16,6 +16,11 @@ import { formatFileSize } from '@/utils/format';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
 import { downloadBlob } from '@/utils/download';
 import {
+  DEFAULT_AUTH_FILE_IMPORT_OPTIONS,
+  transformAuthFilesForImport,
+  type AuthFileImportOptions,
+} from '@/features/authFiles/importOptions';
+import {
   getTypeLabel,
   hasAuthFileStatusMessage,
   isRuntimeOnlyAuthFile,
@@ -50,9 +55,12 @@ export type UseAuthFilesDataResult = {
   deletingAll: boolean;
   statusUpdating: Record<string, boolean>;
   batchStatusUpdating: boolean;
+  importOptionsOpen: boolean;
   fileInputRef: RefObject<HTMLInputElement | null>;
   loadFiles: () => Promise<void>;
   handleUploadClick: () => void;
+  handleImportOptionsClose: () => void;
+  handleImportFileSelect: (options: AuthFileImportOptions) => void;
   handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleDelete: (name: string) => void;
   handleDeleteAll: (options: DeleteAllOptions) => void;
@@ -79,10 +87,12 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
   const [deletingAll, setDeletingAll] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
+  const [importOptionsOpen, setImportOptionsOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const batchStatusPendingRef = useRef(false);
+  const pendingImportOptionsRef = useRef<AuthFileImportOptions>(DEFAULT_AUTH_FILE_IMPORT_OPTIONS);
   const selectionCount = selectedFiles.size;
   const toggleSelect = useCallback((name: string) => {
     setSelectedFiles((prev) => {
@@ -184,6 +194,17 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
   }, [t]);
 
   const handleUploadClick = useCallback(() => {
+    pendingImportOptionsRef.current = DEFAULT_AUTH_FILE_IMPORT_OPTIONS;
+    setImportOptionsOpen(true);
+  }, []);
+
+  const handleImportOptionsClose = useCallback(() => {
+    if (uploading) return;
+    setImportOptionsOpen(false);
+  }, [uploading]);
+
+  const handleImportFileSelect = useCallback((options: AuthFileImportOptions) => {
+    pendingImportOptionsRef.current = options;
     fileInputRef.current?.click();
   }, []);
 
@@ -226,7 +247,11 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
 
       setUploading(true);
       try {
-        const result = await authFilesApi.uploadFiles(validFiles);
+        const uploadFiles = await transformAuthFilesForImport(
+          validFiles,
+          pendingImportOptionsRef.current
+        );
+        const result = await authFilesApi.uploadFiles(uploadFiles);
         const successCount = result.uploaded;
 
         if (successCount > 0) {
@@ -236,6 +261,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
             result.failed.length ? 'warning' : 'success'
           );
           await loadFiles();
+          setImportOptionsOpen(false);
         }
 
         if (result.failed.length > 0) {
@@ -247,6 +273,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
         showNotification(`${t('notification.upload_failed')}: ${errorMessage}`, 'error');
       } finally {
         setUploading(false);
+        pendingImportOptionsRef.current = DEFAULT_AUTH_FILE_IMPORT_OPTIONS;
         event.target.value = '';
       }
     },
@@ -662,9 +689,12 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     deletingAll,
     statusUpdating,
     batchStatusUpdating,
+    importOptionsOpen,
     fileInputRef,
     loadFiles,
     handleUploadClick,
+    handleImportOptionsClose,
+    handleImportFileSelect,
     handleFileChange,
     handleDelete,
     handleDeleteAll,
