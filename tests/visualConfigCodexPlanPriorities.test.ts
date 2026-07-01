@@ -76,4 +76,18 @@ routing:
       strategy: 'fill-first',
     });
   });
+
+  test('does not write decimal Codex plan priorities', () => {
+    const output = applyVisualConfigValuesToYaml(
+      '',
+      {
+        ...DEFAULT_VISUAL_VALUES,
+        routingCodexProPlanPriority: '1.5',
+      },
+      new Set(['routingCodexProPlanPriority'])
+    );
+    const parsed = parseYaml(output) as Record<string, unknown>;
+
+    expect(parsed).toEqual({});
+  });
 });

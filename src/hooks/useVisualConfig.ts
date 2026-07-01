@@ -1861,17 +1861,17 @@ export function applyVisualConfigValuesToYaml(
         values.routingCodexTeamPlanPriority.trim()
       ) {
         ensureMapInDoc(doc, ['routing', 'codex-plan-priorities']);
-        setNumberFromStringInDoc(
+        setIntFromStringInDoc(
           doc,
           ['routing', 'codex-plan-priorities', 'pro'],
           values.routingCodexProPlanPriority
         );
-        setNumberFromStringInDoc(
+        setIntFromStringInDoc(
           doc,
           ['routing', 'codex-plan-priorities', 'plus'],
           values.routingCodexPlusPlanPriority
         );
-        setNumberFromStringInDoc(
+        setIntFromStringInDoc(
           doc,
           ['routing', 'codex-plan-priorities', 'team'],
           values.routingCodexTeamPlanPriority
