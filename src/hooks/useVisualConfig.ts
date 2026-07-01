@@ -285,6 +285,9 @@ export function getVisualConfigValidationErrors(
     quotaCapacityTeamWeeklyThreshold: getNonNegativeNumberError(
       values.quotaCapacityTeamWeeklyThreshold
     ),
+    routingCodexProPlanPriority: getNonNegativeIntegerError(values.routingCodexProPlanPriority),
+    routingCodexPlusPlanPriority: getNonNegativeIntegerError(values.routingCodexPlusPlanPriority),
+    routingCodexTeamPlanPriority: getNonNegativeIntegerError(values.routingCodexTeamPlanPriority),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
     'streaming.nonstreamKeepaliveInterval': getNonNegativeIntegerError(
@@ -1006,6 +1009,9 @@ function getNextDirtyFields(
       'quotaCapacityTeamFiveHourThreshold',
       'quotaCapacityTeamWeeklyThreshold',
       'routingStrategy',
+      'routingCodexProPlanPriority',
+      'routingCodexPlusPlanPriority',
+      'routingCodexTeamPlanPriority',
       'routingSessionAffinity',
       'routingSessionAffinityTTL',
     ] as Array<keyof VisualConfigValues>
@@ -1149,6 +1155,14 @@ function quotaCapacityPlanValue(
   return String(policy?.[key] ?? fallback);
 }
 
+function routingCodexPlanPriorityValue(
+  priorities: Record<string, unknown> | null,
+  plan: 'pro' | 'plus' | 'team'
+): string {
+  const value = priorities?.[plan];
+  return typeof value === 'number' || typeof value === 'string' ? String(value) : '';
+}
+
 export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConfigValues {
   const document = parseDocument(yamlContent);
   if (document.errors.length > 0) {
@@ -1165,6 +1179,7 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
   const quotaCapacityAlerts = asRecord(quotaAutoDisable?.['capacity-alerts']);
   const quotaCapacityPlans = asRecord(quotaCapacityAlerts?.plans);
   const routing = asRecord(parsed.routing);
+  const routingCodexPlanPriorities = asRecord(routing?.['codex-plan-priorities']);
   const payload = asRecord(parsed.payload);
   const streaming = asRecord(parsed.streaming);
   const plugins = asRecord(parsed.plugins);
@@ -1342,6 +1357,15 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     ),
 
     routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
+    routingCodexProPlanPriority: routingCodexPlanPriorityValue(routingCodexPlanPriorities, 'pro'),
+    routingCodexPlusPlanPriority: routingCodexPlanPriorityValue(
+      routingCodexPlanPriorities,
+      'plus'
+    ),
+    routingCodexTeamPlanPriority: routingCodexPlanPriorityValue(
+      routingCodexPlanPriorities,
+      'team'
+    ),
     routingSessionAffinity: Boolean(
       routing?.['session-affinity'] ?? routing?.sessionAffinity ?? routing?.['sessionAffinity']
     ),
@@ -1810,13 +1834,56 @@ export function applyVisualConfigValuesToYaml(
     if (
       docHas(doc, ['routing']) ||
       values.routingStrategy !== 'round-robin' ||
+      values.routingCodexProPlanPriority.trim() ||
+      values.routingCodexPlusPlanPriority.trim() ||
+      values.routingCodexTeamPlanPriority.trim() ||
+      dirtyFields.has('routingCodexProPlanPriority') ||
+      dirtyFields.has('routingCodexPlusPlanPriority') ||
+      dirtyFields.has('routingCodexTeamPlanPriority') ||
       values.routingSessionAffinity ||
       values.routingSessionAffinityTTL.trim()
     ) {
       ensureMapInDoc(doc, ['routing']);
-      doc.setIn(['routing', 'strategy'], values.routingStrategy);
-      setBooleanInDoc(doc, ['routing', 'session-affinity'], values.routingSessionAffinity);
-      setStringInDoc(doc, ['routing', 'session-affinity-ttl'], values.routingSessionAffinityTTL);
+      if (
+        docHas(doc, ['routing', 'strategy']) ||
+        dirtyFields.has('routingStrategy') ||
+        values.routingStrategy !== 'round-robin'
+      ) {
+        doc.setIn(['routing', 'strategy'], values.routingStrategy);
+      }
+      if (
+        docHas(doc, ['routing', 'codex-plan-priorities']) ||
+        dirtyFields.has('routingCodexProPlanPriority') ||
+        dirtyFields.has('routingCodexPlusPlanPriority') ||
+        dirtyFields.has('routingCodexTeamPlanPriority') ||
+        values.routingCodexProPlanPriority.trim() ||
+        values.routingCodexPlusPlanPriority.trim() ||
+        values.routingCodexTeamPlanPriority.trim()
+      ) {
+        ensureMapInDoc(doc, ['routing', 'codex-plan-priorities']);
+        setNumberFromStringInDoc(
+          doc,
+          ['routing', 'codex-plan-priorities', 'pro'],
+          values.routingCodexProPlanPriority
+        );
+        setNumberFromStringInDoc(
+          doc,
+          ['routing', 'codex-plan-priorities', 'plus'],
+          values.routingCodexPlusPlanPriority
+        );
+        setNumberFromStringInDoc(
+          doc,
+          ['routing', 'codex-plan-priorities', 'team'],
+          values.routingCodexTeamPlanPriority
+        );
+        deleteIfMapEmpty(doc, ['routing', 'codex-plan-priorities']);
+      }
+      if (docHas(doc, ['routing', 'session-affinity']) || values.routingSessionAffinity) {
+        setBooleanInDoc(doc, ['routing', 'session-affinity'], values.routingSessionAffinity);
+      }
+      if (docHas(doc, ['routing', 'session-affinity-ttl']) || values.routingSessionAffinityTTL) {
+        setStringInDoc(doc, ['routing', 'session-affinity-ttl'], values.routingSessionAffinityTTL);
+      }
       deleteIfMapEmpty(doc, ['routing']);
     }
 

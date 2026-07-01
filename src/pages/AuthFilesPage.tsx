@@ -39,6 +39,7 @@ import {
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
+import { AuthFilesImportOptionsModal } from '@/features/authFiles/components/AuthFilesImportOptionsModal';
 import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
 import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
@@ -196,9 +197,12 @@ export function AuthFilesPage() {
     deleting,
     statusUpdating,
     batchStatusUpdating,
+    importOptionsOpen,
     fileInputRef,
     loadFiles,
     handleUploadClick,
+    handleImportOptionsClose,
+    handleImportFileSelect,
     handleFileChange,
     handleDelete,
     handleDownload,
@@ -1346,6 +1350,16 @@ export function AuthFilesPage() {
         onSave={handlePrefixProxySave}
         onChange={handlePrefixProxyChange}
       />
+
+      {importOptionsOpen && (
+        <AuthFilesImportOptionsModal
+          open={importOptionsOpen}
+          uploading={uploading}
+          disableControls={disableControls}
+          onClose={handleImportOptionsClose}
+          onSelectFiles={handleImportFileSelect}
+        />
+      )}
 
       {batchActionBarVisible && typeof document !== 'undefined'
         ? createPortal(
