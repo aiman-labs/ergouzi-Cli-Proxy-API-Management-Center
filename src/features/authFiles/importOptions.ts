@@ -62,4 +62,13 @@ export const transformAuthFileForImport = async (
 export const transformAuthFilesForImport = async (
   files: File[],
   options: AuthFileImportOptions
-): Promise<File[]> => Promise.all(files.map((file) => transformAuthFileForImport(file, options)));
+): Promise<File[]> =>
+  Promise.all(
+    files.map(async (file) => {
+      try {
+        return await transformAuthFileForImport(file, options);
+      } catch {
+        return file;
+      }
+    })
+  );

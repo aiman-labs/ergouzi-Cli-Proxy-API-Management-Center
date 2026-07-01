@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { transformAuthFileImportJson } from '../src/features/authFiles/importOptions';
+import {
+  transformAuthFileImportJson,
+  transformAuthFilesForImport,
+} from '../src/features/authFiles/importOptions';
 
 describe('transformAuthFileImportJson', () => {
   test('removes supplier priority when import mode strips priority', () => {
@@ -69,5 +72,28 @@ describe('transformAuthFileImportJson', () => {
     ) as Record<string, unknown>;
 
     expect(transformed.disabled).toBe(true);
+  });
+
+  test('keeps one malformed file from aborting the whole import batch', async () => {
+    const goodFile = new File(
+      [
+        JSON.stringify({
+          type: 'codex',
+          priority: 99,
+        }),
+      ],
+      'good.json',
+      { type: 'application/json' }
+    );
+    const badFile = new File(['not-json'], 'bad.json', { type: 'application/json' });
+
+    const transformed = await transformAuthFilesForImport([goodFile, badFile], {
+      priorityMode: 'strip',
+      disabledMode: 'enabled',
+    });
+
+    const goodPayload = JSON.parse(await transformed[0].text()) as Record<string, unknown>;
+    expect(goodPayload.priority).toBeUndefined();
+    expect(await transformed[1].text()).toBe('not-json');
   });
 });
