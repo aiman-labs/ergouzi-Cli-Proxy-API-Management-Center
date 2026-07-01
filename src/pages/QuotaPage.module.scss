@@ -322,6 +322,12 @@
   align-items: center;
 }
 
+.quotaPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .antigravityGrid,
 .claudeGrid,
 .codexGrid,
@@ -337,10 +343,12 @@
 }
 
 .sectionScrollBody {
-  max-height: clamp(480px, 62vh, 760px);
+  max-height: clamp(760px, 72vh, 900px);
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
+  padding-bottom: 2px;
   scrollbar-gutter: stable;
 
   &::-webkit-scrollbar {
@@ -1070,7 +1078,8 @@
   justify-content: center;
   align-items: center;
   gap: $spacing-md;
-  margin-top: $spacing-lg;
+  flex: 0 0 auto;
+  margin-top: $spacing-md;
   padding-top: $spacing-md;
   border-top: 1px solid var(--border-color);
 }

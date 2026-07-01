@@ -740,7 +740,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   );
 
   return (
-    <Card title={titleNode}>
+    <Card title={titleNode} className={styles.quotaPanel}>
       <div className={styles.quotaCrudToolbar}>
         <div className={styles.quotaFilterBar}>
           <label className={styles.sectionSearch}>
@@ -994,34 +994,33 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             }
           />
         ) : (
-          <>
-            <div ref={gridRef} className={config.gridClassName}>
-              {pageItems.map((item) => {
-                const itemQuota = quota[item.name];
-                const isResettingQuota = resettingQuotaName === item.name;
-                const canRefreshQuotaAction = !disabled && itemQuota?.status !== 'loading';
-                const canResetQuotaAction = canRefreshQuotaAction && !item.disabled;
-                const showResetQuotaAction =
-                  itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));
-                const resetQuotaAction =
-                  config.resetQuota && showResetQuotaAction ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className={styles.quotaResetCreditButton}
-                      onClick={() => resetQuotaForFile(item)}
-                      disabled={!canResetQuotaAction || isResettingQuota}
-                      loading={isResettingQuota}
-                      title={t('codex_quota.reset_button')}
-                      aria-label={t('codex_quota.reset_button')}
-                    >
-                      {!isResettingQuota && <IconRefreshCw size={14} />}
-                      {t('codex_quota.reset_button')}
-                    </Button>
-                  ) : undefined;
-                const statusAction =
-                  statusActionsEnabled && !isRuntimeOnlyAuthFile(item) ? (
+          <div ref={gridRef} className={config.gridClassName}>
+            {pageItems.map((item) => {
+              const itemQuota = quota[item.name];
+              const isResettingQuota = resettingQuotaName === item.name;
+              const canRefreshQuotaAction = !disabled && itemQuota?.status !== 'loading';
+              const canResetQuotaAction = canRefreshQuotaAction && !item.disabled;
+              const showResetQuotaAction =
+                itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));
+              const resetQuotaAction =
+                config.resetQuota && showResetQuotaAction ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className={styles.quotaResetCreditButton}
+                    onClick={() => resetQuotaForFile(item)}
+                    disabled={!canResetQuotaAction || isResettingQuota}
+                    loading={isResettingQuota}
+                    title={t('codex_quota.reset_button')}
+                    aria-label={t('codex_quota.reset_button')}
+                  >
+                    {!isResettingQuota && <IconRefreshCw size={14} />}
+                    {t('codex_quota.reset_button')}
+                  </Button>
+                ) : undefined;
+              const statusAction =
+                statusActionsEnabled && !isRuntimeOnlyAuthFile(item) ? (
                   <div className={styles.quotaStatusToggle}>
                     <ToggleSwitch
                       checked={item.disabled !== true}
@@ -1036,62 +1035,61 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                       ariaLabel={t('auth_files.status_toggle_label')}
                     />
                   </div>
-                  ) : undefined;
+                ) : undefined;
 
-                return (
-                  <QuotaCard
-                    key={item.name}
-                    item={item}
-                    quota={itemQuota}
-                    resolvedTheme={resolvedTheme}
-                    i18nPrefix={config.i18nPrefix}
-                    cardIdleMessageKey={config.cardIdleMessageKey}
-                    cardClassName={config.cardClassName}
-                    defaultType={config.type}
-                    canRefresh={canRefreshQuotaAction && !isResettingQuota}
-                    onRefresh={() => void refreshQuotaForFile(item)}
-                    resetQuotaAction={resetQuotaAction}
-                    statusAction={statusAction}
-                    renderOptions={
-                      showCodexResetExpiryToggle
-                        ? { showCodexResetCreditExpiries }
-                        : undefined
-                    }
-                    renderQuotaItems={config.renderQuotaItems}
-                  />
-                );
-              })}
-            </div>
-            {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
-              <div className={styles.pagination}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={goToPrev}
-                  disabled={currentPage <= 1}
-                >
-                  {t('auth_files.pagination_prev')}
-                </Button>
-                <div className={styles.pageInfo}>
-                  {t('auth_files.pagination_info', {
-                    current: currentPage,
-                    total: totalPages,
-                    count: filteredFiles.length,
-                  })}
-                </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={goToNext}
-                  disabled={currentPage >= totalPages}
-                >
-                  {t('auth_files.pagination_next')}
-                </Button>
-              </div>
-            )}
-          </>
+              return (
+                <QuotaCard
+                  key={item.name}
+                  item={item}
+                  quota={itemQuota}
+                  resolvedTheme={resolvedTheme}
+                  i18nPrefix={config.i18nPrefix}
+                  cardIdleMessageKey={config.cardIdleMessageKey}
+                  cardClassName={config.cardClassName}
+                  defaultType={config.type}
+                  canRefresh={canRefreshQuotaAction && !isResettingQuota}
+                  onRefresh={() => void refreshQuotaForFile(item)}
+                  resetQuotaAction={resetQuotaAction}
+                  statusAction={statusAction}
+                  renderOptions={
+                    showCodexResetExpiryToggle
+                      ? { showCodexResetCreditExpiries }
+                      : undefined
+                  }
+                  renderQuotaItems={config.renderQuotaItems}
+                />
+              );
+            })}
+          </div>
         )}
       </div>
+      {filteredFiles.length > pageSize && effectiveViewMode === 'paged' && (
+        <div className={styles.pagination}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={goToPrev}
+            disabled={currentPage <= 1}
+          >
+            {t('auth_files.pagination_prev')}
+          </Button>
+          <div className={styles.pageInfo}>
+            {t('auth_files.pagination_info', {
+              current: currentPage,
+              total: totalPages,
+              count: filteredFiles.length,
+            })}
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={goToNext}
+            disabled={currentPage >= totalPages}
+          >
+            {t('auth_files.pagination_next')}
+          </Button>
+        </div>
+      )}
       {showTooManyWarning && (
         <div className={styles.warningOverlay} onClick={() => setShowTooManyWarning(false)}>
           <div className={styles.warningModal} onClick={(e) => e.stopPropagation()}>
