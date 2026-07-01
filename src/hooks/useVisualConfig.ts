@@ -151,6 +151,28 @@ function setIntFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown
   }
 }
 
+function setNonNegativeIntFromStringInDoc(
+  doc: YamlDocument,
+  path: YamlPath,
+  value: unknown
+): void {
+  const safe = typeof value === 'string' ? value : '';
+  const trimmed = safe.trim();
+  if (trimmed === '') {
+    if (docHas(doc, path)) doc.deleteIn(path);
+    return;
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    return;
+  }
+
+  const parsed = Number(trimmed);
+  if (Number.isSafeInteger(parsed)) {
+    doc.setIn(path, parsed);
+  }
+}
+
 function setNumberFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown): void {
   const safe = typeof value === 'string' ? value : '';
   const trimmed = safe.trim();
@@ -1861,17 +1883,17 @@ export function applyVisualConfigValuesToYaml(
         values.routingCodexTeamPlanPriority.trim()
       ) {
         ensureMapInDoc(doc, ['routing', 'codex-plan-priorities']);
-        setIntFromStringInDoc(
+        setNonNegativeIntFromStringInDoc(
           doc,
           ['routing', 'codex-plan-priorities', 'pro'],
           values.routingCodexProPlanPriority
         );
-        setIntFromStringInDoc(
+        setNonNegativeIntFromStringInDoc(
           doc,
           ['routing', 'codex-plan-priorities', 'plus'],
           values.routingCodexPlusPlanPriority
         );
-        setIntFromStringInDoc(
+        setNonNegativeIntFromStringInDoc(
           doc,
           ['routing', 'codex-plan-priorities', 'team'],
           values.routingCodexTeamPlanPriority

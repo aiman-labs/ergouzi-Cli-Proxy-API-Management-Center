@@ -90,4 +90,18 @@ routing:
 
     expect(parsed).toEqual({});
   });
+
+  test('does not write negative Codex plan priorities', () => {
+    const output = applyVisualConfigValuesToYaml(
+      '',
+      {
+        ...DEFAULT_VISUAL_VALUES,
+        routingCodexProPlanPriority: '-1',
+      },
+      new Set(['routingCodexProPlanPriority'])
+    );
+    const parsed = parseYaml(output) as Record<string, unknown>;
+
+    expect(parsed).toEqual({});
+  });
 });
