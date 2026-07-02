@@ -87,7 +87,7 @@ describe('resolveCodexPlanFilterValue', () => {
       plan_type: 'free',
     };
 
-    expect(resolveCodexPlanFilterValue(file, 'team')).toBe('bug_team');
+    expect(resolveCodexPlanFilterValue(file, 'team')).toBe('team');
   });
 
   test('classifies K12 plan variants as K12 Team', () => {
@@ -127,12 +127,21 @@ describe('resolveCodexPlanFilterValue', () => {
         plan_type: 'free',
       },
     };
-    const bugTeamFile: AuthFileItem = {
+    const teamFile: AuthFileItem = {
       name: 'team.json',
       type: 'codex',
       id_token: createJwt({
         'https://api.openai.com/auth': {
           plan_type: 'team',
+        },
+      }),
+    };
+    const bugTeamFile: AuthFileItem = {
+      name: 'bug-team.json',
+      type: 'codex',
+      id_token: createJwt({
+        'https://api.openai.com/auth': {
+          plan_type: 'bug team',
         },
       }),
     };
@@ -170,6 +179,7 @@ describe('resolveCodexPlanFilterValue', () => {
     }
     expect(resolveCodexPlanFilterValue(proFile)).toBe('pro');
     expect(resolveCodexPlanFilterValue(freeFile)).toBe('free');
+    expect(resolveCodexPlanFilterValue(teamFile)).toBe('team');
     expect(resolveCodexPlanFilterValue(bugTeamFile)).toBe('bug_team');
     expect(resolveCodexPlanFilterValue(regularTeamFile)).toBe('regular_team');
   });
