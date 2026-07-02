@@ -981,7 +981,7 @@ const renderCodexItems = (
       return t('codex_quota.plan_prolite');
     }
     if (normalized === 'plus') return t('codex_quota.plan_plus');
-    if (planKey === 'bugteam' || planKey === 'team' || planKey === 'chatgptteam') {
+    if (planKey === 'bugteam' || planKey === 'chatgptbugteam') {
       return t('codex_quota.plan_bug_team');
     }
     if (planKey === 'k12' || planKey === 'k12team' || planKey === 'chatgptk12' || planKey === 'chatgptk12team') {
