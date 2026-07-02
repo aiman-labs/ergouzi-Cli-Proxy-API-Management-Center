@@ -55,6 +55,7 @@ import {
   normalizePlanType,
   normalizeStringValue,
   normalizeCodexResetCreditsPayload,
+  matchesCodexPlanFilterValue,
   parseAntigravityPayload,
   parseClaudeUsagePayload,
   parseCodexUsagePayload,
@@ -62,7 +63,6 @@ import {
   parseXaiBillingPayload,
   resolveAuthFileEnabledFilterValue,
   resolveCodexChatgptAccountId,
-  resolveCodexPlanFilterValue,
   resolveCodexPlanType,
   resolveCodexSubscriptionActiveUntil,
   formatCodexResetLabel,
@@ -945,10 +945,15 @@ const renderAntigravityItems = (
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 const TEAM_CODEX_PLAN_TYPES = new Set([
   'team',
+  'chatgptteam',
+  'bugteam',
+  'chatgptbugteam',
   'k12',
   'k12team',
   'chatgptk12',
   'chatgptk12team',
+  'regularteam',
+  'chatgptregularteam',
 ]);
 const normalizeCodexPlanCategoryKey = (value?: string | null): string =>
   normalizePlanType(value)?.replace(/[-_\s]+/g, '') ?? '';
@@ -976,6 +981,15 @@ const renderCodexItems = (
       return t('codex_quota.plan_prolite');
     }
     if (normalized === 'plus') return t('codex_quota.plan_plus');
+    if (planKey === 'bugteam' || planKey === 'team' || planKey === 'chatgptteam') {
+      return t('codex_quota.plan_bug_team');
+    }
+    if (planKey === 'k12' || planKey === 'k12team' || planKey === 'chatgptk12' || planKey === 'chatgptk12team') {
+      return t('codex_quota.plan_k12_team');
+    }
+    if (planKey === 'regularteam' || planKey === 'chatgptregularteam') {
+      return t('codex_quota.plan_regular_team');
+    }
     if (TEAM_CODEX_PLAN_TYPES.has(planKey)) return t('codex_quota.plan_team');
     if (normalized === 'free') return t('codex_quota.plan_free');
     return pt || normalized;
@@ -1492,44 +1506,64 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
       labelKey: 'quota_management.codex_plan_filter_plus',
       emptyTitleKey: 'quota_management.no_codex_plan_plus_title',
       emptyDescKey: 'quota_management.no_codex_plan_plus_desc',
-      matches: ({ file, quota }) => resolveCodexPlanFilterValue(file, quota?.planType) === 'plus',
+      matches: ({ file, quota }) => matchesCodexPlanFilterValue(file, 'plus', quota?.planType),
     },
     {
       value: 'pro',
       labelKey: 'quota_management.codex_plan_filter_pro',
       emptyTitleKey: 'quota_management.no_codex_plan_pro_title',
       emptyDescKey: 'quota_management.no_codex_plan_pro_desc',
-      matches: ({ file, quota }) => resolveCodexPlanFilterValue(file, quota?.planType) === 'pro',
+      matches: ({ file, quota }) => matchesCodexPlanFilterValue(file, 'pro', quota?.planType),
     },
     {
       value: 'pro_lite',
       labelKey: 'quota_management.codex_plan_filter_pro_lite',
       emptyTitleKey: 'quota_management.no_codex_plan_pro_lite_title',
       emptyDescKey: 'quota_management.no_codex_plan_pro_lite_desc',
-      matches: ({ file, quota }) =>
-        resolveCodexPlanFilterValue(file, quota?.planType) === 'pro_lite',
+      matches: ({ file, quota }) => matchesCodexPlanFilterValue(file, 'pro_lite', quota?.planType),
     },
     {
       value: 'team',
       labelKey: 'quota_management.codex_plan_filter_team',
       emptyTitleKey: 'quota_management.no_codex_plan_team_title',
       emptyDescKey: 'quota_management.no_codex_plan_team_desc',
-      matches: ({ file, quota }) => resolveCodexPlanFilterValue(file, quota?.planType) === 'team',
+      matches: ({ file, quota }) => matchesCodexPlanFilterValue(file, 'team', quota?.planType),
+    },
+    {
+      value: 'bug_team',
+      labelKey: 'quota_management.codex_plan_filter_bug_team',
+      emptyTitleKey: 'quota_management.no_codex_plan_bug_team_title',
+      emptyDescKey: 'quota_management.no_codex_plan_bug_team_desc',
+      matches: ({ file, quota }) => matchesCodexPlanFilterValue(file, 'bug_team', quota?.planType),
+    },
+    {
+      value: 'k12_team',
+      labelKey: 'quota_management.codex_plan_filter_k12_team',
+      emptyTitleKey: 'quota_management.no_codex_plan_k12_team_title',
+      emptyDescKey: 'quota_management.no_codex_plan_k12_team_desc',
+      matches: ({ file, quota }) => matchesCodexPlanFilterValue(file, 'k12_team', quota?.planType),
+    },
+    {
+      value: 'regular_team',
+      labelKey: 'quota_management.codex_plan_filter_regular_team',
+      emptyTitleKey: 'quota_management.no_codex_plan_regular_team_title',
+      emptyDescKey: 'quota_management.no_codex_plan_regular_team_desc',
+      matches: ({ file, quota }) =>
+        matchesCodexPlanFilterValue(file, 'regular_team', quota?.planType),
     },
     {
       value: 'free',
       labelKey: 'quota_management.codex_plan_filter_free',
       emptyTitleKey: 'quota_management.no_codex_plan_free_title',
       emptyDescKey: 'quota_management.no_codex_plan_free_desc',
-      matches: ({ file, quota }) => resolveCodexPlanFilterValue(file, quota?.planType) === 'free',
+      matches: ({ file, quota }) => matchesCodexPlanFilterValue(file, 'free', quota?.planType),
     },
     {
       value: 'unknown',
       labelKey: 'quota_management.codex_plan_filter_unknown',
       emptyTitleKey: 'quota_management.no_codex_plan_unknown_title',
       emptyDescKey: 'quota_management.no_codex_plan_unknown_desc',
-      matches: ({ file, quota }) =>
-        resolveCodexPlanFilterValue(file, quota?.planType) === 'unknown',
+      matches: ({ file, quota }) => matchesCodexPlanFilterValue(file, 'unknown', quota?.planType),
     },
   ],
   enabledFilterLabelKey: 'quota_management.enabled_filter_label',

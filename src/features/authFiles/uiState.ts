@@ -14,6 +14,9 @@ export const AUTH_FILES_CODEX_PLAN_FILTERS = [
   'pro',
   'pro_lite',
   'team',
+  'bug_team',
+  'k12_team',
+  'regular_team',
   'free',
   'unknown',
 ] as const;

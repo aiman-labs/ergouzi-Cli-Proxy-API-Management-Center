@@ -17,6 +17,9 @@ export type CodexPlanFilterValue =
   | 'pro'
   | 'pro_lite'
   | 'team'
+  | 'bug_team'
+  | 'k12_team'
+  | 'regular_team'
   | 'free'
   | 'unknown';
 export type AuthFileEnabledFilterValue = 'all' | 'enabled' | 'disabled';
@@ -26,11 +29,16 @@ const CODEX_PLAN_FILTER_VALUES: Record<string, Exclude<CodexPlanFilterValue, 'al
     plus: 'plus',
     pro: 'pro',
     prolite: 'pro_lite',
-    team: 'team',
-    k12: 'team',
-    k12team: 'team',
-    chatgptk12: 'team',
-    chatgptk12team: 'team',
+    team: 'bug_team',
+    chatgptteam: 'bug_team',
+    bugteam: 'bug_team',
+    chatgptbugteam: 'bug_team',
+    k12: 'k12_team',
+    k12team: 'k12_team',
+    chatgptk12: 'k12_team',
+    chatgptk12team: 'k12_team',
+    regularteam: 'regular_team',
+    chatgptregularteam: 'regular_team',
     free: 'free',
   };
 
@@ -131,6 +139,19 @@ export function resolveCodexPlanFilterValue(
   const planType = normalizePlanType(quotaPlanType) ?? resolveCodexPlanType(file);
   if (!planType) return 'unknown';
   return CODEX_PLAN_FILTER_VALUES[normalizeCodexPlanFilterKey(planType)] ?? 'unknown';
+}
+
+export function matchesCodexPlanFilterValue(
+  file: AuthFileItem,
+  filter: CodexPlanFilterValue,
+  quotaPlanType?: unknown
+): boolean {
+  if (filter === 'all') return true;
+  const value = resolveCodexPlanFilterValue(file, quotaPlanType);
+  if (filter === 'team') {
+    return value === 'bug_team' || value === 'k12_team' || value === 'regular_team' || value === 'team';
+  }
+  return value === filter;
 }
 
 export function resolveAuthFileEnabledFilterValue(
