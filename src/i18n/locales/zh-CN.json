@@ -1722,6 +1722,7 @@
       "gemini": "Gemini",
       "codex": "Codex",
       "claude": "Claude",
+      "claudeApi": "ClaudeAPI",
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI 兼容",
       "apikeyFun": "APIKEY.FUN"
