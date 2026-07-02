@@ -87,7 +87,7 @@ describe('resolveCodexPlanFilterValue', () => {
       plan_type: 'free',
     };
 
-    expect(resolveCodexPlanFilterValue(file, 'team')).toBe('team');
+    expect(resolveCodexPlanFilterValue(file, 'team')).toBe('regular_team');
   });
 
   test('classifies K12 plan variants as K12 Team', () => {
@@ -179,7 +179,7 @@ describe('resolveCodexPlanFilterValue', () => {
     }
     expect(resolveCodexPlanFilterValue(proFile)).toBe('pro');
     expect(resolveCodexPlanFilterValue(freeFile)).toBe('free');
-    expect(resolveCodexPlanFilterValue(teamFile)).toBe('team');
+    expect(resolveCodexPlanFilterValue(teamFile)).toBe('regular_team');
     expect(resolveCodexPlanFilterValue(bugTeamFile)).toBe('bug_team');
     expect(resolveCodexPlanFilterValue(regularTeamFile)).toBe('regular_team');
   });
