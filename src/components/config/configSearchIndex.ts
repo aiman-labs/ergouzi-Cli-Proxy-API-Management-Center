@@ -339,7 +339,12 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     labelKey: L('sections.quota.capacity_snapshots_included'),
     hintKey: L('sections.quota.capacity_snapshots_included_desc'),
     yamlKeys: ['quota-auto-disable', 'capacity-alerts', 'include-snapshots'],
-    keywords: ['capacity snapshot', 'codex quota snapshot', 'discord quota summary'],
+    keywords: [
+      'capacity snapshot',
+      'codex quota snapshot',
+      'discord quota summary',
+      'bug team monthly inventory',
+    ],
   },
   {
     fieldId: 'quotaCapacityProFiveHourThreshold',
@@ -409,7 +414,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
       'team',
       'five-hour-threshold-equivalent',
     ],
-    keywords: ['team 5 hour capacity', 'k12 team capacity alert'],
+    keywords: ['team 5 hour capacity', 'k12 team capacity alert', 'regular team capacity alert'],
   },
   {
     fieldId: 'quotaCapacityTeamWeeklyThreshold',
@@ -423,7 +428,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
       'team',
       'weekly-threshold-equivalent',
     ],
-    keywords: ['team weekly capacity', 'k12 team weekly alert'],
+    keywords: ['team weekly capacity', 'k12 team weekly alert', 'regular team weekly alert'],
   },
   {
     fieldId: 'quotaAutoDisableProPlanThresholdPercent',
@@ -447,7 +452,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     labelKey: L('sections.quota.plan_policies_title'),
     hintKey: L('sections.quota.team_plan_enabled_desc'),
     yamlKeys: ['quota-auto-disable', 'plan-policies', 'team'],
-    keywords: ['codex team quota policy', 'k12 team', 'plan policy'],
+    keywords: ['codex team quota policy', 'k12 team', 'regular team', 'bug team monthly', 'plan policy'],
   },
   // ── streaming ─────────────────────────────────────────────────────────────
   {

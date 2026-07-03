@@ -1255,7 +1255,7 @@ export function VisualConfigEditor({
                     <Input
                       id={routingCodexTeamPlanPriorityInputId}
                       label={t('config_management.visual.sections.network.codex_plan_priority', {
-                        plan: 'Team / K12 Team',
+                        plan: 'Team / Bug Team / K12 Team',
                       })}
                       type="number"
                       min={0}
@@ -1664,7 +1664,7 @@ export function VisualConfigEditor({
                               id={quotaAutoDisableTeamPlanThresholdInputId}
                               label={t(
                                 'config_management.visual.sections.quota.plan_disable_threshold',
-                                { plan: 'Team / K12 Team' }
+                                { plan: 'Team / K12 Team (5h+weekly)' }
                               )}
                               type="number"
                               min={1}
@@ -1685,7 +1685,7 @@ export function VisualConfigEditor({
                               id={quotaAutoDisableTeamPlanResumeThresholdInputId}
                               label={t(
                                 'config_management.visual.sections.quota.plan_resume_threshold',
-                                { plan: 'Team / K12 Team' }
+                                { plan: 'Team / K12 Team (5h+weekly)' }
                               )}
                               type="number"
                               min={1}
@@ -1825,7 +1825,7 @@ export function VisualConfigEditor({
                               id={quotaCapacityTeamFiveHourThresholdInputId}
                               label={t(
                                 'config_management.visual.sections.quota.capacity_five_hour_threshold',
-                                { plan: 'Team / K12 Team' }
+                                { plan: 'Team / K12 Team (5h+weekly)' }
                               )}
                               type="number"
                               min={0}
@@ -1844,7 +1844,7 @@ export function VisualConfigEditor({
                               id={quotaCapacityTeamWeeklyThresholdInputId}
                               label={t(
                                 'config_management.visual.sections.quota.capacity_weekly_threshold',
-                                { plan: 'Team / K12 Team' }
+                                { plan: 'Team / K12 Team (5h+weekly)' }
                               )}
                               type="number"
                               min={0}

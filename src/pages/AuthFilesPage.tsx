@@ -70,7 +70,7 @@ import {
 } from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem } from '@/types/authFile';
-import { isCodexFile, resolveCodexPlanFilterValue } from '@/utils/quota';
+import { isCodexFile, matchesCodexPlanFilterValue } from '@/utils/quota';
 import styles from './AuthFilesPage.module.scss';
 
 const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
@@ -493,9 +493,7 @@ export function AuthFilesPage() {
       }
       if (codexPlanFilter !== 'all') {
         if (!isCodexFile(file)) return false;
-        if (
-          resolveCodexPlanFilterValue(file, codexQuota[file.name]?.planType) !== codexPlanFilter
-        ) {
+        if (!matchesCodexPlanFilterValue(file, codexPlanFilter, codexQuota[file.name]?.planType)) {
           return false;
         }
       }
@@ -564,6 +562,9 @@ export function AuthFilesPage() {
       { value: 'pro', label: t('auth_files.codex_plan_filter_pro') },
       { value: 'pro_lite', label: t('auth_files.codex_plan_filter_pro_lite') },
       { value: 'team', label: t('auth_files.codex_plan_filter_team') },
+      { value: 'bug_team', label: t('auth_files.codex_plan_filter_bug_team') },
+      { value: 'k12_team', label: t('auth_files.codex_plan_filter_k12_team') },
+      { value: 'regular_team', label: t('auth_files.codex_plan_filter_regular_team') },
       { value: 'free', label: t('auth_files.codex_plan_filter_free') },
       { value: 'unknown', label: t('auth_files.codex_plan_filter_unknown') },
     ],
