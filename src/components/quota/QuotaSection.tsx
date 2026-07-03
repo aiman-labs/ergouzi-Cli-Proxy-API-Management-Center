@@ -33,27 +33,44 @@ const MAX_ITEMS_PER_PAGE = 25;
 const MAX_SHOW_ALL_THRESHOLD = 30;
 const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'available']);
 
-const getModifiedTime = (file: AuthFileItem): number | null => {
-  const raw = file.modified ?? file['mtime'] ?? file['modified_at'] ?? file['updated_at'];
-  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
-  if (typeof raw === 'string') {
-    const numeric = Number(raw);
-    if (Number.isFinite(numeric)) return numeric;
-    const parsed = Date.parse(raw);
+const parseTimestampMs = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value < 1e12 ? value * 1000 : value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const numeric = Number(trimmed);
+    if (Number.isFinite(numeric)) return numeric < 1e12 ? numeric * 1000 : numeric;
+    const parsed = Date.parse(trimmed);
     if (Number.isFinite(parsed)) return parsed;
   }
   return null;
 };
 
+const getImportTime = (file: AuthFileItem): number | null =>
+  parseTimestampMs(file['created_at'] ?? file.createdAt ?? file.created);
+
+const getLegacyModifiedTime = (file: AuthFileItem): number | null =>
+  parseTimestampMs(file.modified ?? file['mtime'] ?? file['modified_at'] ?? file['updated_at']);
+
 const sortByNewestImport = (files: AuthFileItem[]) =>
   files
-    .map((file, index) => ({ file, index, modified: getModifiedTime(file) }))
+    .map((file, index) => ({
+      file,
+      index,
+      importTime: getImportTime(file),
+      fallbackTime: getLegacyModifiedTime(file),
+    }))
     .sort((a, b) => {
-      if (a.modified !== null && b.modified !== null && a.modified !== b.modified) {
-        return b.modified - a.modified;
+      const timeA = a.importTime ?? a.fallbackTime;
+      const timeB = b.importTime ?? b.fallbackTime;
+      if (timeA !== null && timeB !== null && timeA !== timeB) {
+        return timeB - timeA;
       }
-      if (a.modified !== null && b.modified === null) return -1;
-      if (a.modified === null && b.modified !== null) return 1;
+      if (timeA !== null && timeB === null) return -1;
+      if (timeA === null && timeB !== null) return 1;
       return a.index - b.index;
     })
     .map((entry) => entry.file);
