@@ -303,6 +303,7 @@
     "error_type_filter_all": "Все",
     "error_type_filter_usage_limit": "Usage Limit Reached",
     "error_type_filter_authentication_error": "Unauthorized / authentication_error",
+    "error_type_filter_deactivated_workspace": "Deactivated Workspace",
     "error_type_filter_other": "Другое",
     "success_count_filter_label": "Успешных",
     "success_count_filter_all": "Все",

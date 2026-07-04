@@ -49,6 +49,7 @@ import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModel
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
+import { classifyAuthFileErrorType } from '@/features/authFiles/errorType';
 import { filterAuthFilesBySuccessCount } from '@/features/authFiles/successFilter';
 import {
   isAuthFilesEnabledFilter,
@@ -86,19 +87,6 @@ type QuotaIssueState = {
   errorStatus?: number;
 };
 
-type KnownAuthFileErrorType = Exclude<AuthFilesErrorTypeFilter, 'all'>;
-
-const AUTH_FILE_AUTHENTICATION_ERROR_PATTERNS = [
-  /\b401\b/,
-  /authentication[_\s-]*error/,
-  /unauthori[sz]ed/,
-  /auth[_\s-]*unavailable/,
-  /authentication token has been invalidated/,
-  /please try signing in again/,
-  /\binvalid(?:ated)?\s+(?:auth(?:entication)?\s+)?token\b/,
-  /\btoken\s+(?:has\s+been\s+)?invalidated\b/,
-];
-
 const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildWildcardSearch = (value: string): RegExp | null => {
@@ -128,26 +116,6 @@ const getAuthFileSearchText = (file: AuthFileItem): string =>
     .filter((value) => value !== undefined && value !== null)
     .map((value) => String(value).toLowerCase())
     .join('\n');
-
-const classifyAuthFileErrorType = (message: string): KnownAuthFileErrorType | null => {
-  const normalized = message.trim().toLowerCase();
-  if (!normalized) return null;
-
-  if (
-    normalized.includes('usage_limit_reached') ||
-    normalized.includes('usage limit has been reached') ||
-    normalized.includes('usage limit reached') ||
-    normalized.includes('usage limited reach')
-  ) {
-    return 'usage_limit';
-  }
-
-  if (AUTH_FILE_AUTHENTICATION_ERROR_PATTERNS.some((pattern) => pattern.test(normalized))) {
-    return 'authentication_error';
-  }
-
-  return 'other';
-};
 
 export function AuthFilesPage() {
   const { t } = useTranslation();
@@ -542,6 +510,10 @@ export function AuthFilesPage() {
       {
         value: 'authentication_error',
         label: t('auth_files.error_type_filter_authentication_error'),
+      },
+      {
+        value: 'deactivated_workspace',
+        label: t('auth_files.error_type_filter_deactivated_workspace'),
       },
       { value: 'other', label: t('auth_files.error_type_filter_other') },
     ],
