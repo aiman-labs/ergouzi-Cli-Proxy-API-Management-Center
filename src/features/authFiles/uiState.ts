@@ -5,6 +5,7 @@ export const AUTH_FILES_ERROR_TYPE_FILTERS = [
   'all',
   'usage_limit',
   'authentication_error',
+  'deactivated_workspace',
   'other',
 ] as const;
 export const AUTH_FILES_SUCCESS_COUNT_FILTERS = ['all', 'positive', 'zero'] as const;
