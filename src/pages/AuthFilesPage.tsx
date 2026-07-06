@@ -35,7 +35,6 @@ import {
   getTypeLabel,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
-  parsePriorityValue,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
@@ -51,6 +50,7 @@ import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAut
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { classifyAuthFileErrorType } from '@/features/authFiles/errorType';
 import { filterAuthFilesBySuccessCount } from '@/features/authFiles/successFilter';
+import { sortAuthFiles } from '@/features/authFiles/sort';
 import {
   isAuthFilesEnabledFilter,
   isAuthFilesErrorTypeFilter,
@@ -58,6 +58,7 @@ import {
   isAuthFilesHealthFilter,
   isAuthFilesSortMode,
   isAuthFilesSuccessCountFilter,
+  normalizeAuthFilesSortMode,
   readAuthFilesUiState,
   readPersistedAuthFilesCompactMode,
   writeAuthFilesUiState,
@@ -316,8 +317,9 @@ export function AuthFilesPage() {
         regular: regularPageSize,
         compact: compactPageSize,
       });
-      if (isAuthFilesSortMode(persisted.sortMode)) {
-        setSortMode(persisted.sortMode);
+      const persistedSortMode = normalizeAuthFilesSortMode(persisted.sortMode);
+      if (persistedSortMode) {
+        setSortMode(persistedSortMode);
       }
     }
 
@@ -483,7 +485,10 @@ export function AuthFilesPage() {
     () => [
       { value: 'default', label: t('auth_files.sort_default') },
       { value: 'az', label: t('auth_files.sort_az') },
-      { value: 'priority', label: t('auth_files.sort_priority') },
+      { value: 'import_desc', label: t('auth_files.sort_import_desc') },
+      { value: 'import_asc', label: t('auth_files.sort_import_asc') },
+      { value: 'priority_desc', label: t('auth_files.sort_priority_desc') },
+      { value: 'priority_asc', label: t('auth_files.sort_priority_asc') },
     ],
     [t]
   );
@@ -570,27 +575,7 @@ export function AuthFilesPage() {
     });
   }, [filesMatchingStatusFilters, normalizedFilter, normalizedSearch, wildcardSearch]);
 
-  const sorted = useMemo(() => {
-    const copy = [...filtered];
-    if (sortMode === 'default') {
-      copy.sort((a, b) => {
-        const providerA = normalizeProviderKey(String(a.provider ?? a.type ?? 'unknown'));
-        const providerB = normalizeProviderKey(String(b.provider ?? b.type ?? 'unknown'));
-        const providerCompare = providerA.localeCompare(providerB);
-        if (providerCompare !== 0) return providerCompare;
-        return a.name.localeCompare(b.name);
-      });
-    } else if (sortMode === 'az') {
-      copy.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortMode === 'priority') {
-      copy.sort((a, b) => {
-        const pa = parsePriorityValue(a.priority) ?? 0;
-        const pb = parsePriorityValue(b.priority) ?? 0;
-        return pb - pa; // 高优先级排前面
-      });
-    }
-    return copy;
-  }, [filtered, sortMode]);
+  const sorted = useMemo(() => sortAuthFiles(filtered, sortMode), [filtered, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);

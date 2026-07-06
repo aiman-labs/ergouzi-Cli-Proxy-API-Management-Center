@@ -1,4 +1,11 @@
-export const AUTH_FILES_SORT_MODES = ['default', 'az', 'priority'] as const;
+export const AUTH_FILES_SORT_MODES = [
+  'default',
+  'az',
+  'import_desc',
+  'import_asc',
+  'priority_desc',
+  'priority_asc',
+] as const;
 export const AUTH_FILES_HEALTH_FILTERS = ['all', 'normal', 'problem'] as const;
 export const AUTH_FILES_ENABLED_FILTERS = ['all', 'enabled', 'disabled'] as const;
 export const AUTH_FILES_ERROR_TYPE_FILTERS = [
@@ -65,6 +72,12 @@ const AUTH_FILES_CODEX_PLAN_FILTER_SET = new Set<AuthFilesCodexPlanFilter>(
 
 export const isAuthFilesSortMode = (value: unknown): value is AuthFilesSortMode =>
   typeof value === 'string' && AUTH_FILES_SORT_MODE_SET.has(value as AuthFilesSortMode);
+
+export const normalizeAuthFilesSortMode = (value: unknown): AuthFilesSortMode | null => {
+  if (isAuthFilesSortMode(value)) return value;
+  if (value === 'priority') return 'priority_desc';
+  return null;
+};
 
 export const isAuthFilesHealthFilter = (value: unknown): value is AuthFilesHealthFilter =>
   typeof value === 'string' && AUTH_FILES_HEALTH_FILTER_SET.has(value as AuthFilesHealthFilter);
