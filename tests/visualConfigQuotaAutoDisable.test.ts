@@ -206,6 +206,33 @@ quota-auto-disable:
     expect(parsed['quota-auto-disable']).toBeUndefined();
   });
 
+  test('preserves omitted quota scan controls during unrelated visual saves', () => {
+    const output = applyVisualConfigValuesToYaml(
+      `
+quota-auto-disable:
+  enabled: true
+  auto-enable: true
+  interval-seconds: 300
+`,
+      {
+        ...DEFAULT_VISUAL_VALUES,
+        quotaAutoDisableEnabled: true,
+        quotaAutoDisableAutoEnable: true,
+        quotaAutoDisableIntervalSeconds: '300',
+        port: '9090',
+      },
+      new Set(['port'])
+    );
+    const parsed = parseYaml(output) as Record<string, Record<string, unknown>>;
+    const quotaAutoDisable = parsed['quota-auto-disable'];
+
+    expect(quotaAutoDisable).toEqual({
+      enabled: true,
+      'auto-enable': true,
+      'interval-seconds': 300,
+    });
+  });
+
   test('writes capacity alert settings to the new nested YAML structure', () => {
     const output = applyVisualConfigValuesToYaml(
       '',

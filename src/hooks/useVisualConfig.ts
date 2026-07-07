@@ -1728,36 +1728,90 @@ export function applyVisualConfigValuesToYaml(
         ['quota-auto-disable', 'interval-seconds'],
         values.quotaAutoDisableIntervalSeconds
       );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'max-scan-per-run'],
-        values.quotaAutoDisableMaxScanPerRun
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'probe-timeout-seconds'],
-        values.quotaAutoDisableProbeTimeoutSeconds
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'sample-freshness-seconds'],
-        values.quotaAutoDisableSampleFreshnessSeconds
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'account-error-backoff-seconds'],
-        values.quotaAutoDisableAccountErrorBackoffSeconds
-      );
-      setIntFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'transient-error-backoff-seconds'],
-        values.quotaAutoDisableTransientErrorBackoffSeconds
-      );
-      setNumberFromStringInDoc(
-        doc,
-        ['quota-auto-disable', 'min-capacity-coverage-percent'],
-        values.quotaAutoDisableMinCapacityCoveragePercent
-      );
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'max-scan-per-run'],
+          dirtyFields,
+          'quotaAutoDisableMaxScanPerRun'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'max-scan-per-run'],
+          values.quotaAutoDisableMaxScanPerRun
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'probe-timeout-seconds'],
+          dirtyFields,
+          'quotaAutoDisableProbeTimeoutSeconds'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'probe-timeout-seconds'],
+          values.quotaAutoDisableProbeTimeoutSeconds
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'sample-freshness-seconds'],
+          dirtyFields,
+          'quotaAutoDisableSampleFreshnessSeconds'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'sample-freshness-seconds'],
+          values.quotaAutoDisableSampleFreshnessSeconds
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'account-error-backoff-seconds'],
+          dirtyFields,
+          'quotaAutoDisableAccountErrorBackoffSeconds'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'account-error-backoff-seconds'],
+          values.quotaAutoDisableAccountErrorBackoffSeconds
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'transient-error-backoff-seconds'],
+          dirtyFields,
+          'quotaAutoDisableTransientErrorBackoffSeconds'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'transient-error-backoff-seconds'],
+          values.quotaAutoDisableTransientErrorBackoffSeconds
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'min-capacity-coverage-percent'],
+          dirtyFields,
+          'quotaAutoDisableMinCapacityCoveragePercent'
+        )
+      ) {
+        setNumberFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'min-capacity-coverage-percent'],
+          values.quotaAutoDisableMinCapacityCoveragePercent
+        );
+      }
       const writeProPlanPolicy =
         docHas(doc, ['quota-auto-disable', 'plan-policies', 'pro']) ||
         dirtyFields.has('quotaAutoDisableProPlanEnabled') ||
