@@ -207,6 +207,7 @@ export function VisualConfigEditor({
   const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
   const quotaAutoDisableIntervalInputId = useId();
   const quotaAutoDisableMaxScanPerRunInputId = useId();
+  const quotaAutoDisableAutoEnableScanReserveInputId = useId();
   const quotaAutoDisableProbeTimeoutInputId = useId();
   const quotaAutoDisableSampleFreshnessInputId = useId();
   const quotaAutoDisableAccountErrorBackoffInputId = useId();
@@ -389,6 +390,10 @@ export function VisualConfigEditor({
     t,
     validationErrors?.quotaAutoDisableMaxScanPerRun
   );
+  const quotaAutoDisableAutoEnableScanReserveError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableAutoEnableScanReserve
+  );
   const quotaAutoDisableProbeTimeoutError = getValidationMessage(
     t,
     validationErrors?.quotaAutoDisableProbeTimeoutSeconds
@@ -562,6 +567,7 @@ export function VisualConfigEditor({
         errorCount: countErrors([
           'quotaAutoDisableIntervalSeconds',
           'quotaAutoDisableMaxScanPerRun',
+          'quotaAutoDisableAutoEnableScanReserve',
           'quotaAutoDisableProbeTimeoutSeconds',
           'quotaAutoDisableSampleFreshnessSeconds',
           'quotaAutoDisableAccountErrorBackoffSeconds',
@@ -1591,6 +1597,26 @@ export function VisualConfigEditor({
                             'config_management.visual.sections.quota.max_scan_per_run_hint'
                           )}
                           error={quotaAutoDisableMaxScanPerRunError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableAutoEnableScanReserve">
+                        <Input
+                          id={quotaAutoDisableAutoEnableScanReserveInputId}
+                          label={t(
+                            'config_management.visual.sections.quota.auto_enable_scan_reserve'
+                          )}
+                          type="number"
+                          min={1}
+                          placeholder="40"
+                          value={values.quotaAutoDisableAutoEnableScanReserve}
+                          onChange={(e) =>
+                            onChange({ quotaAutoDisableAutoEnableScanReserve: e.target.value })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.auto_enable_scan_reserve_hint'
+                          )}
+                          error={quotaAutoDisableAutoEnableScanReserveError}
                         />
                       </FieldAnchor>
                       <FieldAnchor fieldId="quotaAutoDisableProbeTimeoutSeconds">

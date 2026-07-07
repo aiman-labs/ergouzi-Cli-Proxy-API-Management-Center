@@ -286,6 +286,9 @@ export function getVisualConfigValidationErrors(
     quotaAutoDisableMaxScanPerRun: getOptionalPositiveIntegerError(
       values.quotaAutoDisableMaxScanPerRun
     ),
+    quotaAutoDisableAutoEnableScanReserve: getOptionalPositiveIntegerError(
+      values.quotaAutoDisableAutoEnableScanReserve
+    ),
     quotaAutoDisableProbeTimeoutSeconds: getOptionalPositiveIntegerError(
       values.quotaAutoDisableProbeTimeoutSeconds
     ),
@@ -1043,6 +1046,7 @@ function getNextDirtyFields(
       'quotaAutoDisableAutoEnable',
       'quotaAutoDisableIntervalSeconds',
       'quotaAutoDisableMaxScanPerRun',
+      'quotaAutoDisableAutoEnableScanReserve',
       'quotaAutoDisableProbeTimeoutSeconds',
       'quotaAutoDisableSampleFreshnessSeconds',
       'quotaAutoDisableAccountErrorBackoffSeconds',
@@ -1331,6 +1335,9 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     quotaAutoDisableAutoEnable: Boolean(quotaAutoDisable?.['auto-enable'] ?? true),
     quotaAutoDisableIntervalSeconds: String(quotaAutoDisable?.['interval-seconds'] ?? '300'),
     quotaAutoDisableMaxScanPerRun: String(quotaAutoDisable?.['max-scan-per-run'] ?? '120'),
+    quotaAutoDisableAutoEnableScanReserve: String(
+      quotaAutoDisable?.['auto-enable-scan-reserve'] ?? '40'
+    ),
     quotaAutoDisableProbeTimeoutSeconds: String(
       quotaAutoDisable?.['probe-timeout-seconds'] ?? '15'
     ),
@@ -1704,6 +1711,7 @@ export function applyVisualConfigValuesToYaml(
       dirtyFields.has('quotaAutoDisableAutoEnable') ||
       dirtyFields.has('quotaAutoDisableIntervalSeconds') ||
       dirtyFields.has('quotaAutoDisableMaxScanPerRun') ||
+      dirtyFields.has('quotaAutoDisableAutoEnableScanReserve') ||
       dirtyFields.has('quotaAutoDisableProbeTimeoutSeconds') ||
       dirtyFields.has('quotaAutoDisableSampleFreshnessSeconds') ||
       dirtyFields.has('quotaAutoDisableAccountErrorBackoffSeconds') ||
@@ -1754,6 +1762,20 @@ export function applyVisualConfigValuesToYaml(
           doc,
           ['quota-auto-disable', 'max-scan-per-run'],
           values.quotaAutoDisableMaxScanPerRun
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'auto-enable-scan-reserve'],
+          dirtyFields,
+          'quotaAutoDisableAutoEnableScanReserve'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'auto-enable-scan-reserve'],
+          values.quotaAutoDisableAutoEnableScanReserve
         );
       }
       if (

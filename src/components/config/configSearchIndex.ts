@@ -334,6 +334,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     keywords: ['scan budget', 'codex quota scan limit'],
   },
   {
+    fieldId: 'quotaAutoDisableAutoEnableScanReserve',
+    sectionId: 'quota',
+    labelKey: L('sections.quota.auto_enable_scan_reserve'),
+    hintKey: L('sections.quota.auto_enable_scan_reserve_hint'),
+    yamlKeys: ['quota-auto-disable', 'auto-enable-scan-reserve'],
+    keywords: ['auto enable reserve', 'recovery scan budget', 'codex quota recovery'],
+  },
+  {
     fieldId: 'quotaAutoDisableProbeTimeoutSeconds',
     sectionId: 'quota',
     labelKey: L('sections.quota.probe_timeout'),

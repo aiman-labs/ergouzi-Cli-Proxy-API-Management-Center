@@ -1187,6 +1187,8 @@
           "auto_disable_interval_hint": "後台檢查 Codex 配額的間隔，建議不低於 60 秒。",
           "max_scan_per_run": "每輪掃描上限",
           "max_scan_per_run_hint": "每次巡檢最多刷新多少個 Codex 帳號配額；大型號池建議限制在 100-200。",
+          "auto_enable_scan_reserve": "自動恢復掃描保底",
+          "auto_enable_scan_reserve_hint": "每輪掃描中優先留給自動恢復探測的名額；大型號池建議保留一部分，避免已恢復帳號長期等待。",
           "probe_timeout": "單號探測逾時（秒）",
           "probe_timeout_hint": "單個帳號配額請求的最長等待時間，只作用於後台巡檢。",
           "sample_freshness": "樣本新鮮度（秒）",

@@ -1163,6 +1163,8 @@
           "auto_disable_interval_hint": "How often the backend checks Codex quota. 60 seconds or more is recommended.",
           "max_scan_per_run": "Max Scans Per Run",
           "max_scan_per_run_hint": "Maximum Codex accounts refreshed per patrol run. Use 100-200 for large pools.",
+          "auto_enable_scan_reserve": "Auto Recovery Scan Reserve",
+          "auto_enable_scan_reserve_hint": "Scan slots reserved first for auto-recovery probes each run. Reserve part of the budget for large pools so recovered accounts do not wait too long.",
           "probe_timeout": "Probe Timeout (seconds)",
           "probe_timeout_hint": "Maximum wait for one account quota request. Only applies to background patrols.",
           "sample_freshness": "Sample Freshness (seconds)",

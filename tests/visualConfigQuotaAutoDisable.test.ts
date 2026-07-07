@@ -13,6 +13,7 @@ describe('visual config quota auto-disable YAML mapping', () => {
     const values = parseVisualConfigValuesFromYaml('');
 
     expect(values.quotaAutoDisableMaxScanPerRun).toBe('120');
+    expect(values.quotaAutoDisableAutoEnableScanReserve).toBe('40');
     expect(values.quotaAutoDisableProbeTimeoutSeconds).toBe('15');
     expect(values.quotaAutoDisableSampleFreshnessSeconds).toBe('7200');
     expect(values.quotaAutoDisableAccountErrorBackoffSeconds).toBe('21600');
@@ -27,6 +28,7 @@ quota-auto-disable:
   auto-enable: false
   interval-seconds: 240
   max-scan-per-run: 160
+  auto-enable-scan-reserve: 48
   probe-timeout-seconds: 20
   sample-freshness-seconds: 7200
   account-error-backoff-seconds: 28800
@@ -54,6 +56,7 @@ quota-auto-disable:
     expect(values.quotaAutoDisableAutoEnable).toBe(false);
     expect(values.quotaAutoDisableIntervalSeconds).toBe('240');
     expect(values.quotaAutoDisableMaxScanPerRun).toBe('160');
+    expect(values.quotaAutoDisableAutoEnableScanReserve).toBe('48');
     expect(values.quotaAutoDisableProbeTimeoutSeconds).toBe('20');
     expect(values.quotaAutoDisableSampleFreshnessSeconds).toBe('7200');
     expect(values.quotaAutoDisableAccountErrorBackoffSeconds).toBe('28800');
@@ -80,6 +83,7 @@ quota-auto-disable:
         quotaAutoDisableAutoEnable: false,
         quotaAutoDisableIntervalSeconds: '180',
         quotaAutoDisableMaxScanPerRun: '160',
+        quotaAutoDisableAutoEnableScanReserve: '48',
         quotaAutoDisableProbeTimeoutSeconds: '20',
         quotaAutoDisableSampleFreshnessSeconds: '7200',
         quotaAutoDisableAccountErrorBackoffSeconds: '28800',
@@ -101,6 +105,7 @@ quota-auto-disable:
         'quotaAutoDisableAutoEnable',
         'quotaAutoDisableIntervalSeconds',
         'quotaAutoDisableMaxScanPerRun',
+        'quotaAutoDisableAutoEnableScanReserve',
         'quotaAutoDisableProbeTimeoutSeconds',
         'quotaAutoDisableSampleFreshnessSeconds',
         'quotaAutoDisableAccountErrorBackoffSeconds',
@@ -125,6 +130,7 @@ quota-auto-disable:
       'auto-enable': false,
       'interval-seconds': 180,
       'max-scan-per-run': 160,
+      'auto-enable-scan-reserve': 48,
       'probe-timeout-seconds': 20,
       'sample-freshness-seconds': 7200,
       'account-error-backoff-seconds': 28800,
@@ -240,6 +246,7 @@ quota-auto-disable:
       quotaAutoDisableAutoEnable: true,
       quotaAutoDisableIntervalSeconds: '300',
       quotaAutoDisableMaxScanPerRun: '',
+      quotaAutoDisableAutoEnableScanReserve: '',
       quotaAutoDisableProbeTimeoutSeconds: '',
       quotaAutoDisableSampleFreshnessSeconds: '',
       quotaAutoDisableAccountErrorBackoffSeconds: '',
@@ -249,6 +256,7 @@ quota-auto-disable:
     const errors = getVisualConfigValidationErrors(values);
 
     expect(errors.quotaAutoDisableMaxScanPerRun).toBeUndefined();
+    expect(errors.quotaAutoDisableAutoEnableScanReserve).toBeUndefined();
     expect(errors.quotaAutoDisableProbeTimeoutSeconds).toBeUndefined();
     expect(errors.quotaAutoDisableSampleFreshnessSeconds).toBeUndefined();
     expect(errors.quotaAutoDisableAccountErrorBackoffSeconds).toBeUndefined();
@@ -262,6 +270,7 @@ quota-auto-disable:
   auto-enable: true
   interval-seconds: 300
   max-scan-per-run: 160
+  auto-enable-scan-reserve: 48
   probe-timeout-seconds: 20
   sample-freshness-seconds: 7200
   account-error-backoff-seconds: 28800
@@ -271,6 +280,7 @@ quota-auto-disable:
       values,
       new Set([
         'quotaAutoDisableMaxScanPerRun',
+        'quotaAutoDisableAutoEnableScanReserve',
         'quotaAutoDisableProbeTimeoutSeconds',
         'quotaAutoDisableSampleFreshnessSeconds',
         'quotaAutoDisableAccountErrorBackoffSeconds',
@@ -352,6 +362,7 @@ quota-auto-disable:
     const errors = getVisualConfigValidationErrors({
       ...DEFAULT_VISUAL_VALUES,
       quotaAutoDisableMaxScanPerRun: '0',
+      quotaAutoDisableAutoEnableScanReserve: '0',
       quotaAutoDisableProbeTimeoutSeconds: 'soon',
       quotaAutoDisableSampleFreshnessSeconds: '-1',
       quotaAutoDisableAccountErrorBackoffSeconds: '1.5',
@@ -360,6 +371,7 @@ quota-auto-disable:
     });
 
     expect(errors.quotaAutoDisableMaxScanPerRun).toBe('positive_integer');
+    expect(errors.quotaAutoDisableAutoEnableScanReserve).toBe('positive_integer');
     expect(errors.quotaAutoDisableProbeTimeoutSeconds).toBe('positive_integer');
     expect(errors.quotaAutoDisableSampleFreshnessSeconds).toBe('positive_integer');
     expect(errors.quotaAutoDisableAccountErrorBackoffSeconds).toBe('positive_integer');
@@ -371,6 +383,7 @@ quota-auto-disable:
     const translate = (key: string) => key;
     const expected = new Map([
       ['max-scan-per-run', 'quotaAutoDisableMaxScanPerRun'],
+      ['auto-enable-scan-reserve', 'quotaAutoDisableAutoEnableScanReserve'],
       ['probe-timeout-seconds', 'quotaAutoDisableProbeTimeoutSeconds'],
       ['sample-freshness-seconds', 'quotaAutoDisableSampleFreshnessSeconds'],
       ['account-error-backoff-seconds', 'quotaAutoDisableAccountErrorBackoffSeconds'],

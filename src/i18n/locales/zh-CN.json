@@ -1161,6 +1161,8 @@
           "auto_disable_interval_hint": "后台检查 Codex 额度的间隔，建议不低于 60 秒。",
           "max_scan_per_run": "每轮扫描上限",
           "max_scan_per_run_hint": "每次巡检最多刷新多少个 Codex 账号额度；大号池建议限制在 100-200。",
+          "auto_enable_scan_reserve": "自动恢复扫描保底",
+          "auto_enable_scan_reserve_hint": "每轮扫描中优先留给自动恢复探测的名额；大号池建议保留一部分，避免已恢复账号长期等待。",
           "probe_timeout": "单号探测超时 (秒)",
           "probe_timeout_hint": "单个账号额度请求的最长等待时间，只作用于后台巡检。",
           "sample_freshness": "样本新鲜度 (秒)",

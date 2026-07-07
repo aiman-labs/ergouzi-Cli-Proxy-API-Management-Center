@@ -18,6 +18,7 @@ export type VisualConfigFieldPath =
   | 'authAutoRefreshWorkers'
   | 'quotaAutoDisableIntervalSeconds'
   | 'quotaAutoDisableMaxScanPerRun'
+  | 'quotaAutoDisableAutoEnableScanReserve'
   | 'quotaAutoDisableProbeTimeoutSeconds'
   | 'quotaAutoDisableSampleFreshnessSeconds'
   | 'quotaAutoDisableAccountErrorBackoffSeconds'
@@ -152,6 +153,7 @@ export type VisualConfigValues = {
   quotaAutoDisableAutoEnable: boolean;
   quotaAutoDisableIntervalSeconds: string;
   quotaAutoDisableMaxScanPerRun: string;
+  quotaAutoDisableAutoEnableScanReserve: string;
   quotaAutoDisableProbeTimeoutSeconds: string;
   quotaAutoDisableSampleFreshnessSeconds: string;
   quotaAutoDisableAccountErrorBackoffSeconds: string;
@@ -247,6 +249,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaAutoDisableAutoEnable: true,
   quotaAutoDisableIntervalSeconds: '300',
   quotaAutoDisableMaxScanPerRun: '120',
+  quotaAutoDisableAutoEnableScanReserve: '40',
   quotaAutoDisableProbeTimeoutSeconds: '15',
   quotaAutoDisableSampleFreshnessSeconds: '7200',
   quotaAutoDisableAccountErrorBackoffSeconds: '21600',
