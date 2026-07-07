@@ -238,6 +238,12 @@ function getPositiveIntegerError(value: string): 'positive_integer' | undefined 
   return Number(trimmed) >= 1 ? undefined : 'positive_integer';
 }
 
+function getOptionalPositiveIntegerError(value: string): 'positive_integer' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return getPositiveIntegerError(trimmed);
+}
+
 function getPortError(value: string): 'port_range' | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -252,6 +258,12 @@ function getPercentRangeError(value: string): 'percent_range' | undefined {
   if (!/^\d+$/.test(trimmed)) return 'percent_range';
   const parsed = Number(trimmed);
   return parsed >= 1 && parsed <= 100 ? undefined : 'percent_range';
+}
+
+function getOptionalPercentRangeError(value: string): 'percent_range' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return getPercentRangeError(trimmed);
 }
 
 export function getVisualConfigValidationErrors(
@@ -270,6 +282,24 @@ export function getVisualConfigValidationErrors(
     authAutoRefreshWorkers: getNonNegativeIntegerError(values.authAutoRefreshWorkers),
     quotaAutoDisableIntervalSeconds: getPositiveIntegerError(
       values.quotaAutoDisableIntervalSeconds
+    ),
+    quotaAutoDisableMaxScanPerRun: getOptionalPositiveIntegerError(
+      values.quotaAutoDisableMaxScanPerRun
+    ),
+    quotaAutoDisableProbeTimeoutSeconds: getOptionalPositiveIntegerError(
+      values.quotaAutoDisableProbeTimeoutSeconds
+    ),
+    quotaAutoDisableSampleFreshnessSeconds: getOptionalPositiveIntegerError(
+      values.quotaAutoDisableSampleFreshnessSeconds
+    ),
+    quotaAutoDisableAccountErrorBackoffSeconds: getOptionalPositiveIntegerError(
+      values.quotaAutoDisableAccountErrorBackoffSeconds
+    ),
+    quotaAutoDisableTransientErrorBackoffSeconds: getOptionalPositiveIntegerError(
+      values.quotaAutoDisableTransientErrorBackoffSeconds
+    ),
+    quotaAutoDisableMinCapacityCoveragePercent: getOptionalPercentRangeError(
+      values.quotaAutoDisableMinCapacityCoveragePercent
     ),
     quotaAutoDisableProPlanThresholdPercent: getPercentRangeError(
       values.quotaAutoDisableProPlanThresholdPercent
@@ -1012,6 +1042,12 @@ function getNextDirtyFields(
       'quotaAutoDisableEnabled',
       'quotaAutoDisableAutoEnable',
       'quotaAutoDisableIntervalSeconds',
+      'quotaAutoDisableMaxScanPerRun',
+      'quotaAutoDisableProbeTimeoutSeconds',
+      'quotaAutoDisableSampleFreshnessSeconds',
+      'quotaAutoDisableAccountErrorBackoffSeconds',
+      'quotaAutoDisableTransientErrorBackoffSeconds',
+      'quotaAutoDisableMinCapacityCoveragePercent',
       'quotaAutoDisableProPlanEnabled',
       'quotaAutoDisableProPlanThresholdPercent',
       'quotaAutoDisableProPlanResumeThresholdPercent',
@@ -1294,6 +1330,22 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     quotaAutoDisableEnabled: Boolean(quotaAutoDisable?.enabled ?? false),
     quotaAutoDisableAutoEnable: Boolean(quotaAutoDisable?.['auto-enable'] ?? true),
     quotaAutoDisableIntervalSeconds: String(quotaAutoDisable?.['interval-seconds'] ?? '300'),
+    quotaAutoDisableMaxScanPerRun: String(quotaAutoDisable?.['max-scan-per-run'] ?? '120'),
+    quotaAutoDisableProbeTimeoutSeconds: String(
+      quotaAutoDisable?.['probe-timeout-seconds'] ?? '15'
+    ),
+    quotaAutoDisableSampleFreshnessSeconds: String(
+      quotaAutoDisable?.['sample-freshness-seconds'] ?? '7200'
+    ),
+    quotaAutoDisableAccountErrorBackoffSeconds: String(
+      quotaAutoDisable?.['account-error-backoff-seconds'] ?? '21600'
+    ),
+    quotaAutoDisableTransientErrorBackoffSeconds: String(
+      quotaAutoDisable?.['transient-error-backoff-seconds'] ?? '600'
+    ),
+    quotaAutoDisableMinCapacityCoveragePercent: String(
+      quotaAutoDisable?.['min-capacity-coverage-percent'] ?? '80'
+    ),
     quotaAutoDisableProPlanEnabled: quotaPlanPolicyEnabled(quotaAutoDisablePlanPolicies, 'pro'),
     quotaAutoDisableProPlanThresholdPercent: quotaPlanPolicyValue(
       quotaAutoDisablePlanPolicies,
@@ -1651,6 +1703,12 @@ export function applyVisualConfigValuesToYaml(
       dirtyFields.has('quotaAutoDisableEnabled') ||
       dirtyFields.has('quotaAutoDisableAutoEnable') ||
       dirtyFields.has('quotaAutoDisableIntervalSeconds') ||
+      dirtyFields.has('quotaAutoDisableMaxScanPerRun') ||
+      dirtyFields.has('quotaAutoDisableProbeTimeoutSeconds') ||
+      dirtyFields.has('quotaAutoDisableSampleFreshnessSeconds') ||
+      dirtyFields.has('quotaAutoDisableAccountErrorBackoffSeconds') ||
+      dirtyFields.has('quotaAutoDisableTransientErrorBackoffSeconds') ||
+      dirtyFields.has('quotaAutoDisableMinCapacityCoveragePercent') ||
       dirtyFields.has('quotaAutoDisableProPlanEnabled') ||
       dirtyFields.has('quotaAutoDisableProPlanThresholdPercent') ||
       dirtyFields.has('quotaAutoDisableProPlanResumeThresholdPercent') ||
@@ -1684,6 +1742,90 @@ export function applyVisualConfigValuesToYaml(
         ['quota-auto-disable', 'interval-seconds'],
         values.quotaAutoDisableIntervalSeconds
       );
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'max-scan-per-run'],
+          dirtyFields,
+          'quotaAutoDisableMaxScanPerRun'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'max-scan-per-run'],
+          values.quotaAutoDisableMaxScanPerRun
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'probe-timeout-seconds'],
+          dirtyFields,
+          'quotaAutoDisableProbeTimeoutSeconds'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'probe-timeout-seconds'],
+          values.quotaAutoDisableProbeTimeoutSeconds
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'sample-freshness-seconds'],
+          dirtyFields,
+          'quotaAutoDisableSampleFreshnessSeconds'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'sample-freshness-seconds'],
+          values.quotaAutoDisableSampleFreshnessSeconds
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'account-error-backoff-seconds'],
+          dirtyFields,
+          'quotaAutoDisableAccountErrorBackoffSeconds'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'account-error-backoff-seconds'],
+          values.quotaAutoDisableAccountErrorBackoffSeconds
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'transient-error-backoff-seconds'],
+          dirtyFields,
+          'quotaAutoDisableTransientErrorBackoffSeconds'
+        )
+      ) {
+        setIntFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'transient-error-backoff-seconds'],
+          values.quotaAutoDisableTransientErrorBackoffSeconds
+        );
+      }
+      if (
+        shouldWriteManagedField(
+          doc,
+          ['quota-auto-disable', 'min-capacity-coverage-percent'],
+          dirtyFields,
+          'quotaAutoDisableMinCapacityCoveragePercent'
+        )
+      ) {
+        setNumberFromStringInDoc(
+          doc,
+          ['quota-auto-disable', 'min-capacity-coverage-percent'],
+          values.quotaAutoDisableMinCapacityCoveragePercent
+        );
+      }
       const writeProPlanPolicy =
         docHas(doc, ['quota-auto-disable', 'plan-policies', 'pro']) ||
         dirtyFields.has('quotaAutoDisableProPlanEnabled') ||
