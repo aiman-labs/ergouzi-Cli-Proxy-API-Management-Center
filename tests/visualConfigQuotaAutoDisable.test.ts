@@ -233,6 +233,61 @@ quota-auto-disable:
     });
   });
 
+  test('allows clearing optional quota scan controls', () => {
+    const values = {
+      ...DEFAULT_VISUAL_VALUES,
+      quotaAutoDisableEnabled: true,
+      quotaAutoDisableAutoEnable: true,
+      quotaAutoDisableIntervalSeconds: '300',
+      quotaAutoDisableMaxScanPerRun: '',
+      quotaAutoDisableProbeTimeoutSeconds: '',
+      quotaAutoDisableSampleFreshnessSeconds: '',
+      quotaAutoDisableAccountErrorBackoffSeconds: '',
+      quotaAutoDisableTransientErrorBackoffSeconds: '',
+      quotaAutoDisableMinCapacityCoveragePercent: '',
+    };
+    const errors = getVisualConfigValidationErrors(values);
+
+    expect(errors.quotaAutoDisableMaxScanPerRun).toBeUndefined();
+    expect(errors.quotaAutoDisableProbeTimeoutSeconds).toBeUndefined();
+    expect(errors.quotaAutoDisableSampleFreshnessSeconds).toBeUndefined();
+    expect(errors.quotaAutoDisableAccountErrorBackoffSeconds).toBeUndefined();
+    expect(errors.quotaAutoDisableTransientErrorBackoffSeconds).toBeUndefined();
+    expect(errors.quotaAutoDisableMinCapacityCoveragePercent).toBeUndefined();
+
+    const output = applyVisualConfigValuesToYaml(
+      `
+quota-auto-disable:
+  enabled: true
+  auto-enable: true
+  interval-seconds: 300
+  max-scan-per-run: 160
+  probe-timeout-seconds: 20
+  sample-freshness-seconds: 7200
+  account-error-backoff-seconds: 28800
+  transient-error-backoff-seconds: 900
+  min-capacity-coverage-percent: 75
+`,
+      values,
+      new Set([
+        'quotaAutoDisableMaxScanPerRun',
+        'quotaAutoDisableProbeTimeoutSeconds',
+        'quotaAutoDisableSampleFreshnessSeconds',
+        'quotaAutoDisableAccountErrorBackoffSeconds',
+        'quotaAutoDisableTransientErrorBackoffSeconds',
+        'quotaAutoDisableMinCapacityCoveragePercent',
+      ])
+    );
+    const parsed = parseYaml(output) as Record<string, Record<string, unknown>>;
+    const quotaAutoDisable = parsed['quota-auto-disable'];
+
+    expect(quotaAutoDisable).toEqual({
+      enabled: true,
+      'auto-enable': true,
+      'interval-seconds': 300,
+    });
+  });
+
   test('writes capacity alert settings to the new nested YAML structure', () => {
     const output = applyVisualConfigValuesToYaml(
       '',
@@ -297,10 +352,10 @@ quota-auto-disable:
     const errors = getVisualConfigValidationErrors({
       ...DEFAULT_VISUAL_VALUES,
       quotaAutoDisableMaxScanPerRun: '0',
-      quotaAutoDisableProbeTimeoutSeconds: '',
+      quotaAutoDisableProbeTimeoutSeconds: 'soon',
       quotaAutoDisableSampleFreshnessSeconds: '-1',
       quotaAutoDisableAccountErrorBackoffSeconds: '1.5',
-      quotaAutoDisableTransientErrorBackoffSeconds: 'soon',
+      quotaAutoDisableTransientErrorBackoffSeconds: '0',
       quotaAutoDisableMinCapacityCoveragePercent: '101',
     });
 

@@ -238,6 +238,12 @@ function getPositiveIntegerError(value: string): 'positive_integer' | undefined 
   return Number(trimmed) >= 1 ? undefined : 'positive_integer';
 }
 
+function getOptionalPositiveIntegerError(value: string): 'positive_integer' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return getPositiveIntegerError(trimmed);
+}
+
 function getPortError(value: string): 'port_range' | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -252,6 +258,12 @@ function getPercentRangeError(value: string): 'percent_range' | undefined {
   if (!/^\d+$/.test(trimmed)) return 'percent_range';
   const parsed = Number(trimmed);
   return parsed >= 1 && parsed <= 100 ? undefined : 'percent_range';
+}
+
+function getOptionalPercentRangeError(value: string): 'percent_range' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return getPercentRangeError(trimmed);
 }
 
 export function getVisualConfigValidationErrors(
@@ -271,20 +283,22 @@ export function getVisualConfigValidationErrors(
     quotaAutoDisableIntervalSeconds: getPositiveIntegerError(
       values.quotaAutoDisableIntervalSeconds
     ),
-    quotaAutoDisableMaxScanPerRun: getPositiveIntegerError(values.quotaAutoDisableMaxScanPerRun),
-    quotaAutoDisableProbeTimeoutSeconds: getPositiveIntegerError(
+    quotaAutoDisableMaxScanPerRun: getOptionalPositiveIntegerError(
+      values.quotaAutoDisableMaxScanPerRun
+    ),
+    quotaAutoDisableProbeTimeoutSeconds: getOptionalPositiveIntegerError(
       values.quotaAutoDisableProbeTimeoutSeconds
     ),
-    quotaAutoDisableSampleFreshnessSeconds: getPositiveIntegerError(
+    quotaAutoDisableSampleFreshnessSeconds: getOptionalPositiveIntegerError(
       values.quotaAutoDisableSampleFreshnessSeconds
     ),
-    quotaAutoDisableAccountErrorBackoffSeconds: getPositiveIntegerError(
+    quotaAutoDisableAccountErrorBackoffSeconds: getOptionalPositiveIntegerError(
       values.quotaAutoDisableAccountErrorBackoffSeconds
     ),
-    quotaAutoDisableTransientErrorBackoffSeconds: getPositiveIntegerError(
+    quotaAutoDisableTransientErrorBackoffSeconds: getOptionalPositiveIntegerError(
       values.quotaAutoDisableTransientErrorBackoffSeconds
     ),
-    quotaAutoDisableMinCapacityCoveragePercent: getPercentRangeError(
+    quotaAutoDisableMinCapacityCoveragePercent: getOptionalPercentRangeError(
       values.quotaAutoDisableMinCapacityCoveragePercent
     ),
     quotaAutoDisableProPlanThresholdPercent: getPercentRangeError(
