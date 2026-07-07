@@ -1609,7 +1609,7 @@ export function VisualConfigEditor({
                           label={t('config_management.visual.sections.quota.sample_freshness')}
                           type="number"
                           min={1}
-                          placeholder="1800"
+                          placeholder="7200"
                           value={values.quotaAutoDisableSampleFreshnessSeconds}
                           onChange={(e) =>
                             onChange({ quotaAutoDisableSampleFreshnessSeconds: e.target.value })

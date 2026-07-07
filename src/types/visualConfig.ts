@@ -248,7 +248,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaAutoDisableIntervalSeconds: '300',
   quotaAutoDisableMaxScanPerRun: '120',
   quotaAutoDisableProbeTimeoutSeconds: '15',
-  quotaAutoDisableSampleFreshnessSeconds: '1800',
+  quotaAutoDisableSampleFreshnessSeconds: '7200',
   quotaAutoDisableAccountErrorBackoffSeconds: '21600',
   quotaAutoDisableTransientErrorBackoffSeconds: '600',
   quotaAutoDisableMinCapacityCoveragePercent: '80',

@@ -1321,7 +1321,7 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
       quotaAutoDisable?.['probe-timeout-seconds'] ?? '15'
     ),
     quotaAutoDisableSampleFreshnessSeconds: String(
-      quotaAutoDisable?.['sample-freshness-seconds'] ?? '1800'
+      quotaAutoDisable?.['sample-freshness-seconds'] ?? '7200'
     ),
     quotaAutoDisableAccountErrorBackoffSeconds: String(
       quotaAutoDisable?.['account-error-backoff-seconds'] ?? '21600'
