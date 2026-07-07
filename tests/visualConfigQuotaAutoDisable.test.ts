@@ -5,6 +5,7 @@ import {
   getVisualConfigValidationErrors,
   parseVisualConfigValuesFromYaml,
 } from '../src/hooks/useVisualConfig';
+import { searchConfigFields } from '../src/components/config/configSearchIndex';
 import { DEFAULT_VISUAL_VALUES } from '../src/types/visualConfig';
 
 describe('visual config quota auto-disable YAML mapping', () => {
@@ -282,5 +283,22 @@ quota-auto-disable:
     expect(errors.quotaAutoDisableAccountErrorBackoffSeconds).toBe('positive_integer');
     expect(errors.quotaAutoDisableTransientErrorBackoffSeconds).toBe('positive_integer');
     expect(errors.quotaAutoDisableMinCapacityCoveragePercent).toBe('percent_range');
+  });
+
+  test('indexes quota auto-disable scan controls for visual config search', () => {
+    const translate = (key: string) => key;
+    const expected = new Map([
+      ['max-scan-per-run', 'quotaAutoDisableMaxScanPerRun'],
+      ['probe-timeout-seconds', 'quotaAutoDisableProbeTimeoutSeconds'],
+      ['sample-freshness-seconds', 'quotaAutoDisableSampleFreshnessSeconds'],
+      ['account-error-backoff-seconds', 'quotaAutoDisableAccountErrorBackoffSeconds'],
+      ['transient-error-backoff-seconds', 'quotaAutoDisableTransientErrorBackoffSeconds'],
+      ['min-capacity-coverage-percent', 'quotaAutoDisableMinCapacityCoveragePercent'],
+    ]);
+
+    for (const [query, fieldId] of expected) {
+      const result = searchConfigFields(query, translate).find((entry) => entry.fieldId === fieldId);
+      expect(result?.sectionId).toBe('quota');
+    }
   });
 });

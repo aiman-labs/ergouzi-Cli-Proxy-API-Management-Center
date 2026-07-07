@@ -561,6 +561,12 @@ export function VisualConfigEditor({
         icon: IconTimer,
         errorCount: countErrors([
           'quotaAutoDisableIntervalSeconds',
+          'quotaAutoDisableMaxScanPerRun',
+          'quotaAutoDisableProbeTimeoutSeconds',
+          'quotaAutoDisableSampleFreshnessSeconds',
+          'quotaAutoDisableAccountErrorBackoffSeconds',
+          'quotaAutoDisableTransientErrorBackoffSeconds',
+          'quotaAutoDisableMinCapacityCoveragePercent',
           'quotaCapacityProFiveHourThreshold',
           'quotaCapacityProWeeklyThreshold',
           'quotaCapacityPlusFiveHourThreshold',
