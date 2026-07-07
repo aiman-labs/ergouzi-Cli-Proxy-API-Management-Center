@@ -17,6 +17,12 @@ export type VisualConfigFieldPath =
   | 'maxRetryInterval'
   | 'authAutoRefreshWorkers'
   | 'quotaAutoDisableIntervalSeconds'
+  | 'quotaAutoDisableMaxScanPerRun'
+  | 'quotaAutoDisableProbeTimeoutSeconds'
+  | 'quotaAutoDisableSampleFreshnessSeconds'
+  | 'quotaAutoDisableAccountErrorBackoffSeconds'
+  | 'quotaAutoDisableTransientErrorBackoffSeconds'
+  | 'quotaAutoDisableMinCapacityCoveragePercent'
   | 'quotaAutoDisableProPlanThresholdPercent'
   | 'quotaAutoDisableProPlanResumeThresholdPercent'
   | 'quotaAutoDisablePlusPlanThresholdPercent'
@@ -145,6 +151,12 @@ export type VisualConfigValues = {
   quotaAutoDisableEnabled: boolean;
   quotaAutoDisableAutoEnable: boolean;
   quotaAutoDisableIntervalSeconds: string;
+  quotaAutoDisableMaxScanPerRun: string;
+  quotaAutoDisableProbeTimeoutSeconds: string;
+  quotaAutoDisableSampleFreshnessSeconds: string;
+  quotaAutoDisableAccountErrorBackoffSeconds: string;
+  quotaAutoDisableTransientErrorBackoffSeconds: string;
+  quotaAutoDisableMinCapacityCoveragePercent: string;
   quotaAutoDisableProPlanEnabled: boolean;
   quotaAutoDisableProPlanThresholdPercent: string;
   quotaAutoDisableProPlanResumeThresholdPercent: string;
@@ -234,6 +246,12 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaAutoDisableEnabled: false,
   quotaAutoDisableAutoEnable: true,
   quotaAutoDisableIntervalSeconds: '300',
+  quotaAutoDisableMaxScanPerRun: '120',
+  quotaAutoDisableProbeTimeoutSeconds: '15',
+  quotaAutoDisableSampleFreshnessSeconds: '1800',
+  quotaAutoDisableAccountErrorBackoffSeconds: '21600',
+  quotaAutoDisableTransientErrorBackoffSeconds: '600',
+  quotaAutoDisableMinCapacityCoveragePercent: '80',
   quotaAutoDisableProPlanEnabled: true,
   quotaAutoDisableProPlanThresholdPercent: '5',
   quotaAutoDisableProPlanResumeThresholdPercent: '10',

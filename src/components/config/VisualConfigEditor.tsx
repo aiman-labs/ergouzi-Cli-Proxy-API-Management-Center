@@ -206,6 +206,12 @@ export function VisualConfigEditor({
   const nonstreamKeepaliveHintId = `${nonstreamKeepaliveInputId}-hint`;
   const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
   const quotaAutoDisableIntervalInputId = useId();
+  const quotaAutoDisableMaxScanPerRunInputId = useId();
+  const quotaAutoDisableProbeTimeoutInputId = useId();
+  const quotaAutoDisableSampleFreshnessInputId = useId();
+  const quotaAutoDisableAccountErrorBackoffInputId = useId();
+  const quotaAutoDisableTransientErrorBackoffInputId = useId();
+  const quotaAutoDisableMinCapacityCoverageInputId = useId();
   const quotaAutoDisableProPlanThresholdInputId = useId();
   const quotaAutoDisableProPlanResumeThresholdInputId = useId();
   const quotaAutoDisablePlusPlanThresholdInputId = useId();
@@ -378,6 +384,30 @@ export function VisualConfigEditor({
   const quotaAutoDisableIntervalError = getValidationMessage(
     t,
     validationErrors?.quotaAutoDisableIntervalSeconds
+  );
+  const quotaAutoDisableMaxScanPerRunError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableMaxScanPerRun
+  );
+  const quotaAutoDisableProbeTimeoutError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableProbeTimeoutSeconds
+  );
+  const quotaAutoDisableSampleFreshnessError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableSampleFreshnessSeconds
+  );
+  const quotaAutoDisableAccountErrorBackoffError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableAccountErrorBackoffSeconds
+  );
+  const quotaAutoDisableTransientErrorBackoffError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableTransientErrorBackoffSeconds
+  );
+  const quotaAutoDisableMinCapacityCoverageError = getValidationMessage(
+    t,
+    validationErrors?.quotaAutoDisableMinCapacityCoveragePercent
   );
   const quotaAutoDisableProPlanThresholdError = getValidationMessage(
     t,
@@ -1535,6 +1565,123 @@ export function VisualConfigEditor({
                             'config_management.visual.sections.quota.auto_disable_interval_hint'
                           )}
                           error={quotaAutoDisableIntervalError}
+                        />
+                      </FieldAnchor>
+                    </SectionGrid>
+                    <SectionGrid>
+                      <FieldAnchor fieldId="quotaAutoDisableMaxScanPerRun">
+                        <Input
+                          id={quotaAutoDisableMaxScanPerRunInputId}
+                          label={t('config_management.visual.sections.quota.max_scan_per_run')}
+                          type="number"
+                          min={1}
+                          placeholder="120"
+                          value={values.quotaAutoDisableMaxScanPerRun}
+                          onChange={(e) =>
+                            onChange({ quotaAutoDisableMaxScanPerRun: e.target.value })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.max_scan_per_run_hint'
+                          )}
+                          error={quotaAutoDisableMaxScanPerRunError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableProbeTimeoutSeconds">
+                        <Input
+                          id={quotaAutoDisableProbeTimeoutInputId}
+                          label={t('config_management.visual.sections.quota.probe_timeout')}
+                          type="number"
+                          min={1}
+                          placeholder="15"
+                          value={values.quotaAutoDisableProbeTimeoutSeconds}
+                          onChange={(e) =>
+                            onChange({ quotaAutoDisableProbeTimeoutSeconds: e.target.value })
+                          }
+                          disabled={disabled}
+                          hint={t('config_management.visual.sections.quota.probe_timeout_hint')}
+                          error={quotaAutoDisableProbeTimeoutError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableSampleFreshnessSeconds">
+                        <Input
+                          id={quotaAutoDisableSampleFreshnessInputId}
+                          label={t('config_management.visual.sections.quota.sample_freshness')}
+                          type="number"
+                          min={1}
+                          placeholder="1800"
+                          value={values.quotaAutoDisableSampleFreshnessSeconds}
+                          onChange={(e) =>
+                            onChange({ quotaAutoDisableSampleFreshnessSeconds: e.target.value })
+                          }
+                          disabled={disabled}
+                          hint={t('config_management.visual.sections.quota.sample_freshness_hint')}
+                          error={quotaAutoDisableSampleFreshnessError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableAccountErrorBackoffSeconds">
+                        <Input
+                          id={quotaAutoDisableAccountErrorBackoffInputId}
+                          label={t('config_management.visual.sections.quota.account_error_backoff')}
+                          type="number"
+                          min={1}
+                          placeholder="21600"
+                          value={values.quotaAutoDisableAccountErrorBackoffSeconds}
+                          onChange={(e) =>
+                            onChange({
+                              quotaAutoDisableAccountErrorBackoffSeconds: e.target.value,
+                            })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.account_error_backoff_hint'
+                          )}
+                          error={quotaAutoDisableAccountErrorBackoffError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableTransientErrorBackoffSeconds">
+                        <Input
+                          id={quotaAutoDisableTransientErrorBackoffInputId}
+                          label={t(
+                            'config_management.visual.sections.quota.transient_error_backoff'
+                          )}
+                          type="number"
+                          min={1}
+                          placeholder="600"
+                          value={values.quotaAutoDisableTransientErrorBackoffSeconds}
+                          onChange={(e) =>
+                            onChange({
+                              quotaAutoDisableTransientErrorBackoffSeconds: e.target.value,
+                            })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.transient_error_backoff_hint'
+                          )}
+                          error={quotaAutoDisableTransientErrorBackoffError}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="quotaAutoDisableMinCapacityCoveragePercent">
+                        <Input
+                          id={quotaAutoDisableMinCapacityCoverageInputId}
+                          label={t(
+                            'config_management.visual.sections.quota.min_capacity_coverage'
+                          )}
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="80"
+                          value={values.quotaAutoDisableMinCapacityCoveragePercent}
+                          onChange={(e) =>
+                            onChange({
+                              quotaAutoDisableMinCapacityCoveragePercent: e.target.value,
+                            })
+                          }
+                          disabled={disabled}
+                          hint={t(
+                            'config_management.visual.sections.quota.min_capacity_coverage_hint'
+                          )}
+                          error={quotaAutoDisableMinCapacityCoverageError}
                         />
                       </FieldAnchor>
                     </SectionGrid>
