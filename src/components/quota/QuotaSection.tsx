@@ -11,8 +11,11 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { authFilesApi } from '@/services/api';
 import { useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
-import { getStatusFromError, isDisabledAuthFile, isRuntimeOnlyAuthFile } from '@/utils/quota';
-import { getAuthFileStatusMessage } from '@/features/authFiles/constants';
+import { getStatusFromError, isDisabledAuthFile } from '@/utils/quota';
+import {
+  getAuthFileStatusMessage,
+  isRuntimeOnlyAuthFile,
+} from '@/features/authFiles/constants';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
