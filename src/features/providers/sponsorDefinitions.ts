@@ -102,7 +102,7 @@ const SPONSOR_DEFINITIONS: Record<SponsorProviderBrand, SponsorProviderDefinitio
     displayName: FENNO_AI_DISPLAY_NAME,
     providerName: FENNO_AI_PROVIDER_NAME,
     affiliateUrl: FENNO_AI_AFFILIATE_URL,
-    protocols: ['openai', 'codex', 'claude'],
+    protocols: ['codex', 'claude'],
     protocolLabels: FENNO_AI_PROTOCOL_LABELS,
     defaultProtocol: 'codex',
     baseUrlOptions: FENNO_AI_BASE_URL_OPTIONS,
