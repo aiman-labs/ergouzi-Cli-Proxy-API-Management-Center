@@ -21,7 +21,7 @@ export const FENNO_AI_BASE_URL_OPTIONS = [
   },
 ] as const;
 
-export const FENNO_AI_PROTOCOL_LABELS = ['codexResponses', 'anthropic'] as const;
+export const FENNO_AI_PROTOCOL_LABELS = ['openai', 'codexResponses', 'anthropic'] as const;
 
 const normalizeText = (value: string | undefined | null): string =>
   String(value ?? '')
