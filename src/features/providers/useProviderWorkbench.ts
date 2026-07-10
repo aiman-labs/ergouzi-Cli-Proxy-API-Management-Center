@@ -61,7 +61,10 @@ import {
   getSponsorProviderDefinition,
   type SponsorProtocolUrls,
 } from './sponsorDefinitions';
-import { sponsorEntryIndicesToReplace } from './sponsorPersistence';
+import {
+  mergeSponsorOpenAIAPIKeyEntries,
+  sponsorEntryIndicesToReplace,
+} from './sponsorPersistence';
 
 export interface UseProviderWorkbenchResult {
   connected: boolean;
@@ -250,16 +253,11 @@ const buildSponsorOpenAIConfig = (
   const urls = getProtocolUrls(entry.baseUrl);
   const models = buildModelAliases(entry.models, true);
   const apiKey = sponsorEntryApiKey(entry);
-  const firstExistingEntry = existing?.apiKeyEntries?.[0];
-  const apiKeyEntries = apiKey
-    ? [
-        {
-          ...(firstExistingEntry ?? {}),
-          apiKey,
-          proxyUrl: entry.proxyUrl.trim() || undefined,
-        },
-      ]
-    : [];
+  const apiKeyEntries = mergeSponsorOpenAIAPIKeyEntries(
+    existing?.apiKeyEntries,
+    apiKey,
+    entry.proxyUrl.trim() || undefined
+  );
 
   return {
     ...(existing ?? {}),
