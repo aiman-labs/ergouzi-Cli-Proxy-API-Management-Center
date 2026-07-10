@@ -209,26 +209,6 @@ export const parsePriorityValue = (value: unknown): number | undefined => {
   return Number.isSafeInteger(parsed) ? parsed : undefined;
 };
 
-export const normalizeExcludedModels = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-
-  const seen = new Set<string>();
-  const normalized: string[] = [];
-  value.forEach((entry) => {
-    const model = String(entry ?? '')
-      .trim()
-      .toLowerCase();
-    if (!model || seen.has(model)) return;
-    seen.add(model);
-    normalized.push(model);
-  });
-
-  return normalized.sort((a, b) => a.localeCompare(b));
-};
-
-export const parseExcludedModelsText = (value: string): string[] =>
-  normalizeExcludedModels(value.split(/[\n,]+/));
-
 export const parseDisableCoolingValue = (value: unknown): boolean | undefined => {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number' && Number.isFinite(value)) return value !== 0;

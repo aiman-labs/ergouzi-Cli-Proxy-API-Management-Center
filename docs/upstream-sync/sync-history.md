@@ -1,5 +1,80 @@
 # Sync History
 
+## 2026-07-10 Upstream `v1.17.14` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `53d14c6` |
+| Sync branch | `sync/upstream-v1.17.14` |
+| Upstream previous baseline | `v1.17.8` / `e9817a8` |
+| Upstream target tag | `v1.17.14` |
+| Upstream target commit | `fd22c148` |
+| Upstream non-merge commits adopted | `24` |
+| Changed files from `v1.17.8` to `v1.17.14` | `97` |
+| Local sync diff before records | `95 files changed, 3384 insertions(+), 3375 deletions(-)` |
+| Pre-close latest release recheck | `v1.17.14` |
+| Sync status | `local sync prepared; not pushed; not released; not deployed` |
+
+Upstream release themes:
+
+- Added ClaudeAPI, Code0, FennoAI, and Qiniu Cloud provider management.
+- Added XAI pay-as-you-go and weekly billing quota displays.
+- Added GitHub Release version selection for plugin installation.
+- Refined provider forms, quick fill, resource status layout, and large-scale
+  dead-code, locale, style, store, and API cleanup.
+
+Sync findings:
+
+- The fork does not preserve direct upstream tag ancestry, so the sync adopted
+  the `24` non-merge commits in release order.
+- Accepted deletion of the unused Antigravity subscription hook; active quota
+  loading continues through `quotaConfigs.ts` and the shared API service.
+- Preserved auth-file page size `100`, refresh warning behavior, error-type and
+  plan filters, import-time and priority sorting, and the card quota display
+  switch.
+- Rejected upstream quota dead-prop cleanup where those props remain active in
+  Ergouzi batch refresh, account enable/disable, disabled-card display,
+  per-section filters, bounded scrolling, and Codex reset-expiry controls.
+- Accepted truly unused global styles and locale keys while preserving every
+  locale key referenced by Ergouzi auth-file and quota workflows.
+- Combined upstream plugin Release selection with Ergouzi's install-settled
+  polling guard, including normalized installed-version comparison.
+- Reused the auth-file module's runtime-only credential helper after upstream
+  removed its duplicate quota utility export.
+
+Protected Ergouzi surfaces checked:
+
+- Auth-file filtered and selected batch operations, page size `100`, plan,
+  health, enabled, error, and success-count filters remain present.
+- Import-time and priority ascending/descending sorting remain present.
+- The auth-file card quota display remains disabled by default and available
+  through its display switch.
+- Quota search, plan/enabled/problem filters, limited-concurrency refresh,
+  disabled credential actions, and Codex reset-expiry display switch remain
+  present.
+- Quota governor plan policies, capacity alerts, and recovery-scan reserve
+  remain configurable in the visual editor.
+- The single-file `management.html` release contract remains intact.
+
+Verification:
+
+```bash
+bun install --frozen-lockfile
+bun run type-check
+bun run build
+bun run lint
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- Type-check passed.
+- Production build passed and generated a single-file `dist/index.html`.
+- Lint passed.
+- Diff check passed and the conflict-marker scan returned no matches.
+- No push, pull request, release, or production deployment has been performed.
+
 ## 2026-06-15 Fork Mechanism Baseline
 
 | Item | Value |
