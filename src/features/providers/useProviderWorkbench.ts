@@ -61,6 +61,7 @@ import {
   getSponsorProviderDefinition,
   type SponsorProtocolUrls,
 } from './sponsorDefinitions';
+import { sponsorEntryIndicesToReplace } from './sponsorPersistence';
 
 export interface UseProviderWorkbenchResult {
   connected: boolean;
@@ -561,19 +562,19 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       const geminiEntry = entries.find((entry) => entry.protocol === 'gemini');
       const nextGeminiList = removeSponsorEntries(
         geminiList,
-        raw.gemini.map((item) => item.index)
+        sponsorEntryIndicesToReplace(raw.gemini)
       );
       const nextOpenAIList = removeSponsorEntries(
         openaiList,
-        raw.openai.map((item) => item.index)
+        sponsorEntryIndicesToReplace(raw.openai)
       );
       const nextClaudeList = removeSponsorEntries(
         claudeList,
-        raw.claude.map((item) => item.index)
+        sponsorEntryIndicesToReplace(raw.claude)
       );
       const nextCodexList = removeSponsorEntries(
         codexList,
-        raw.codex.map((item) => item.index)
+        sponsorEntryIndicesToReplace(raw.codex)
       );
 
       if (definition.protocols.includes('gemini')) {
