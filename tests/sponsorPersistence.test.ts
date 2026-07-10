@@ -1,12 +1,31 @@
 import { describe, expect, test } from 'bun:test';
 import {
   mergeSponsorOpenAIAPIKeyEntries,
-  sponsorEntryIndicesToReplace,
+  replaceVisibleSponsorEntry,
 } from '../src/features/providers/sponsorPersistence';
 
 describe('sponsor persistence', () => {
-  test('replaces only the visible entry and preserves hidden entries', () => {
-    expect(sponsorEntryIndicesToReplace([{ index: 2 }, { index: 5 }, { index: 8 }])).toEqual([2]);
+  test('replaces the visible entry in place and preserves hidden entry order', () => {
+    expect(
+      replaceVisibleSponsorEntry(
+        ['before', 'visible', 'middle', 'hidden'],
+        [{ index: 1 }, { index: 3 }],
+        'updated'
+      )
+    ).toEqual(['before', 'updated', 'middle', 'hidden']);
+  });
+
+  test('removes only the visible entry when the protocol is cleared', () => {
+    expect(
+      replaceVisibleSponsorEntry(['before', 'visible', 'hidden'], [{ index: 1 }, { index: 2 }])
+    ).toEqual(['before', 'hidden']);
+  });
+
+  test('appends a new sponsor entry when no visible entry exists', () => {
+    expect(replaceVisibleSponsorEntry(['existing'], [], 'created')).toEqual([
+      'existing',
+      'created',
+    ]);
   });
 
   test('updates the visible OpenAI key without dropping additional keys', () => {

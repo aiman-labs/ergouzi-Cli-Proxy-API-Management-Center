@@ -4,9 +4,20 @@ interface IndexedSponsorEntry {
   index: number;
 }
 
-export const sponsorEntryIndicesToReplace = (
-  entries: readonly IndexedSponsorEntry[]
-): number[] => entries.slice(0, 1).map((entry) => entry.index);
+export const replaceVisibleSponsorEntry = <T>(
+  list: readonly T[],
+  entries: readonly IndexedSponsorEntry[],
+  replacement?: T
+): T[] => {
+  const visibleIndex = entries[0]?.index;
+  if (visibleIndex === undefined) {
+    return replacement === undefined ? [...list] : [...list, replacement];
+  }
+  return list.flatMap((item, index) => {
+    if (index !== visibleIndex) return [item];
+    return replacement === undefined ? [] : [replacement];
+  });
+};
 
 export const mergeSponsorOpenAIAPIKeyEntries = (
   existingEntries: readonly ApiKeyEntry[] | undefined,

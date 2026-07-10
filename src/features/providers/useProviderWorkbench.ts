@@ -63,7 +63,7 @@ import {
 } from './sponsorDefinitions';
 import {
   mergeSponsorOpenAIAPIKeyEntries,
-  sponsorEntryIndicesToReplace,
+  replaceVisibleSponsorEntry,
 } from './sponsorPersistence';
 
 export interface UseProviderWorkbenchResult {
@@ -234,11 +234,6 @@ const buildOpenAIConfig = (
     priority: input.priority,
     testModel: input.testModel?.trim() || undefined,
   };
-};
-
-const removeSponsorEntries = <T>(list: T[], indices: number[]): T[] => {
-  const sponsorIndices = new Set(indices);
-  return list.filter((_, index) => !sponsorIndices.has(index));
 };
 
 const sponsorEntryApiKey = (entry: SponsorKeyEntryInput): string =>
@@ -558,75 +553,63 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
       const codexEntry = entries.find((entry) => entry.protocol === 'codex');
       const geminiEntry = entries.find((entry) => entry.protocol === 'gemini');
-      const nextGeminiList = removeSponsorEntries(
-        geminiList,
-        sponsorEntryIndicesToReplace(raw.gemini)
-      );
-      const nextOpenAIList = removeSponsorEntries(
-        openaiList,
-        sponsorEntryIndicesToReplace(raw.openai)
-      );
-      const nextClaudeList = removeSponsorEntries(
-        claudeList,
-        sponsorEntryIndicesToReplace(raw.claude)
-      );
-      const nextCodexList = removeSponsorEntries(
-        codexList,
-        sponsorEntryIndicesToReplace(raw.codex)
-      );
 
       if (definition.protocols.includes('gemini')) {
         await persistGeminiKeys(
-          geminiEntry
-            ? [
-                ...nextGeminiList,
-                buildSponsorGeminiConfig(
+          replaceVisibleSponsorEntry(
+            geminiList,
+            raw.gemini,
+            geminiEntry
+              ? buildSponsorGeminiConfig(
                   geminiEntry,
                   definition.getProtocolUrls,
                   raw.gemini[0]?.config
-                ),
-              ]
-            : nextGeminiList
+                )
+              : undefined
+          )
         );
       }
       await persistCodexConfigs(
-        codexEntry
-          ? [
-              ...nextCodexList,
-              buildSponsorProviderKeyConfig(
+        replaceVisibleSponsorEntry(
+          codexList,
+          raw.codex,
+          codexEntry
+            ? buildSponsorProviderKeyConfig(
                 codexEntry,
                 'codex',
                 definition.getProtocolUrls,
                 raw.codex[0]?.config
-              ),
-            ]
-          : nextCodexList
+              )
+            : undefined
+        )
       );
       await persistClaudeConfigs(
-        claudeEntry
-          ? [
-              ...nextClaudeList,
-              buildSponsorProviderKeyConfig(
+        replaceVisibleSponsorEntry(
+          claudeList,
+          raw.claude,
+          claudeEntry
+            ? buildSponsorProviderKeyConfig(
                 claudeEntry,
                 'claude',
                 definition.getProtocolUrls,
                 raw.claude[0]?.config
-              ),
-            ]
-          : nextClaudeList
+              )
+            : undefined
+        )
       );
       await persistOpenAIConfigs(
-        openaiEntry
-          ? [
-              ...nextOpenAIList,
-              buildSponsorOpenAIConfig(
+        replaceVisibleSponsorEntry(
+          openaiList,
+          raw.openai,
+          openaiEntry
+            ? buildSponsorOpenAIConfig(
                 openaiEntry,
                 definition.providerName,
                 definition.getProtocolUrls,
                 raw.openai[0]?.config
-              ),
-            ]
-          : nextOpenAIList
+              )
+            : undefined
+        )
       );
     },
     [config, persistClaudeConfigs, persistCodexConfigs, persistGeminiKeys, persistOpenAIConfigs]
