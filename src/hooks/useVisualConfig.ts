@@ -1333,8 +1333,8 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
     quotaAutoDisableEnabled: Boolean(quotaAutoDisable?.enabled ?? false),
     quotaAutoDisableAutoEnable: Boolean(quotaAutoDisable?.['auto-enable'] ?? true),
-    quotaAutoDisableIntervalSeconds: String(quotaAutoDisable?.['interval-seconds'] ?? '300'),
-    quotaAutoDisableMaxScanPerRun: String(quotaAutoDisable?.['max-scan-per-run'] ?? '120'),
+    quotaAutoDisableIntervalSeconds: String(quotaAutoDisable?.['interval-seconds'] ?? '180'),
+    quotaAutoDisableMaxScanPerRun: String(quotaAutoDisable?.['max-scan-per-run'] ?? '100'),
     quotaAutoDisableAutoEnableScanReserve: String(
       quotaAutoDisable?.['auto-enable-scan-reserve'] ?? '40'
     ),
