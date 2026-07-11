@@ -12,7 +12,8 @@ describe('visual config quota auto-disable YAML mapping', () => {
   test('uses scan control defaults when YAML omits them', () => {
     const values = parseVisualConfigValuesFromYaml('');
 
-    expect(values.quotaAutoDisableMaxScanPerRun).toBe('120');
+    expect(values.quotaAutoDisableIntervalSeconds).toBe('180');
+    expect(values.quotaAutoDisableMaxScanPerRun).toBe('100');
     expect(values.quotaAutoDisableAutoEnableScanReserve).toBe('40');
     expect(values.quotaAutoDisableProbeTimeoutSeconds).toBe('15');
     expect(values.quotaAutoDisableSampleFreshnessSeconds).toBe('7200');

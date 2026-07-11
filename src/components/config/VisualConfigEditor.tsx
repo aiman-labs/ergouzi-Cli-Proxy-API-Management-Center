@@ -1567,7 +1567,7 @@ export function VisualConfigEditor({
                           label={t('config_management.visual.sections.quota.auto_disable_interval')}
                           type="number"
                           min={1}
-                          placeholder="300"
+                          placeholder="180"
                           value={values.quotaAutoDisableIntervalSeconds}
                           onChange={(e) =>
                             onChange({ quotaAutoDisableIntervalSeconds: e.target.value })
@@ -1587,7 +1587,7 @@ export function VisualConfigEditor({
                           label={t('config_management.visual.sections.quota.max_scan_per_run')}
                           type="number"
                           min={1}
-                          placeholder="120"
+                          placeholder="100"
                           value={values.quotaAutoDisableMaxScanPerRun}
                           onChange={(e) =>
                             onChange({ quotaAutoDisableMaxScanPerRun: e.target.value })
