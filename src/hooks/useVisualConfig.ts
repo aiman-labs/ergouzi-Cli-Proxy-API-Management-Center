@@ -280,26 +280,17 @@ export function getVisualConfigValidationErrors(
     maxRetryCredentials: getNonNegativeIntegerError(values.maxRetryCredentials),
     maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
     authAutoRefreshWorkers: getNonNegativeIntegerError(values.authAutoRefreshWorkers),
-    quotaAutoDisableIntervalSeconds: getPositiveIntegerError(
-      values.quotaAutoDisableIntervalSeconds
+    quotaAutoDisableScanIntervalSeconds: getPositiveIntegerError(
+      values.quotaAutoDisableScanIntervalSeconds
     ),
-    quotaAutoDisableMaxScanPerRun: getOptionalPositiveIntegerError(
-      values.quotaAutoDisableMaxScanPerRun
+    quotaAutoDisableScanConcurrency: getOptionalPositiveIntegerError(
+      values.quotaAutoDisableScanConcurrency
     ),
-    quotaAutoDisableAutoEnableScanReserve: getOptionalPositiveIntegerError(
-      values.quotaAutoDisableAutoEnableScanReserve
+    quotaAutoDisableScanRateLimitPerSecond: getNonNegativeIntegerError(
+      values.quotaAutoDisableScanRateLimitPerSecond
     ),
     quotaAutoDisableProbeTimeoutSeconds: getOptionalPositiveIntegerError(
       values.quotaAutoDisableProbeTimeoutSeconds
-    ),
-    quotaAutoDisableSampleFreshnessSeconds: getOptionalPositiveIntegerError(
-      values.quotaAutoDisableSampleFreshnessSeconds
-    ),
-    quotaAutoDisableAccountErrorBackoffSeconds: getOptionalPositiveIntegerError(
-      values.quotaAutoDisableAccountErrorBackoffSeconds
-    ),
-    quotaAutoDisableTransientErrorBackoffSeconds: getOptionalPositiveIntegerError(
-      values.quotaAutoDisableTransientErrorBackoffSeconds
     ),
     quotaAutoDisableMinCapacityCoveragePercent: getOptionalPercentRangeError(
       values.quotaAutoDisableMinCapacityCoveragePercent
@@ -1044,13 +1035,10 @@ function getNextDirtyFields(
       'quotaAntigravityCredits',
       'quotaAutoDisableEnabled',
       'quotaAutoDisableAutoEnable',
-      'quotaAutoDisableIntervalSeconds',
-      'quotaAutoDisableMaxScanPerRun',
-      'quotaAutoDisableAutoEnableScanReserve',
+      'quotaAutoDisableScanIntervalSeconds',
+      'quotaAutoDisableScanConcurrency',
+      'quotaAutoDisableScanRateLimitPerSecond',
       'quotaAutoDisableProbeTimeoutSeconds',
-      'quotaAutoDisableSampleFreshnessSeconds',
-      'quotaAutoDisableAccountErrorBackoffSeconds',
-      'quotaAutoDisableTransientErrorBackoffSeconds',
       'quotaAutoDisableMinCapacityCoveragePercent',
       'quotaAutoDisableProPlanEnabled',
       'quotaAutoDisableProPlanThresholdPercent',
@@ -1333,22 +1321,15 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
     quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
     quotaAutoDisableEnabled: Boolean(quotaAutoDisable?.enabled ?? false),
     quotaAutoDisableAutoEnable: Boolean(quotaAutoDisable?.['auto-enable'] ?? true),
-    quotaAutoDisableIntervalSeconds: String(quotaAutoDisable?.['interval-seconds'] ?? '180'),
-    quotaAutoDisableMaxScanPerRun: String(quotaAutoDisable?.['max-scan-per-run'] ?? '100'),
-    quotaAutoDisableAutoEnableScanReserve: String(
-      quotaAutoDisable?.['auto-enable-scan-reserve'] ?? '40'
+    quotaAutoDisableScanIntervalSeconds: String(
+      quotaAutoDisable?.['scan-interval-seconds'] ?? '600'
+    ),
+    quotaAutoDisableScanConcurrency: String(quotaAutoDisable?.['scan-concurrency'] ?? '20'),
+    quotaAutoDisableScanRateLimitPerSecond: String(
+      quotaAutoDisable?.['scan-rate-limit-per-second'] ?? '0'
     ),
     quotaAutoDisableProbeTimeoutSeconds: String(
       quotaAutoDisable?.['probe-timeout-seconds'] ?? '15'
-    ),
-    quotaAutoDisableSampleFreshnessSeconds: String(
-      quotaAutoDisable?.['sample-freshness-seconds'] ?? '7200'
-    ),
-    quotaAutoDisableAccountErrorBackoffSeconds: String(
-      quotaAutoDisable?.['account-error-backoff-seconds'] ?? '21600'
-    ),
-    quotaAutoDisableTransientErrorBackoffSeconds: String(
-      quotaAutoDisable?.['transient-error-backoff-seconds'] ?? '600'
     ),
     quotaAutoDisableMinCapacityCoveragePercent: String(
       quotaAutoDisable?.['min-capacity-coverage-percent'] ?? '80'
@@ -1709,13 +1690,10 @@ export function applyVisualConfigValuesToYaml(
       docHas(doc, ['quota-auto-disable']) ||
       dirtyFields.has('quotaAutoDisableEnabled') ||
       dirtyFields.has('quotaAutoDisableAutoEnable') ||
-      dirtyFields.has('quotaAutoDisableIntervalSeconds') ||
-      dirtyFields.has('quotaAutoDisableMaxScanPerRun') ||
-      dirtyFields.has('quotaAutoDisableAutoEnableScanReserve') ||
+      dirtyFields.has('quotaAutoDisableScanIntervalSeconds') ||
+      dirtyFields.has('quotaAutoDisableScanConcurrency') ||
+      dirtyFields.has('quotaAutoDisableScanRateLimitPerSecond') ||
       dirtyFields.has('quotaAutoDisableProbeTimeoutSeconds') ||
-      dirtyFields.has('quotaAutoDisableSampleFreshnessSeconds') ||
-      dirtyFields.has('quotaAutoDisableAccountErrorBackoffSeconds') ||
-      dirtyFields.has('quotaAutoDisableTransientErrorBackoffSeconds') ||
       dirtyFields.has('quotaAutoDisableMinCapacityCoveragePercent') ||
       dirtyFields.has('quotaAutoDisableProPlanEnabled') ||
       dirtyFields.has('quotaAutoDisableProPlanThresholdPercent') ||
@@ -1745,37 +1723,43 @@ export function applyVisualConfigValuesToYaml(
       doc.deleteIn(['quota-auto-disable', 'weekly-threshold-percent']);
       doc.deleteIn(['quota-auto-disable', 'resume-five-hour-threshold-percent']);
       doc.deleteIn(['quota-auto-disable', 'resume-weekly-threshold-percent']);
+      doc.deleteIn(['quota-auto-disable', 'interval-seconds']);
+      doc.deleteIn(['quota-auto-disable', 'max-scan-per-run']);
+      doc.deleteIn(['quota-auto-disable', 'auto-enable-scan-reserve']);
+      doc.deleteIn(['quota-auto-disable', 'sample-freshness-seconds']);
+      doc.deleteIn(['quota-auto-disable', 'account-error-backoff-seconds']);
+      doc.deleteIn(['quota-auto-disable', 'transient-error-backoff-seconds']);
       setIntFromStringInDoc(
         doc,
-        ['quota-auto-disable', 'interval-seconds'],
-        values.quotaAutoDisableIntervalSeconds
+        ['quota-auto-disable', 'scan-interval-seconds'],
+        values.quotaAutoDisableScanIntervalSeconds
       );
       if (
         shouldWriteManagedField(
           doc,
-          ['quota-auto-disable', 'max-scan-per-run'],
+          ['quota-auto-disable', 'scan-concurrency'],
           dirtyFields,
-          'quotaAutoDisableMaxScanPerRun'
+          'quotaAutoDisableScanConcurrency'
         )
       ) {
         setIntFromStringInDoc(
           doc,
-          ['quota-auto-disable', 'max-scan-per-run'],
-          values.quotaAutoDisableMaxScanPerRun
+          ['quota-auto-disable', 'scan-concurrency'],
+          values.quotaAutoDisableScanConcurrency
         );
       }
       if (
         shouldWriteManagedField(
           doc,
-          ['quota-auto-disable', 'auto-enable-scan-reserve'],
+          ['quota-auto-disable', 'scan-rate-limit-per-second'],
           dirtyFields,
-          'quotaAutoDisableAutoEnableScanReserve'
+          'quotaAutoDisableScanRateLimitPerSecond'
         )
       ) {
         setIntFromStringInDoc(
           doc,
-          ['quota-auto-disable', 'auto-enable-scan-reserve'],
-          values.quotaAutoDisableAutoEnableScanReserve
+          ['quota-auto-disable', 'scan-rate-limit-per-second'],
+          values.quotaAutoDisableScanRateLimitPerSecond
         );
       }
       if (
@@ -1790,48 +1774,6 @@ export function applyVisualConfigValuesToYaml(
           doc,
           ['quota-auto-disable', 'probe-timeout-seconds'],
           values.quotaAutoDisableProbeTimeoutSeconds
-        );
-      }
-      if (
-        shouldWriteManagedField(
-          doc,
-          ['quota-auto-disable', 'sample-freshness-seconds'],
-          dirtyFields,
-          'quotaAutoDisableSampleFreshnessSeconds'
-        )
-      ) {
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'sample-freshness-seconds'],
-          values.quotaAutoDisableSampleFreshnessSeconds
-        );
-      }
-      if (
-        shouldWriteManagedField(
-          doc,
-          ['quota-auto-disable', 'account-error-backoff-seconds'],
-          dirtyFields,
-          'quotaAutoDisableAccountErrorBackoffSeconds'
-        )
-      ) {
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'account-error-backoff-seconds'],
-          values.quotaAutoDisableAccountErrorBackoffSeconds
-        );
-      }
-      if (
-        shouldWriteManagedField(
-          doc,
-          ['quota-auto-disable', 'transient-error-backoff-seconds'],
-          dirtyFields,
-          'quotaAutoDisableTransientErrorBackoffSeconds'
-        )
-      ) {
-        setIntFromStringInDoc(
-          doc,
-          ['quota-auto-disable', 'transient-error-backoff-seconds'],
-          values.quotaAutoDisableTransientErrorBackoffSeconds
         );
       }
       if (

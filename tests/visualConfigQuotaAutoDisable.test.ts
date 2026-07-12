@@ -12,14 +12,39 @@ describe('visual config quota auto-disable YAML mapping', () => {
   test('uses scan control defaults when YAML omits them', () => {
     const values = parseVisualConfigValuesFromYaml('');
 
-    expect(values.quotaAutoDisableIntervalSeconds).toBe('180');
-    expect(values.quotaAutoDisableMaxScanPerRun).toBe('100');
-    expect(values.quotaAutoDisableAutoEnableScanReserve).toBe('40');
+    expect(values.quotaAutoDisableScanIntervalSeconds).toBe('600');
+    expect(values.quotaAutoDisableScanConcurrency).toBe('20');
+    expect(values.quotaAutoDisableScanRateLimitPerSecond).toBe('0');
     expect(values.quotaAutoDisableProbeTimeoutSeconds).toBe('15');
-    expect(values.quotaAutoDisableSampleFreshnessSeconds).toBe('7200');
-    expect(values.quotaAutoDisableAccountErrorBackoffSeconds).toBe('21600');
-    expect(values.quotaAutoDisableTransientErrorBackoffSeconds).toBe('600');
     expect(values.quotaAutoDisableMinCapacityCoveragePercent).toBe('80');
+  });
+
+  test('exposes only supported quota auto-disable fields', () => {
+    const fieldNames = Object.keys(DEFAULT_VISUAL_VALUES)
+      .filter((fieldName) => fieldName.startsWith('quotaAutoDisable'))
+      .sort();
+
+    expect(fieldNames).toEqual(
+      [
+        'quotaAutoDisableAutoEnable',
+        'quotaAutoDisableEnabled',
+        'quotaAutoDisableMinCapacityCoveragePercent',
+        'quotaAutoDisablePlusPlanEnabled',
+        'quotaAutoDisablePlusPlanResumeThresholdPercent',
+        'quotaAutoDisablePlusPlanThresholdPercent',
+        'quotaAutoDisableProFiveHourCapacityAlertThreshold',
+        'quotaAutoDisableProPlanEnabled',
+        'quotaAutoDisableProPlanResumeThresholdPercent',
+        'quotaAutoDisableProPlanThresholdPercent',
+        'quotaAutoDisableProbeTimeoutSeconds',
+        'quotaAutoDisableScanConcurrency',
+        'quotaAutoDisableScanIntervalSeconds',
+        'quotaAutoDisableScanRateLimitPerSecond',
+        'quotaAutoDisableTeamPlanEnabled',
+        'quotaAutoDisableTeamPlanResumeThresholdPercent',
+        'quotaAutoDisableTeamPlanThresholdPercent',
+      ].sort()
+    );
   });
 
   test('loads quota-auto-disable settings from YAML', () => {
@@ -27,13 +52,10 @@ describe('visual config quota auto-disable YAML mapping', () => {
 quota-auto-disable:
   enabled: true
   auto-enable: false
-  interval-seconds: 240
-  max-scan-per-run: 160
-  auto-enable-scan-reserve: 48
+  scan-interval-seconds: 240
+  scan-concurrency: 16
+  scan-rate-limit-per-second: 8
   probe-timeout-seconds: 20
-  sample-freshness-seconds: 7200
-  account-error-backoff-seconds: 28800
-  transient-error-backoff-seconds: 900
   min-capacity-coverage-percent: 75
   plan-policies:
     pro:
@@ -55,13 +77,10 @@ quota-auto-disable:
 
     expect(values.quotaAutoDisableEnabled).toBe(true);
     expect(values.quotaAutoDisableAutoEnable).toBe(false);
-    expect(values.quotaAutoDisableIntervalSeconds).toBe('240');
-    expect(values.quotaAutoDisableMaxScanPerRun).toBe('160');
-    expect(values.quotaAutoDisableAutoEnableScanReserve).toBe('48');
+    expect(values.quotaAutoDisableScanIntervalSeconds).toBe('240');
+    expect(values.quotaAutoDisableScanConcurrency).toBe('16');
+    expect(values.quotaAutoDisableScanRateLimitPerSecond).toBe('8');
     expect(values.quotaAutoDisableProbeTimeoutSeconds).toBe('20');
-    expect(values.quotaAutoDisableSampleFreshnessSeconds).toBe('7200');
-    expect(values.quotaAutoDisableAccountErrorBackoffSeconds).toBe('28800');
-    expect(values.quotaAutoDisableTransientErrorBackoffSeconds).toBe('900');
     expect(values.quotaAutoDisableMinCapacityCoveragePercent).toBe('75');
     expect(values.quotaAutoDisableProPlanEnabled).toBe(true);
     expect(values.quotaAutoDisableProPlanThresholdPercent).toBe('5');
@@ -82,13 +101,10 @@ quota-auto-disable:
         ...DEFAULT_VISUAL_VALUES,
         quotaAutoDisableEnabled: true,
         quotaAutoDisableAutoEnable: false,
-        quotaAutoDisableIntervalSeconds: '180',
-        quotaAutoDisableMaxScanPerRun: '160',
-        quotaAutoDisableAutoEnableScanReserve: '48',
+        quotaAutoDisableScanIntervalSeconds: '600',
+        quotaAutoDisableScanConcurrency: '16',
+        quotaAutoDisableScanRateLimitPerSecond: '8',
         quotaAutoDisableProbeTimeoutSeconds: '20',
-        quotaAutoDisableSampleFreshnessSeconds: '7200',
-        quotaAutoDisableAccountErrorBackoffSeconds: '28800',
-        quotaAutoDisableTransientErrorBackoffSeconds: '900',
         quotaAutoDisableMinCapacityCoveragePercent: '75',
         quotaAutoDisableProPlanEnabled: true,
         quotaAutoDisableProPlanThresholdPercent: '5',
@@ -104,13 +120,10 @@ quota-auto-disable:
       new Set([
         'quotaAutoDisableEnabled',
         'quotaAutoDisableAutoEnable',
-        'quotaAutoDisableIntervalSeconds',
-        'quotaAutoDisableMaxScanPerRun',
-        'quotaAutoDisableAutoEnableScanReserve',
+        'quotaAutoDisableScanIntervalSeconds',
+        'quotaAutoDisableScanConcurrency',
+        'quotaAutoDisableScanRateLimitPerSecond',
         'quotaAutoDisableProbeTimeoutSeconds',
-        'quotaAutoDisableSampleFreshnessSeconds',
-        'quotaAutoDisableAccountErrorBackoffSeconds',
-        'quotaAutoDisableTransientErrorBackoffSeconds',
         'quotaAutoDisableMinCapacityCoveragePercent',
         'quotaAutoDisableProPlanEnabled',
         'quotaAutoDisableProPlanThresholdPercent',
@@ -129,13 +142,10 @@ quota-auto-disable:
     expect(parsed['quota-auto-disable']).toEqual({
       enabled: true,
       'auto-enable': false,
-      'interval-seconds': 180,
-      'max-scan-per-run': 160,
-      'auto-enable-scan-reserve': 48,
+      'scan-interval-seconds': 600,
+      'scan-concurrency': 16,
+      'scan-rate-limit-per-second': 8,
       'probe-timeout-seconds': 20,
-      'sample-freshness-seconds': 7200,
-      'account-error-backoff-seconds': 28800,
-      'transient-error-backoff-seconds': 900,
       'min-capacity-coverage-percent': 75,
       'plan-policies': {
         pro: {
@@ -167,12 +177,18 @@ quota-auto-disable:
   enabled: true
   auto-enable: true
   pro-only: true
-  interval-seconds: 240
+  scan-interval-seconds: 240
   threshold-percent: 5
   five-hour-threshold-percent: 5
   weekly-threshold-percent: 3
   resume-five-hour-threshold-percent: 10
   resume-weekly-threshold-percent: 6
+  interval-seconds: 180
+  max-scan-per-run: 100
+  auto-enable-scan-reserve: 100
+  sample-freshness-seconds: 7200
+  account-error-backoff-seconds: 21600
+  transient-error-backoff-seconds: 600
   plan-policies:
     pro:
       enabled: true
@@ -183,20 +199,26 @@ quota-auto-disable:
         ...DEFAULT_VISUAL_VALUES,
         quotaAutoDisableEnabled: true,
         quotaAutoDisableAutoEnable: true,
-        quotaAutoDisableIntervalSeconds: '200',
+        quotaAutoDisableScanIntervalSeconds: '200',
       },
-      new Set(['quotaAutoDisableIntervalSeconds'])
+      new Set(['quotaAutoDisableScanIntervalSeconds'])
     );
     const parsed = parseYaml(output) as Record<string, Record<string, unknown>>;
     const quotaAutoDisable = parsed['quota-auto-disable'];
 
-    expect(quotaAutoDisable['interval-seconds']).toBe(200);
+    expect(quotaAutoDisable['scan-interval-seconds']).toBe(200);
     expect(quotaAutoDisable['pro-only']).toBeUndefined();
     expect(quotaAutoDisable['threshold-percent']).toBeUndefined();
     expect(quotaAutoDisable['five-hour-threshold-percent']).toBeUndefined();
     expect(quotaAutoDisable['weekly-threshold-percent']).toBeUndefined();
     expect(quotaAutoDisable['resume-five-hour-threshold-percent']).toBeUndefined();
     expect(quotaAutoDisable['resume-weekly-threshold-percent']).toBeUndefined();
+    expect(quotaAutoDisable['interval-seconds']).toBeUndefined();
+    expect(quotaAutoDisable['max-scan-per-run']).toBeUndefined();
+    expect(quotaAutoDisable['auto-enable-scan-reserve']).toBeUndefined();
+    expect(quotaAutoDisable['sample-freshness-seconds']).toBeUndefined();
+    expect(quotaAutoDisable['account-error-backoff-seconds']).toBeUndefined();
+    expect(quotaAutoDisable['transient-error-backoff-seconds']).toBeUndefined();
     expect(quotaAutoDisable['plan-policies']).toEqual({
       pro: {
         enabled: true,
@@ -219,13 +241,13 @@ quota-auto-disable:
 quota-auto-disable:
   enabled: true
   auto-enable: true
-  interval-seconds: 300
+  scan-interval-seconds: 300
 `,
       {
         ...DEFAULT_VISUAL_VALUES,
         quotaAutoDisableEnabled: true,
         quotaAutoDisableAutoEnable: true,
-        quotaAutoDisableIntervalSeconds: '300',
+        quotaAutoDisableScanIntervalSeconds: '300',
         port: '9090',
       },
       new Set(['port'])
@@ -236,7 +258,7 @@ quota-auto-disable:
     expect(quotaAutoDisable).toEqual({
       enabled: true,
       'auto-enable': true,
-      'interval-seconds': 300,
+      'scan-interval-seconds': 300,
     });
   });
 
@@ -245,23 +267,17 @@ quota-auto-disable:
       ...DEFAULT_VISUAL_VALUES,
       quotaAutoDisableEnabled: true,
       quotaAutoDisableAutoEnable: true,
-      quotaAutoDisableIntervalSeconds: '300',
-      quotaAutoDisableMaxScanPerRun: '',
-      quotaAutoDisableAutoEnableScanReserve: '',
+      quotaAutoDisableScanIntervalSeconds: '300',
+      quotaAutoDisableScanConcurrency: '',
+      quotaAutoDisableScanRateLimitPerSecond: '',
       quotaAutoDisableProbeTimeoutSeconds: '',
-      quotaAutoDisableSampleFreshnessSeconds: '',
-      quotaAutoDisableAccountErrorBackoffSeconds: '',
-      quotaAutoDisableTransientErrorBackoffSeconds: '',
       quotaAutoDisableMinCapacityCoveragePercent: '',
     };
     const errors = getVisualConfigValidationErrors(values);
 
-    expect(errors.quotaAutoDisableMaxScanPerRun).toBeUndefined();
-    expect(errors.quotaAutoDisableAutoEnableScanReserve).toBeUndefined();
+    expect(errors.quotaAutoDisableScanConcurrency).toBeUndefined();
+    expect(errors.quotaAutoDisableScanRateLimitPerSecond).toBeUndefined();
     expect(errors.quotaAutoDisableProbeTimeoutSeconds).toBeUndefined();
-    expect(errors.quotaAutoDisableSampleFreshnessSeconds).toBeUndefined();
-    expect(errors.quotaAutoDisableAccountErrorBackoffSeconds).toBeUndefined();
-    expect(errors.quotaAutoDisableTransientErrorBackoffSeconds).toBeUndefined();
     expect(errors.quotaAutoDisableMinCapacityCoveragePercent).toBeUndefined();
 
     const output = applyVisualConfigValuesToYaml(
@@ -269,23 +285,17 @@ quota-auto-disable:
 quota-auto-disable:
   enabled: true
   auto-enable: true
-  interval-seconds: 300
-  max-scan-per-run: 160
-  auto-enable-scan-reserve: 48
+  scan-interval-seconds: 300
+  scan-concurrency: 16
+  scan-rate-limit-per-second: 8
   probe-timeout-seconds: 20
-  sample-freshness-seconds: 7200
-  account-error-backoff-seconds: 28800
-  transient-error-backoff-seconds: 900
   min-capacity-coverage-percent: 75
 `,
       values,
       new Set([
-        'quotaAutoDisableMaxScanPerRun',
-        'quotaAutoDisableAutoEnableScanReserve',
+        'quotaAutoDisableScanConcurrency',
+        'quotaAutoDisableScanRateLimitPerSecond',
         'quotaAutoDisableProbeTimeoutSeconds',
-        'quotaAutoDisableSampleFreshnessSeconds',
-        'quotaAutoDisableAccountErrorBackoffSeconds',
-        'quotaAutoDisableTransientErrorBackoffSeconds',
         'quotaAutoDisableMinCapacityCoveragePercent',
       ])
     );
@@ -295,7 +305,7 @@ quota-auto-disable:
     expect(quotaAutoDisable).toEqual({
       enabled: true,
       'auto-enable': true,
-      'interval-seconds': 300,
+      'scan-interval-seconds': 300,
     });
   });
 
@@ -353,42 +363,34 @@ quota-auto-disable:
   test('rejects zero quota auto-disable polling interval', () => {
     const errors = getVisualConfigValidationErrors({
       ...DEFAULT_VISUAL_VALUES,
-      quotaAutoDisableIntervalSeconds: '0',
+      quotaAutoDisableScanIntervalSeconds: '0',
     });
 
-    expect(errors.quotaAutoDisableIntervalSeconds).toBe('positive_integer');
+    expect(errors.quotaAutoDisableScanIntervalSeconds).toBe('positive_integer');
   });
 
   test('rejects invalid quota auto-disable scan controls', () => {
     const errors = getVisualConfigValidationErrors({
       ...DEFAULT_VISUAL_VALUES,
-      quotaAutoDisableMaxScanPerRun: '0',
-      quotaAutoDisableAutoEnableScanReserve: '0',
+      quotaAutoDisableScanConcurrency: '0',
+      quotaAutoDisableScanRateLimitPerSecond: '-1',
       quotaAutoDisableProbeTimeoutSeconds: 'soon',
-      quotaAutoDisableSampleFreshnessSeconds: '-1',
-      quotaAutoDisableAccountErrorBackoffSeconds: '1.5',
-      quotaAutoDisableTransientErrorBackoffSeconds: '0',
       quotaAutoDisableMinCapacityCoveragePercent: '101',
     });
 
-    expect(errors.quotaAutoDisableMaxScanPerRun).toBe('positive_integer');
-    expect(errors.quotaAutoDisableAutoEnableScanReserve).toBe('positive_integer');
+    expect(errors.quotaAutoDisableScanConcurrency).toBe('positive_integer');
+    expect(errors.quotaAutoDisableScanRateLimitPerSecond).toBe('non_negative_integer');
     expect(errors.quotaAutoDisableProbeTimeoutSeconds).toBe('positive_integer');
-    expect(errors.quotaAutoDisableSampleFreshnessSeconds).toBe('positive_integer');
-    expect(errors.quotaAutoDisableAccountErrorBackoffSeconds).toBe('positive_integer');
-    expect(errors.quotaAutoDisableTransientErrorBackoffSeconds).toBe('positive_integer');
     expect(errors.quotaAutoDisableMinCapacityCoveragePercent).toBe('percent_range');
   });
 
   test('indexes quota auto-disable scan controls for visual config search', () => {
     const translate = (key: string) => key;
     const expected = new Map([
-      ['max-scan-per-run', 'quotaAutoDisableMaxScanPerRun'],
-      ['auto-enable-scan-reserve', 'quotaAutoDisableAutoEnableScanReserve'],
+      ['scan-interval-seconds', 'quotaAutoDisableScanIntervalSeconds'],
+      ['scan-concurrency', 'quotaAutoDisableScanConcurrency'],
+      ['scan-rate-limit-per-second', 'quotaAutoDisableScanRateLimitPerSecond'],
       ['probe-timeout-seconds', 'quotaAutoDisableProbeTimeoutSeconds'],
-      ['sample-freshness-seconds', 'quotaAutoDisableSampleFreshnessSeconds'],
-      ['account-error-backoff-seconds', 'quotaAutoDisableAccountErrorBackoffSeconds'],
-      ['transient-error-backoff-seconds', 'quotaAutoDisableTransientErrorBackoffSeconds'],
       ['min-capacity-coverage-percent', 'quotaAutoDisableMinCapacityCoveragePercent'],
     ]);
 
