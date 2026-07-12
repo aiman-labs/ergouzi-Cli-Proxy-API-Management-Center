@@ -16,13 +16,10 @@ export type VisualConfigFieldPath =
   | 'maxRetryCredentials'
   | 'maxRetryInterval'
   | 'authAutoRefreshWorkers'
-  | 'quotaAutoDisableIntervalSeconds'
-  | 'quotaAutoDisableMaxScanPerRun'
-  | 'quotaAutoDisableAutoEnableScanReserve'
+  | 'quotaAutoDisableScanIntervalSeconds'
+  | 'quotaAutoDisableScanConcurrency'
+  | 'quotaAutoDisableScanRateLimitPerSecond'
   | 'quotaAutoDisableProbeTimeoutSeconds'
-  | 'quotaAutoDisableSampleFreshnessSeconds'
-  | 'quotaAutoDisableAccountErrorBackoffSeconds'
-  | 'quotaAutoDisableTransientErrorBackoffSeconds'
   | 'quotaAutoDisableMinCapacityCoveragePercent'
   | 'quotaAutoDisableProPlanThresholdPercent'
   | 'quotaAutoDisableProPlanResumeThresholdPercent'
@@ -151,13 +148,10 @@ export type VisualConfigValues = {
   quotaAntigravityCredits: boolean;
   quotaAutoDisableEnabled: boolean;
   quotaAutoDisableAutoEnable: boolean;
-  quotaAutoDisableIntervalSeconds: string;
-  quotaAutoDisableMaxScanPerRun: string;
-  quotaAutoDisableAutoEnableScanReserve: string;
+  quotaAutoDisableScanIntervalSeconds: string;
+  quotaAutoDisableScanConcurrency: string;
+  quotaAutoDisableScanRateLimitPerSecond: string;
   quotaAutoDisableProbeTimeoutSeconds: string;
-  quotaAutoDisableSampleFreshnessSeconds: string;
-  quotaAutoDisableAccountErrorBackoffSeconds: string;
-  quotaAutoDisableTransientErrorBackoffSeconds: string;
   quotaAutoDisableMinCapacityCoveragePercent: string;
   quotaAutoDisableProPlanEnabled: boolean;
   quotaAutoDisableProPlanThresholdPercent: string;
@@ -247,13 +241,10 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   quotaAntigravityCredits: false,
   quotaAutoDisableEnabled: false,
   quotaAutoDisableAutoEnable: true,
-  quotaAutoDisableIntervalSeconds: '180',
-  quotaAutoDisableMaxScanPerRun: '100',
-  quotaAutoDisableAutoEnableScanReserve: '40',
+  quotaAutoDisableScanIntervalSeconds: '600',
+  quotaAutoDisableScanConcurrency: '20',
+  quotaAutoDisableScanRateLimitPerSecond: '0',
   quotaAutoDisableProbeTimeoutSeconds: '15',
-  quotaAutoDisableSampleFreshnessSeconds: '7200',
-  quotaAutoDisableAccountErrorBackoffSeconds: '21600',
-  quotaAutoDisableTransientErrorBackoffSeconds: '600',
   quotaAutoDisableMinCapacityCoveragePercent: '80',
   quotaAutoDisableProPlanEnabled: true,
   quotaAutoDisableProPlanThresholdPercent: '5',
