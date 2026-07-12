@@ -1723,6 +1723,9 @@ export function applyVisualConfigValuesToYaml(
       doc.deleteIn(['quota-auto-disable', 'weekly-threshold-percent']);
       doc.deleteIn(['quota-auto-disable', 'resume-five-hour-threshold-percent']);
       doc.deleteIn(['quota-auto-disable', 'resume-weekly-threshold-percent']);
+      doc.deleteIn(['quota-auto-disable', 'interval-seconds']);
+      doc.deleteIn(['quota-auto-disable', 'max-scan-per-run']);
+      doc.deleteIn(['quota-auto-disable', 'auto-enable-scan-reserve']);
       doc.deleteIn(['quota-auto-disable', 'sample-freshness-seconds']);
       doc.deleteIn(['quota-auto-disable', 'account-error-backoff-seconds']);
       doc.deleteIn(['quota-auto-disable', 'transient-error-backoff-seconds']);

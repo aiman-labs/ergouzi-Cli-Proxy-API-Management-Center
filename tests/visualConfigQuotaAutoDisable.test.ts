@@ -183,6 +183,9 @@ quota-auto-disable:
   weekly-threshold-percent: 3
   resume-five-hour-threshold-percent: 10
   resume-weekly-threshold-percent: 6
+  interval-seconds: 180
+  max-scan-per-run: 100
+  auto-enable-scan-reserve: 100
   sample-freshness-seconds: 7200
   account-error-backoff-seconds: 21600
   transient-error-backoff-seconds: 600
@@ -210,6 +213,9 @@ quota-auto-disable:
     expect(quotaAutoDisable['weekly-threshold-percent']).toBeUndefined();
     expect(quotaAutoDisable['resume-five-hour-threshold-percent']).toBeUndefined();
     expect(quotaAutoDisable['resume-weekly-threshold-percent']).toBeUndefined();
+    expect(quotaAutoDisable['interval-seconds']).toBeUndefined();
+    expect(quotaAutoDisable['max-scan-per-run']).toBeUndefined();
+    expect(quotaAutoDisable['auto-enable-scan-reserve']).toBeUndefined();
     expect(quotaAutoDisable['sample-freshness-seconds']).toBeUndefined();
     expect(quotaAutoDisable['account-error-backoff-seconds']).toBeUndefined();
     expect(quotaAutoDisable['transient-error-backoff-seconds']).toBeUndefined();
