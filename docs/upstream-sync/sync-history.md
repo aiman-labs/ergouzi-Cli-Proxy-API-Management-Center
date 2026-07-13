@@ -1,5 +1,87 @@
 # Sync History
 
+## 2026-07-13 Upstream `v1.18.3` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `9c9f31c` |
+| Sync branch | `sync/upstream-v1.18.3` |
+| Upstream previous baseline | `v1.17.14` / `fd22c148` |
+| Upstream target tag | `v1.18.3` |
+| Upstream target commit | `d3df9b07` |
+| Upstream non-merge commits adopted | `21` |
+| Changed files from `v1.17.14` to `v1.18.3` | `71` |
+| Upstream release diff | `71 files changed, 2535 insertions(+), 1389 deletions(-)` |
+| Pre-close latest release recheck | `v1.18.3` |
+| Sync status | `PR #20 opened; not released; not deployed` |
+
+Upstream release themes:
+
+- Prevent stale quota requests from repopulating cache after a management
+  connection switch.
+- Save visual configuration by dirty field against the latest server YAML,
+  preserving concurrent and unknown configuration values.
+- Replace provider whole-list writes with targeted create, update, and delete
+  calls, with sponsor mutation recovery after partial failures.
+- Add plugin config PATCH behavior, stricter official-plugin trust checks,
+  version-selection support, and improved install-settled polling.
+- Improve OAuth excluded-model and alias editors, dashboard empty/error state,
+  model alias validation, and xAI `using_api` editing.
+
+Sync findings:
+
+- The fork still does not preserve direct upstream tag ancestry, so the exact
+  `v1.17.14..v1.18.3` release diff was applied instead of merging unreleased
+  `upstream/main` drift.
+- Preserved Ergouzi quota search, filters, scoped refresh, disabled credential
+  refresh, bounded concurrency, progressive rendering, and post-refresh auth
+  snapshot synchronization while accepting upstream cache-generation guards.
+- Adopted upstream dirty-field YAML writes and extended them to Ergouzi quota
+  governor, capacity-alert, and Codex plan-priority fields. Targeted saves keep
+  known siblings and unknown nested keys.
+- Adopted targeted sponsor provider mutations while limiting clear operations
+  to the visible Ergouzi entry. OpenAI clearing uses the entry index rather than
+  deleting every provider sharing a name.
+- Kept source-aware plugin polling and delayed restart-required completion
+  until the installed store row has refreshed.
+- Conflict decisions are recorded in `DEC-20260713-008`.
+
+Protected Ergouzi surfaces checked:
+
+- Auth-file filtered and selected batch operations, page size `100`, plan,
+  health, enabled, error, and success-count filters remain present.
+- Quota search, plan/enabled/problem filters, limited-concurrency refresh,
+  disabled credential actions, Codex reset-expiry controls, and quota-governor
+  configuration remain present.
+- Unknown visual-config YAML keys survive targeted saves, including nested
+  quota and payload sections.
+- The release workflow and single-file `management.html` contract remain
+  intact.
+
+Verification:
+
+```bash
+bun run verify
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
+```
+
+Result:
+
+- All `92` tests passed, including quota session isolation, provider mutation
+  recovery, plugin trust/versioning, and visual-config concurrency coverage.
+- ESLint, TypeScript compilation, and the production single-file build passed.
+- `dist/index.html` is `2660.72 kB` (`862.35 kB` gzip).
+- Playwright smoke checks rendered the login shell at desktop and `390x844`
+  mobile viewports with no browser console errors.
+- Authenticated browser workflows were not exercised because this local
+  worktree was not connected to a CPA backend or supplied a management key.
+- Diff check passed, no `.rej` files remain, and the conflict-marker scan
+  returned no matches.
+- Pull request
+  [#20](https://github.com/aiman-labs/ergouzi-Cli-Proxy-API-Management-Center/pull/20)
+  was opened for review. No release or production deployment has been performed.
+
 ## 2026-07-10 Upstream `v1.17.14` Sync
 
 | Item | Value |
