@@ -14,11 +14,13 @@ import {
   type CodexQuotaJobSummary,
 } from '@/services/api';
 import type { AuthFileItem } from '@/types';
-import { normalizeAuthIndex } from '@/utils/authIndex';
 import { getStatusFromError } from '@/utils/quota';
 import {
+  addCodexQuotaJobLocalFailures,
+  applyCodexQuotaJobLocalFailures,
   applyCodexQuotaJobResultBatch,
   createCodexQuotaJobProgress,
+  partitionCodexQuotaJobTargets,
   reduceCodexQuotaJobProgress,
 } from './codexQuotaJobState';
 
@@ -32,6 +34,7 @@ interface ActiveCodexQuotaJobRun {
   appliedSeq: number;
   targetNamesByAuthIndex: Map<string, string>;
   filesByName: Map<string, AuthFileItem>;
+  localFailures: number;
   connection: CodexQuotaJobConnection;
 }
 
@@ -129,7 +132,8 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
             });
           });
           run.appliedSeq = nextAppliedSeq;
-          setProgress((current) => reduceCodexQuotaJobProgress(current, response));
+          const progressResponse = addCodexQuotaJobLocalFailures(response, run.localFailures);
+          setProgress((current) => reduceCodexQuotaJobProgress(current, progressResponse));
 
           const terminal = response.status === 'completed' || response.status === 'cancelled';
           if (terminal && response.results.length === 0) {
@@ -158,16 +162,19 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
       if (activeRun || startInFlight) {
         throw new Error(t('quota_management.refresh_job_already_running'));
       }
-      const targetNamesByAuthIndex = new Map<string, string>();
-      const filesByName = new Map<string, AuthFileItem>();
-      for (const file of targets) {
-        const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
-        if (!authIndex) throw new Error(t('codex_quota.missing_auth_index'));
-        targetNamesByAuthIndex.set(authIndex, file.name);
-        filesByName.set(file.name, file);
-      }
-
       const startGeneration = captureQuotaCacheGeneration();
+      const { targetNamesByAuthIndex, filesByName, invalidFiles } =
+        partitionCodexQuotaJobTargets(targets);
+      const missingAuthIndexMessage = t('codex_quota.missing_auth_index');
+      if (invalidFiles.length > 0) {
+        commitIfQuotaCacheCurrent(startGeneration, () => {
+          setCodexQuota((previous) =>
+            applyCodexQuotaJobLocalFailures(previous, invalidFiles, missingAuthIndexMessage)
+          );
+        });
+      }
+      if (targetNamesByAuthIndex.size === 0) throw new Error(missingAuthIndexMessage);
+
       const authState = useAuthStore.getState();
       const connection = {
         apiBase: authState.apiBase,
@@ -186,6 +193,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
         void cancelCodexQuotaJobAtConnection(summary.jobId, connection).catch(() => undefined);
         throw new Error(t('quota_management.refresh_job_connection_changed'));
       }
+      const localFailures = invalidFiles.length;
       const run: ActiveCodexQuotaJobRun = {
         jobId: summary.jobId,
         controller: new AbortController(),
@@ -193,14 +201,16 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
         appliedSeq: 0,
         targetNamesByAuthIndex,
         filesByName,
+        localFailures,
         connection,
       };
       activeRun = run;
-      setProgress(createCodexQuotaJobProgress(summary));
+      const progressSummary = addCodexQuotaJobLocalFailures(summary, localFailures);
+      setProgress(createCodexQuotaJobProgress(progressSummary));
       void poll(run);
-      return summary;
+      return progressSummary;
     },
-    [poll, setProgress, setStarting, t]
+    [poll, setCodexQuota, setProgress, setStarting, t]
   );
 
   const cancel = useCallback(async () => {
@@ -210,7 +220,9 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
     activeRun = null;
     try {
       const summary = await cancelCodexQuotaJobAtConnection(run.jobId, run.connection);
-      setProgress(createCodexQuotaJobProgress(summary));
+      setProgress(
+        createCodexQuotaJobProgress(addCodexQuotaJobLocalFailures(summary, run.localFailures))
+      );
     } catch (error: unknown) {
       setProgress((current) => ({
         ...current,

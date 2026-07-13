@@ -6,7 +6,50 @@ import type {
   CodexQuotaJobSummary,
 } from '@/services/api';
 import type { CodexQuotaJobProgress } from '@/stores/useCodexQuotaJobStore';
+import { normalizeAuthIndex } from '@/utils/authIndex';
 import { buildCodexQuotaDataFromUsageBody, CODEX_CONFIG } from './quotaConfigs';
+
+export const partitionCodexQuotaJobTargets = (files: AuthFileItem[]) => {
+  const targetNamesByAuthIndex = new Map<string, string>();
+  const filesByName = new Map<string, AuthFileItem>();
+  const invalidFiles: AuthFileItem[] = [];
+  for (const file of files) {
+    const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+    if (!authIndex) {
+      invalidFiles.push(file);
+      continue;
+    }
+    targetNamesByAuthIndex.set(authIndex, file.name);
+    filesByName.set(file.name, file);
+  }
+  return { targetNamesByAuthIndex, filesByName, invalidFiles };
+};
+
+export const applyCodexQuotaJobLocalFailures = (
+  quota: Record<string, CodexQuotaState>,
+  files: AuthFileItem[],
+  message: string
+): Record<string, CodexQuotaState> => {
+  if (files.length === 0) return quota;
+  const nextQuota = { ...quota };
+  for (const file of files) {
+    nextQuota[file.name] = CODEX_CONFIG.buildErrorState(message);
+  }
+  return nextQuota;
+};
+
+export const addCodexQuotaJobLocalFailures = <TSummary extends CodexQuotaJobSummary>(
+  summary: TSummary,
+  localFailures: number
+): TSummary => {
+  if (localFailures <= 0) return summary;
+  return {
+    ...summary,
+    total: summary.total + localFailures,
+    completed: summary.completed + localFailures,
+    failed: summary.failed + localFailures,
+  };
+};
 
 export const createCodexQuotaJobProgress = (
   summary: CodexQuotaJobSummary

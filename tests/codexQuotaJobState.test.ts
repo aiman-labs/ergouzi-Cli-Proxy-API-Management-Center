@@ -1,14 +1,52 @@
 import { describe, expect, test } from 'bun:test';
 import type { CodexQuotaState } from '../src/types';
 import {
+  addCodexQuotaJobLocalFailures,
+  applyCodexQuotaJobLocalFailures,
   applyCodexQuotaJobResultBatch,
   createCodexQuotaJobProgress,
+  partitionCodexQuotaJobTargets,
   reduceCodexQuotaJobProgress,
 } from '../src/components/quota/codexQuotaJobState';
 
 const t = ((key: string) => key) as never;
 
 describe('Codex quota job batched state', () => {
+  test('keeps valid targets and records missing auth indices as local failures', () => {
+    const valid = { name: 'valid.json', auth_index: 'auth-valid' };
+    const missing = { name: 'missing.json', type: 'codex' };
+    const partitioned = partitionCodexQuotaJobTargets([valid, missing]);
+
+    expect([...partitioned.targetNamesByAuthIndex.entries()]).toEqual([
+      ['auth-valid', 'valid.json'],
+    ]);
+    expect(partitioned.invalidFiles).toEqual([missing]);
+
+    const previous: Record<string, CodexQuotaState> = {
+      'valid.json': { status: 'idle', windows: [] },
+      'missing.json': { status: 'idle', windows: [] },
+    };
+    const quota = applyCodexQuotaJobLocalFailures(previous, partitioned.invalidFiles, 'missing');
+    expect(quota['valid.json']).toBe(previous['valid.json']);
+    expect(quota['missing.json']).toMatchObject({ status: 'error', error: 'missing' });
+
+    expect(
+      addCodexQuotaJobLocalFailures(
+        {
+          jobId: 'job',
+          status: 'running',
+          total: 1,
+          completed: 0,
+          succeeded: 0,
+          failed: 0,
+          nextSeq: 0,
+          error: '',
+        },
+        1
+      )
+    ).toMatchObject({ total: 2, completed: 1, succeeded: 0, failed: 1 });
+  });
+
   test('applies successes and failures in one immutable batch and advances every sequence', () => {
     const previous: Record<string, CodexQuotaState> = {
       'a.json': { status: 'idle', windows: [] },
