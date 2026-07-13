@@ -1289,6 +1289,16 @@
     "refresh_all_confirm_title": "确认刷新全部凭证",
     "refresh_all_confirm_message": "将按限流队列刷新当前分组下全部 {{count}} 个凭证的额度。",
     "refresh_all_confirm_button": "确认刷新全部",
+    "refresh_job_already_running": "Codex 全量刷新任务正在运行",
+    "refresh_job_connection_changed": "连接已切换，已停止追踪旧的刷新任务",
+    "refresh_job_status_queued": "等待刷新",
+    "refresh_job_status_running": "正在刷新",
+    "refresh_job_status_completed": "刷新完成",
+    "refresh_job_status_cancelled": "刷新已取消",
+    "refresh_job_status_error": "刷新中断",
+    "refresh_job_progress": "{{completed}}/{{total}} · 成功 {{succeeded}} · 失败 {{failed}}",
+    "refresh_job_progress_label": "Codex 全量刷新进度",
+    "refresh_job_cancel": "取消刷新",
     "card_idle_hint": "请使用顶部刷新按钮获取最新额度。"
   },
   "plugin_management": {

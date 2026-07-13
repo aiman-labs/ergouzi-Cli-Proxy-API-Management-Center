@@ -2,7 +2,7 @@
  * Generic quota section component.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -16,14 +16,16 @@ import {
   useQuotaStore,
   useThemeStore,
 } from '@/stores';
-import type { AuthFileItem, ResolvedTheme } from '@/types';
+import type { AuthFileItem, CodexQuotaState, ResolvedTheme } from '@/types';
 import { getStatusFromError, isDisabledAuthFile } from '@/utils/quota';
 import { getAuthFileStatusMessage, isRuntimeOnlyAuthFile } from '@/features/authFiles/constants';
 import { QuotaCard } from './QuotaCard';
 import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
-import type { QuotaConfig } from './quotaConfigs';
+import { fetchCodexResetCreditDetails, type QuotaConfig } from './quotaConfigs';
+import { useCodexQuotaRefreshJob } from './useCodexQuotaRefreshJob';
 import { useGridColumns } from './useGridColumns';
+import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import { IconRefreshCw } from '@/components/ui/icons';
 import styles from '@/pages/QuotaPage.module.scss';
 
@@ -208,6 +210,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [showCodexResetCreditExpiries, setShowCodexResetCreditExpiries] = useState(false);
+  const resetCreditDetailsInFlightRef = useRef(new Set<string>());
+  const resetCreditDetailsScopeRef = useRef('');
 
   const providerFiles = useMemo(
     () => sortByNewestImport(files.filter((file) => config.filterFn(file))),
@@ -365,6 +369,95 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     }
   }, [onQuotaRefreshComplete, showNotification, t]);
 
+  const codexQuotaJob = useCodexQuotaRefreshJob({
+    enabled: config.type === 'codex',
+    onComplete: syncFilesAfterQuotaRefresh,
+  });
+
+  const resetCreditDetailsScope =
+    showCodexResetExpiryToggle && showCodexResetCreditExpiries && config.type === 'codex'
+      ? pageItems.map((file) => file.name).join('\n')
+      : '';
+
+  useEffect(() => {
+    resetCreditDetailsScopeRef.current = resetCreditDetailsScope;
+  }, [resetCreditDetailsScope]);
+
+  useEffect(() => {
+    if (!showCodexResetExpiryToggle || !showCodexResetCreditExpiries || config.type !== 'codex') {
+      return;
+    }
+    const codexQuota = quota as unknown as Record<string, CodexQuotaState>;
+    const targets = pageItems.filter((file) => {
+      const state = codexQuota[file.name];
+      return (
+        state?.status === 'success' &&
+        state.rateLimitResetCreditsLoaded !== true &&
+        !resetCreditDetailsInFlightRef.current.has(file.name)
+      );
+    });
+    if (targets.length === 0) return;
+
+    const cacheGeneration = captureQuotaCacheGeneration();
+    const scope = resetCreditDetailsScope;
+    targets.forEach((file) => resetCreditDetailsInFlightRef.current.add(file.name));
+    void runLimitedBatch({
+      items: targets,
+      concurrency: 4,
+      worker: async (file) => {
+        const quotaAtStart = codexQuota[file.name];
+        try {
+          return { file, quotaAtStart, details: await fetchCodexResetCreditDetails(file, t) };
+        } catch (error: unknown) {
+          return {
+            file,
+            quotaAtStart,
+            details: {
+              availableCount: null,
+              credits: [],
+              error: error instanceof Error ? error.message : t('common.unknown_error'),
+            },
+          };
+        } finally {
+          resetCreditDetailsInFlightRef.current.delete(file.name);
+        }
+      },
+      onResult: ({ file, quotaAtStart, details }) => {
+        if (resetCreditDetailsScopeRef.current !== scope) return;
+        commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          setQuota((previous) => {
+            const current = (previous as unknown as Record<string, CodexQuotaState>)[file.name];
+            if (!current || current.status !== 'success') return previous;
+            if (current !== quotaAtStart) return { ...previous };
+            const detailCount = details.credits.length > 0 ? details.credits.length : null;
+            return {
+              ...previous,
+              [file.name]: {
+                ...current,
+                rateLimitResetCreditsAvailableCount:
+                  details.availableCount ??
+                  detailCount ??
+                  current.rateLimitResetCreditsAvailableCount,
+                rateLimitResetCredits: details.credits,
+                rateLimitResetCreditsLoaded: true,
+                rateLimitResetCreditsError: details.error,
+              },
+            } as unknown as Record<string, TState>;
+          });
+        });
+      },
+    });
+  }, [
+    config.type,
+    pageItems,
+    quota,
+    resetCreditDetailsScope,
+    setQuota,
+    showCodexResetCreditExpiries,
+    showCodexResetExpiryToggle,
+    t,
+  ]);
+
   const refreshQuotaTargets = useCallback(
     (targets: AuthFileItem[], scope: 'page' | 'all') => {
       if (targets.length === 0) return;
@@ -390,9 +483,18 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
       }),
       confirmText: t('quota_management.refresh_all_confirm_button'),
       variant: 'primary',
-      onConfirm: () => refreshQuotaTargets(filteredFiles, 'all'),
+      onConfirm: () => {
+        if (config.type !== 'codex') {
+          refreshQuotaTargets(filteredFiles, 'all');
+          return;
+        }
+        void codexQuotaJob.start(filteredFiles).catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : t('common.unknown_error');
+          showNotification(`${t('notification.refresh_failed')}: ${message}`, 'error');
+        });
+      },
     });
-  }, [filteredFiles, refreshQuotaTargets, showConfirmation, t]);
+  }, [codexQuotaJob, config.type, filteredFiles, refreshQuotaTargets, showConfirmation, showNotification, t]);
 
   useEffect(() => {
     if (loading) return;
@@ -576,9 +678,11 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     </div>
   );
 
-  const isRefreshing = sectionLoading || loading;
+  const codexRefreshActive = config.type === 'codex' && codexQuotaJob.isActive;
+  const isRefreshing = sectionLoading || loading || codexRefreshActive;
   const isRefreshingPage = sectionLoading && loadingScope === 'page';
-  const isRefreshingAll = sectionLoading && loadingScope === 'all';
+  const isRefreshingAll =
+    (sectionLoading && loadingScope === 'all') || codexRefreshActive;
   const currentPageRefreshableCount = pageItems.length;
   const currentPageDisabledCount = pageItems.filter((file) => isDisabledAuthFile(file)).length;
   const filteredDisabledCount = filteredFiles.filter((file) => isDisabledAuthFile(file)).length;
@@ -993,6 +1097,45 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             </Button>
           </div>
         </div>
+        {config.type === 'codex' && codexQuotaJob.progress.jobId && (
+          <div className={styles.quotaRefreshJobStatus} role="status" aria-live="polite">
+            <div className={styles.quotaRefreshJobSummary}>
+              <strong>
+                {t(`quota_management.refresh_job_status_${codexQuotaJob.progress.status}`)}
+              </strong>
+              <span>
+                {t('quota_management.refresh_job_progress', {
+                  completed: codexQuotaJob.progress.completed,
+                  total: codexQuotaJob.progress.total,
+                  succeeded: codexQuotaJob.progress.succeeded,
+                  failed: codexQuotaJob.progress.failed,
+                })}
+              </span>
+              {codexQuotaJob.progress.error && (
+                <span className={styles.quotaRefreshJobError}>
+                  {codexQuotaJob.progress.error}
+                </span>
+              )}
+            </div>
+            <progress
+              className={styles.quotaRefreshJobProgress}
+              max={Math.max(1, codexQuotaJob.progress.total)}
+              value={codexQuotaJob.progress.completed}
+              aria-label={t('quota_management.refresh_job_progress_label')}
+            />
+            {codexQuotaJob.isActive && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => void codexQuotaJob.cancel()}
+                title={t('quota_management.refresh_job_cancel')}
+                aria-label={t('quota_management.refresh_job_cancel')}
+              >
+                {t('quota_management.refresh_job_cancel')}
+              </Button>
+            )}
+          </div>
+        )}
         {showCodexResetExpiryToggle && (
           <div className={styles.quotaDisplayOptionsBar}>
             <div className={styles.sectionScopeSummary}>

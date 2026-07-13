@@ -97,17 +97,18 @@ type AntigravityQuotaData = {
   serverTimeOffsetMs: number | null;
 };
 
-type CodexResetCreditsData = {
+export type CodexResetCreditsData = {
   availableCount: number | null;
   credits: CodexRateLimitResetCredit[];
   error: string;
 };
 
-type CodexQuotaData = {
+export type CodexQuotaData = {
   planType: string | null;
   subscriptionActiveUntil: string | number | null;
   rateLimitResetCreditsAvailableCount: number | null;
   rateLimitResetCredits: CodexRateLimitResetCredit[];
+  rateLimitResetCreditsLoaded: boolean;
   rateLimitResetCreditsError: string;
   windows: CodexQuotaWindow[];
 };
@@ -626,6 +627,34 @@ const fetchCodexResetCredits = async (
   }
 };
 
+export const buildCodexQuotaDataFromUsageBody = (
+  file: AuthFileItem,
+  body: unknown,
+  t: TFunction
+): CodexQuotaData => {
+  const planTypeFromFile = resolveCodexPlanType(file);
+  const subscriptionActiveUntil = resolveCodexSubscriptionActiveUntil(file);
+  const payload = parseCodexUsagePayload(body);
+  if (!payload) {
+    throw new Error(t('codex_quota.empty_windows'));
+  }
+
+  const planTypeFromUsage = normalizePlanType(payload.plan_type ?? payload.planType);
+  const resetCredits = payload.rate_limit_reset_credits ?? payload.rateLimitResetCredits ?? null;
+  const rateLimitResetCreditsAvailableCount = normalizeNumberValue(
+    resetCredits?.available_count ?? resetCredits?.availableCount
+  );
+  return {
+    planType: planTypeFromUsage ?? planTypeFromFile,
+    subscriptionActiveUntil,
+    rateLimitResetCreditsAvailableCount,
+    rateLimitResetCredits: [],
+    rateLimitResetCreditsLoaded: false,
+    rateLimitResetCreditsError: '',
+    windows: buildCodexQuotaWindows(payload, t),
+  };
+};
+
 const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
@@ -633,8 +662,6 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     throw new Error(t('codex_quota.missing_auth_index'));
   }
 
-  const planTypeFromFile = resolveCodexPlanType(file);
-  const subscriptionActiveUntil = resolveCodexSubscriptionActiveUntil(file);
   const requestHeader = buildCodexRequestHeader(file);
 
   const result = await apiCallApi.request({
@@ -648,33 +675,16 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
   }
 
-  const payload = parseCodexUsagePayload(result.body ?? result.bodyText);
-  if (!payload) {
-    throw new Error(t('codex_quota.empty_windows'));
-  }
+  return buildCodexQuotaDataFromUsageBody(file, result.body ?? result.bodyText, t);
+};
 
-  const planTypeFromUsage = normalizePlanType(payload.plan_type ?? payload.planType);
-  const resetCredits = payload.rate_limit_reset_credits ?? payload.rateLimitResetCredits ?? null;
-  const usageResetCreditsAvailableCount = normalizeNumberValue(
-    resetCredits?.available_count ?? resetCredits?.availableCount
-  );
-  const resetCreditsData = await fetchCodexResetCredits(authIndex, requestHeader, t);
-  const resetCreditsCountFromDetails =
-    resetCreditsData.credits.length > 0 ? resetCreditsData.credits.length : null;
-  const rateLimitResetCreditsAvailableCount =
-    resetCreditsData.availableCount ??
-    resetCreditsCountFromDetails ??
-    usageResetCreditsAvailableCount;
-  const planType = planTypeFromUsage ?? planTypeFromFile;
-  const windows = buildCodexQuotaWindows(payload, t);
-  return {
-    planType,
-    subscriptionActiveUntil,
-    rateLimitResetCreditsAvailableCount,
-    rateLimitResetCredits: resetCreditsData.credits,
-    rateLimitResetCreditsError: resetCreditsData.error,
-    windows,
-  };
+export const fetchCodexResetCreditDetails = async (
+  file: AuthFileItem,
+  t: TFunction
+): Promise<CodexResetCreditsData> => {
+  const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+  if (!authIndex) throw new Error(t('codex_quota.missing_auth_index'));
+  return fetchCodexResetCredits(authIndex, buildCodexRequestHeader(file), t);
 };
 
 const createCodexRedeemRequestId = (): string => {
@@ -1429,13 +1439,14 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
   filterFn: isCodexFile,
   fetchQuota: fetchCodexQuota,
   resetQuota: resetCodexQuota,
-  canResetQuota: (quota) => (quota.rateLimitResetCreditsAvailableCount ?? 0) > 0,
+  canResetQuota: (quota) => quota.rateLimitResetCreditsAvailableCount !== 0,
   storeSelector: (state) => state.codexQuota,
   storeSetter: 'setCodexQuota',
   buildLoadingState: () => ({
     status: 'loading',
     windows: [],
     rateLimitResetCredits: [],
+    rateLimitResetCreditsLoaded: false,
     rateLimitResetCreditsError: '',
   }),
   buildSuccessState: (data) => ({
@@ -1445,12 +1456,14 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
     subscriptionActiveUntil: data.subscriptionActiveUntil,
     rateLimitResetCreditsAvailableCount: data.rateLimitResetCreditsAvailableCount,
     rateLimitResetCredits: data.rateLimitResetCredits,
+    rateLimitResetCreditsLoaded: data.rateLimitResetCreditsLoaded,
     rateLimitResetCreditsError: data.rateLimitResetCreditsError,
   }),
   buildErrorState: (message, status) => ({
     status: 'error',
     windows: [],
     rateLimitResetCredits: [],
+    rateLimitResetCreditsLoaded: false,
     rateLimitResetCreditsError: '',
     error: message,
     errorStatus: status,
