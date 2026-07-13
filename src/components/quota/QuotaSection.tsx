@@ -24,6 +24,7 @@ import type { QuotaStatusState } from './QuotaCard';
 import { useQuotaLoader } from './useQuotaLoader';
 import { fetchCodexResetCreditDetails, type QuotaConfig } from './quotaConfigs';
 import { useCodexQuotaRefreshJob } from './useCodexQuotaRefreshJob';
+import { canUseQuotaCardActions } from './codexQuotaJobState';
 import { useGridColumns } from './useGridColumns';
 import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import { IconRefreshCw } from '@/components/ui/icons';
@@ -1185,7 +1186,11 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
             {pageItems.map((item) => {
               const itemQuota = quota[item.name];
               const isResettingQuota = resettingQuotaName === item.name;
-              const canRefreshQuotaAction = !disabled && itemQuota?.status !== 'loading';
+              const canRefreshQuotaAction = canUseQuotaCardActions(
+                disabled,
+                itemQuota?.status,
+                codexRefreshActive
+              );
               const canResetQuotaAction = canRefreshQuotaAction && !item.disabled;
               const showResetQuotaAction =
                 itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));

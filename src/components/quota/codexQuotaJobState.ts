@@ -9,6 +9,12 @@ import type { CodexQuotaJobProgress } from '@/stores/useCodexQuotaJobStore';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { buildCodexQuotaDataFromUsageBody, CODEX_CONFIG } from './quotaConfigs';
 
+export const canUseQuotaCardActions = (
+  sectionDisabled: boolean,
+  quotaStatus: string | undefined,
+  codexRefreshActive: boolean
+): boolean => !sectionDisabled && !codexRefreshActive && quotaStatus !== 'loading';
+
 export const partitionCodexQuotaJobTargets = (files: AuthFileItem[]) => {
   const targetNamesByAuthIndex = new Map<string, string>();
   const filesByName = new Map<string, AuthFileItem>();

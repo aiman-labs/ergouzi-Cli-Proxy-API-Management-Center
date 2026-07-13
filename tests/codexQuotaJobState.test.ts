@@ -4,6 +4,7 @@ import {
   addCodexQuotaJobLocalFailures,
   applyCodexQuotaJobLocalFailures,
   applyCodexQuotaJobResultBatch,
+  canUseQuotaCardActions,
   createCodexQuotaJobProgress,
   partitionCodexQuotaJobTargets,
   reduceCodexQuotaJobProgress,
@@ -12,6 +13,13 @@ import {
 const t = ((key: string) => key) as never;
 
 describe('Codex quota job batched state', () => {
+  test('blocks card actions while a Codex full refresh is active', () => {
+    expect(canUseQuotaCardActions(false, 'success', false)).toBe(true);
+    expect(canUseQuotaCardActions(false, 'success', true)).toBe(false);
+    expect(canUseQuotaCardActions(true, 'success', false)).toBe(false);
+    expect(canUseQuotaCardActions(false, 'loading', false)).toBe(false);
+  });
+
   test('keeps valid targets and records missing auth indices as local failures', () => {
     const valid = { name: 'valid.json', auth_index: 'auth-valid' };
     const missing = { name: 'missing.json', type: 'codex' };
