@@ -217,6 +217,14 @@ const matchesProviderKey = (record: Record<string, unknown>, apiKey: string, bas
   getStringField(record, ['api-key']) === apiKey.trim() &&
   getStringField(record, ['base-url']) === (baseUrl ?? '').trim();
 
+export const matchesProviderKeyAtIndex = (
+  record: Record<string, unknown>,
+  currentIndex: number,
+  apiKey: string,
+  baseUrl: string | undefined,
+  selectedIndex: number
+) => currentIndex === selectedIndex && matchesProviderKey(record, apiKey, baseUrl);
+
 const matchesOpenAIProvider = (record: Record<string, unknown>, name: string) =>
   openAIProviderIdentity(record) === name.trim();
 
@@ -427,11 +435,17 @@ export const providersApi = {
       )
     ),
 
-  updateGeminiKey: (apiKey: string, baseUrl: string | undefined, config: GeminiKeyConfig) =>
+  updateGeminiKey: (
+    apiKey: string,
+    baseUrl: string | undefined,
+    config: GeminiKeyConfig,
+    index: number
+  ) =>
     mutateLatestProviderList('gemini-api-key', (latestItems) =>
       replaceLatestProviderRecord(
         latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
+        (record, currentIndex) =>
+          matchesProviderKeyAtIndex(record, currentIndex, apiKey, baseUrl, index),
         serializeGeminiKey(config),
         (raw, payload) => mergeProviderKeyPayload(raw, payload, GEMINI_KEY_FIELDS)
       )
@@ -447,11 +461,17 @@ export const providersApi = {
       )
     ),
 
-  updateCodexConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
+  updateCodexConfig: (
+    apiKey: string,
+    baseUrl: string | undefined,
+    config: ProviderKeyConfig,
+    index: number
+  ) =>
     mutateLatestProviderList('codex-api-key', (latestItems) =>
       replaceLatestProviderRecord(
         latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
+        (record, currentIndex) =>
+          matchesProviderKeyAtIndex(record, currentIndex, apiKey, baseUrl, index),
         serializeProviderKey(config),
         (raw, payload) => mergeProviderKeyPayload(raw, payload, CODEX_KEY_FIELDS)
       )
@@ -467,11 +487,17 @@ export const providersApi = {
       )
     ),
 
-  updateClaudeConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
+  updateClaudeConfig: (
+    apiKey: string,
+    baseUrl: string | undefined,
+    config: ProviderKeyConfig,
+    index: number
+  ) =>
     mutateLatestProviderList('claude-api-key', (latestItems) =>
       replaceLatestProviderRecord(
         latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
+        (record, currentIndex) =>
+          matchesProviderKeyAtIndex(record, currentIndex, apiKey, baseUrl, index),
         serializeProviderKey(config),
         (raw, payload) => mergeProviderKeyPayload(raw, payload, CLAUDE_KEY_FIELDS)
       )
@@ -495,11 +521,17 @@ export const providersApi = {
       )
     ),
 
-  updateVertexConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
+  updateVertexConfig: (
+    apiKey: string,
+    baseUrl: string | undefined,
+    config: ProviderKeyConfig,
+    index: number
+  ) =>
     mutateLatestProviderList('vertex-api-key', (latestItems) =>
       replaceLatestProviderRecord(
         latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
+        (record, currentIndex) =>
+          matchesProviderKeyAtIndex(record, currentIndex, apiKey, baseUrl, index),
         serializeVertexKey(config),
         (raw, payload) => mergeProviderKeyPayload(raw, payload, VERTEX_KEY_FIELDS)
       )
