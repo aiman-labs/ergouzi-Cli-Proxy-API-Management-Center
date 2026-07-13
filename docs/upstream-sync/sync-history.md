@@ -13,7 +13,7 @@
 | Changed files from `v1.17.14` to `v1.18.3` | `71` |
 | Upstream release diff | `71 files changed, 2535 insertions(+), 1389 deletions(-)` |
 | Pre-close latest release recheck | `v1.18.3` |
-| Sync status | `local sync prepared; not pushed; not released; not deployed` |
+| Sync status | `PR #20 opened; not released; not deployed` |
 
 Upstream release themes:
 
@@ -78,7 +78,9 @@ Result:
   worktree was not connected to a CPA backend or supplied a management key.
 - Diff check passed, no `.rej` files remain, and the conflict-marker scan
   returned no matches.
-- No push, pull request, release, or production deployment has been performed.
+- Pull request
+  [#20](https://github.com/aiman-labs/ergouzi-Cli-Proxy-API-Management-Center/pull/20)
+  was opened for review. No release or production deployment has been performed.
 
 ## 2026-07-10 Upstream `v1.17.14` Sync
 
