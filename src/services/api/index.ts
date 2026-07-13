@@ -1,5 +1,6 @@
 export * from './client';
 export * from './apiCall';
+export * from './codexQuotaJobs';
 export * from './antigravitySubscription';
 export * from './apiKeyUsage';
 export * from './config';

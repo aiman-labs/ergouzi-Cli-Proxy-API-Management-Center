@@ -1291,6 +1291,16 @@
     "refresh_all_confirm_title": "Обновить все учётные данные?",
     "refresh_all_confirm_message": "Квоты для всех учётных данных в этом разделе будут обновлены через ограниченную очередь: {{count}}.",
     "refresh_all_confirm_button": "Обновить все",
+    "refresh_job_already_running": "Полное обновление Codex уже выполняется",
+    "refresh_job_connection_changed": "Подключение изменилось, отслеживание предыдущего обновления остановлено",
+    "refresh_job_status_queued": "Обновление в очереди",
+    "refresh_job_status_running": "Обновление",
+    "refresh_job_status_completed": "Обновление завершено",
+    "refresh_job_status_cancelled": "Обновление отменено",
+    "refresh_job_status_error": "Обновление прервано",
+    "refresh_job_progress": "{{completed}}/{{total}} · успешно {{succeeded}} · ошибок {{failed}}",
+    "refresh_job_progress_label": "Ход полного обновления Codex",
+    "refresh_job_cancel": "Отменить обновление",
     "card_idle_hint": "Используйте кнопки обновления сверху, чтобы загрузить актуальные данные по квотам."
   },
   "plugin_management": {

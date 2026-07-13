@@ -1315,6 +1315,16 @@
     "refresh_all_confirm_title": "確認重新整理全部憑證",
     "refresh_all_confirm_message": "將按限流佇列重新整理目前分組下全部 {{count}} 個憑證的配額。",
     "refresh_all_confirm_button": "確認重新整理全部",
+    "refresh_job_already_running": "Codex 全量重新整理工作正在執行",
+    "refresh_job_connection_changed": "連線已切換，已停止追蹤舊的重新整理工作",
+    "refresh_job_status_queued": "等待重新整理",
+    "refresh_job_status_running": "正在重新整理",
+    "refresh_job_status_completed": "重新整理完成",
+    "refresh_job_status_cancelled": "重新整理已取消",
+    "refresh_job_status_error": "重新整理中斷",
+    "refresh_job_progress": "{{completed}}/{{total}} · 成功 {{succeeded}} · 失敗 {{failed}}",
+    "refresh_job_progress_label": "Codex 全量重新整理進度",
+    "refresh_job_cancel": "取消重新整理",
     "card_idle_hint": "請使用頂部重新整理按鈕取得最新配額。"
   },
   "plugin_management": {

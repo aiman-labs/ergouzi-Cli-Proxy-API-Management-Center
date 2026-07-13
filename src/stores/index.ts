@@ -13,3 +13,8 @@ export {
   commitIfQuotaCacheCurrent,
   useQuotaStore,
 } from './useQuotaStore';
+export {
+  IDLE_CODEX_QUOTA_JOB_PROGRESS,
+  useCodexQuotaJobStore,
+} from './useCodexQuotaJobStore';
+export type { CodexQuotaJobProgress } from './useCodexQuotaJobStore';

@@ -225,6 +225,7 @@ export interface CodexQuotaState {
   subscriptionActiveUntil?: string | number | null;
   rateLimitResetCreditsAvailableCount?: number | null;
   rateLimitResetCredits?: CodexRateLimitResetCredit[];
+  rateLimitResetCreditsLoaded?: boolean;
   rateLimitResetCreditsError?: string;
   error?: string;
   errorStatus?: number;
