@@ -4,7 +4,10 @@ import {
   normalizeCodexQuotaJobResponse,
   normalizeCodexQuotaJobSummary,
 } from '../src/services/api/codexQuotaJobs';
-import { buildCodexQuotaDataFromUsageBody } from '../src/components/quota/quotaConfigs';
+import {
+  buildCodexQuotaDataFromUsageBody,
+  CODEX_CONFIG,
+} from '../src/components/quota/quotaConfigs';
 
 const t = ((key: string) => key) as never;
 
@@ -111,6 +114,21 @@ describe('Codex quota refresh job API normalization', () => {
 });
 
 describe('Codex usage-only quota conversion', () => {
+  test('shows reset only for a known positive credit count', () => {
+    const canResetQuota = CODEX_CONFIG.canResetQuota;
+    const quota = {
+      status: 'success' as const,
+      windows: [],
+      rateLimitResetCredits: [],
+      rateLimitResetCreditsLoaded: false,
+      rateLimitResetCreditsError: '',
+    };
+
+    expect(canResetQuota?.({ ...quota, rateLimitResetCreditsAvailableCount: null })).toBe(false);
+    expect(canResetQuota?.({ ...quota, rateLimitResetCreditsAvailableCount: 0 })).toBe(false);
+    expect(canResetQuota?.({ ...quota, rateLimitResetCreditsAvailableCount: 1 })).toBe(true);
+  });
+
   test('uses reset-credit count from usage without loading expiry details', () => {
     const data = buildCodexQuotaDataFromUsageBody(
       {
