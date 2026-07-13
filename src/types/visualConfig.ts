@@ -1,5 +1,5 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
-export type DisableImageGenerationMode = 'false' | 'true' | 'chat';
+export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
 export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
 export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =
@@ -46,6 +46,7 @@ export type VisualConfigFieldPath =
 export type VisualConfigValidationErrorCode =
   | 'port_range'
   | 'non_negative_integer'
+  | 'integer_range_1_3600'
   | 'non_negative_number'
   | 'positive_integer'
   | 'percent_range';

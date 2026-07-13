@@ -35,12 +35,15 @@ changed.
 
 ```bash
 bun install --frozen-lockfile
+bun run test
 bun run type-check
 bun run build
 bun run lint
+bun run verify
 ```
 
 The production release asset must be named exactly `management.html`.
+Run focused tests while developing and `bun run verify` before handoff.
 
 ## Working Rules
 

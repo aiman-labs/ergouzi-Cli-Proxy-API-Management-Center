@@ -130,3 +130,42 @@ Review notes: Preserve Ergouzi-owned Codex/Pro quota management and auth-file
 batch operation UX while removing Gemini CLI-specific UI and config residues.
 If CPA reintroduces Gemini CLI as a supported runtime later, treat it as a new
 feature design instead of resurrecting stale pre-`v1.17.1` CPAMC code.
+
+## DEC-20260713-008: Merge v1.18.3 concurrency fixes without replacing Ergouzi operations
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | quota / visual-config / providers / plugins |
+| Upstream base | `v1.18.3` / `d3df9b07` |
+| Ergouzi source | `sync/upstream-v1.18.3` |
+
+Final decision: adopt upstream cache-generation invalidation, dirty-field YAML
+writes, targeted provider APIs, and plugin install/config safety fixes while
+preserving the Ergouzi-owned operational behavior around them.
+
+Quota refresh keeps Ergouzi search and filters, scoped page/all refresh,
+disabled credential refresh, concurrency limit `4`, progressive results, and
+auth-file snapshot synchronization. Stale requests may finish, but their quota
+state, notifications, and follow-up synchronization are discarded after the
+cache generation changes.
+
+Visual-config saves patch only dirty fields against current server YAML.
+Ergouzi quota-governor, capacity-alert, and Codex plan-priority fields follow
+the same rule, preserving untouched known values and unknown nested keys.
+
+Sponsor provider changes use targeted create, update, and delete APIs. Clearing
+a protocol removes only the visible Ergouzi sponsor entry; OpenAI clearing uses
+its list index and does not delete hidden same-name providers. Multi-protocol
+mutations remain non-transactional, so failures must refresh the snapshot while
+preserving the original error.
+
+Plugin installs keep source-aware polling and wait for the first settled store
+row even when the backend reports that a restart is required. Official trust
+requires both the official source and an official repository.
+
+Review notes: future upstream syncs must retain quota generation tests, visual
+config concurrency/unknown-key tests, sponsor mutation recovery, and plugin
+trust/version-settling tests. A fully atomic sponsor mutation would require a
+new backend transaction or stable-identity API and is deferred beyond this
+sync.
