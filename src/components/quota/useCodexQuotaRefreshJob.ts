@@ -112,6 +112,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
           if (captureQuotaCacheGeneration() !== run.cacheGeneration) {
             run.controller.abort();
             activeRun = null;
+            void cancelCodexQuotaJobAtConnection(run.jobId, run.connection).catch(() => undefined);
             resetProgress();
             return;
           }
