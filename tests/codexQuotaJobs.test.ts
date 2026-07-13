@@ -3,6 +3,7 @@ import {
   cancelCodexQuotaJobAtConnection,
   normalizeCodexQuotaJobResponse,
   normalizeCodexQuotaJobSummary,
+  pollCodexQuotaJobAtConnection,
 } from '../src/services/api/codexQuotaJobs';
 import {
   buildCodexQuotaDataFromUsageBody,
@@ -110,6 +111,67 @@ describe('Codex quota refresh job API normalization', () => {
       'https://old-cpa.example.com/v0/management/codex/quota-refresh-jobs/old-job'
     );
     expect(capturedAuthorization).toBe('Bearer old-key');
+  });
+
+  test('polls against the captured connection instead of the mutable API client', async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedUrl = '';
+    let capturedAuthorization = '';
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      capturedUrl = String(input);
+      capturedAuthorization = new Headers(init?.headers).get('Authorization') ?? '';
+      return new Response(
+        JSON.stringify({
+          job_id: 'old-job',
+          status: 'running',
+          total: 10,
+          completed: 2,
+          succeeded: 2,
+          failed: 0,
+          next_seq: 2,
+          results: [],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }) as typeof fetch;
+
+    try {
+      await pollCodexQuotaJobAtConnection('old-job', 2, {
+        apiBase: 'https://old-cpa.example.com',
+        managementKey: 'old-key',
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(capturedUrl).toBe(
+      'https://old-cpa.example.com/v0/management/codex/quota-refresh-jobs/old-job?after_seq=2'
+    );
+    expect(capturedAuthorization).toBe('Bearer old-key');
+  });
+
+  test('preserves HTTP status errors when polling the captured connection', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ error: 'job not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      })) as typeof fetch;
+
+    let capturedError: unknown;
+    try {
+      await pollCodexQuotaJobAtConnection('missing-job', 0, {
+        apiBase: 'https://old-cpa.example.com',
+        managementKey: 'old-key',
+      });
+    } catch (error: unknown) {
+      capturedError = error;
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(capturedError).toBeInstanceOf(Error);
+    expect((capturedError as Error & { status?: number }).status).toBe(404);
   });
 });
 

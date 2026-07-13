@@ -113,19 +113,23 @@ export const codexQuotaJobsApi = {
         `/codex/quota-refresh-jobs/${encodeURIComponent(jobId)}`,
         config
       )
-    ),
+  ),
 };
 
-export const cancelCodexQuotaJobAtConnection = async (
+const requestCodexQuotaJobAtConnection = async (
   jobId: string,
-  connection: CodexQuotaJobConnection
-): Promise<CodexQuotaJobSummary> => {
+  connection: CodexQuotaJobConnection,
+  method: 'GET' | 'DELETE',
+  query = '',
+  signal?: AbortSignal
+): Promise<unknown> => {
   const managementBase = computeApiUrl(connection.apiBase);
   if (!managementBase) throw new Error('Codex quota refresh connection is unavailable');
   const response = await fetch(
-    `${managementBase}/codex/quota-refresh-jobs/${encodeURIComponent(jobId)}`,
+    `${managementBase}/codex/quota-refresh-jobs/${encodeURIComponent(jobId)}${query}`,
     {
-      method: 'DELETE',
+      method,
+      signal,
       headers: {
         Authorization: `Bearer ${connection.managementKey}`,
         'Content-Type': 'application/json',
@@ -134,10 +138,37 @@ export const cancelCodexQuotaJobAtConnection = async (
   );
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = isRecord(payload) && typeof payload.error === 'string'
-      ? payload.error
-      : `Request failed with status ${response.status}`;
-    throw new Error(message);
+    const message =
+      isRecord(payload) && typeof payload.error === 'string'
+        ? payload.error
+        : `Request failed with status ${response.status}`;
+    const error = new Error(message) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
-  return normalizeCodexQuotaJobSummary(payload);
+  return payload;
 };
+
+export const pollCodexQuotaJobAtConnection = async (
+  jobId: string,
+  afterSeq: number,
+  connection: CodexQuotaJobConnection,
+  signal?: AbortSignal
+): Promise<CodexQuotaJobResponse> =>
+  normalizeCodexQuotaJobResponse(
+    await requestCodexQuotaJobAtConnection(
+      jobId,
+      connection,
+      'GET',
+      `?after_seq=${Math.max(0, Math.floor(afterSeq))}`,
+      signal
+    )
+  );
+
+export const cancelCodexQuotaJobAtConnection = async (
+  jobId: string,
+  connection: CodexQuotaJobConnection
+): Promise<CodexQuotaJobSummary> =>
+  normalizeCodexQuotaJobSummary(
+    await requestCodexQuotaJobAtConnection(jobId, connection, 'DELETE')
+  );

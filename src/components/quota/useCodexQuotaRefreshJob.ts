@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import {
   cancelCodexQuotaJobAtConnection,
   codexQuotaJobsApi,
+  pollCodexQuotaJobAtConnection,
   type CodexQuotaJobConnection,
   type CodexQuotaJobSummary,
 } from '@/services/api';
@@ -102,20 +103,26 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
   const poll = useCallback(
     async (run: ActiveCodexQuotaJobRun) => {
       let transientFailures = 0;
+      const cancelIfStale = (): boolean => {
+        if (captureQuotaCacheGeneration() === run.cacheGeneration) return false;
+        run.controller.abort();
+        activeRun = null;
+        void cancelCodexQuotaJobAtConnection(run.jobId, run.connection).catch(() => undefined);
+        resetProgress();
+        return true;
+      };
       while (!run.controller.signal.aborted && activeRun === run) {
+        if (cancelIfStale()) return;
         try {
-          const response = await codexQuotaJobsApi.poll(run.jobId, run.appliedSeq, {
-            signal: run.controller.signal,
-          });
+          const response = await pollCodexQuotaJobAtConnection(
+            run.jobId,
+            run.appliedSeq,
+            run.connection,
+            run.controller.signal
+          );
           transientFailures = 0;
           if (run.controller.signal.aborted || activeRun !== run) return;
-          if (captureQuotaCacheGeneration() !== run.cacheGeneration) {
-            run.controller.abort();
-            activeRun = null;
-            void cancelCodexQuotaJobAtConnection(run.jobId, run.connection).catch(() => undefined);
-            resetProgress();
-            return;
-          }
+          if (cancelIfStale()) return;
 
           let nextAppliedSeq = run.appliedSeq;
           commitIfQuotaCacheCurrent(run.cacheGeneration, () => {
@@ -145,6 +152,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
           if (!terminal) await waitForNextPoll(run.controller.signal);
         } catch (error: unknown) {
           if (run.controller.signal.aborted || isAbortError(error)) return;
+          if (cancelIfStale()) return;
           const status = getStatusFromError(error);
           transientFailures += 1;
           if (status !== undefined || transientFailures >= MAX_TRANSIENT_POLL_FAILURES) {
