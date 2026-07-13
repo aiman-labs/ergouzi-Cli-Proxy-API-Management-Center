@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { CodexQuotaState } from '../src/types';
+import { useCodexQuotaJobStore } from '../src/stores/useCodexQuotaJobStore';
 import {
   addCodexQuotaJobLocalFailures,
   applyCodexQuotaJobLocalFailures,
@@ -13,6 +14,27 @@ import {
 const t = ((key: string) => key) as never;
 
 describe('Codex quota job batched state', () => {
+  test('keeps actions locked while terminal result pages are still draining', () => {
+    const store = useCodexQuotaJobStore.getState();
+    store.reset();
+    store.setActive(true);
+    store.setProgress({
+      jobId: 'draining-job',
+      status: 'completed',
+      total: 400,
+      completed: 400,
+      succeeded: 400,
+      failed: 0,
+      nextSeq: 200,
+      error: '',
+    });
+
+    expect(useCodexQuotaJobStore.getState().active).toBe(true);
+
+    useCodexQuotaJobStore.getState().setActive(false);
+    expect(useCodexQuotaJobStore.getState().active).toBe(false);
+  });
+
   test('blocks card actions while a Codex full refresh is active', () => {
     expect(canUseQuotaCardActions(false, 'success', false)).toBe(true);
     expect(canUseQuotaCardActions(false, 'success', true)).toBe(false);

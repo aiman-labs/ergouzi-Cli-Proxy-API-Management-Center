@@ -26,22 +26,26 @@ export const IDLE_CODEX_QUOTA_JOB_PROGRESS: CodexQuotaJobProgress = {
 interface CodexQuotaJobStoreState {
   progress: CodexQuotaJobProgress;
   starting: boolean;
+  active: boolean;
   setProgress: (
     updater:
       | CodexQuotaJobProgress
       | ((current: CodexQuotaJobProgress) => CodexQuotaJobProgress)
   ) => void;
   setStarting: (starting: boolean) => void;
+  setActive: (active: boolean) => void;
   reset: () => void;
 }
 
 export const useCodexQuotaJobStore = create<CodexQuotaJobStoreState>((set) => ({
   progress: IDLE_CODEX_QUOTA_JOB_PROGRESS,
   starting: false,
+  active: false,
   setProgress: (updater) =>
     set((state) => ({
       progress: typeof updater === 'function' ? updater(state.progress) : updater,
     })),
   setStarting: (starting) => set({ starting }),
-  reset: () => set({ progress: IDLE_CODEX_QUOTA_JOB_PROGRESS, starting: false }),
+  setActive: (active) => set({ active }),
+  reset: () => set({ progress: IDLE_CODEX_QUOTA_JOB_PROGRESS, starting: false, active: false }),
 }));

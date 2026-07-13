@@ -74,8 +74,10 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
   const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
   const progress = useCodexQuotaJobStore((state) => state.progress);
   const starting = useCodexQuotaJobStore((state) => state.starting);
+  const active = useCodexQuotaJobStore((state) => state.active);
   const setProgress = useCodexQuotaJobStore((state) => state.setProgress);
   const setStarting = useCodexQuotaJobStore((state) => state.setStarting);
+  const setActive = useCodexQuotaJobStore((state) => state.setActive);
   const resetProgress = useCodexQuotaJobStore((state) => state.reset);
 
   useEffect(() => {
@@ -91,13 +93,14 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
     (run: ActiveCodexQuotaJobRun, error: unknown) => {
       if (activeRun !== run) return;
       activeRun = null;
+      setActive(false);
       setProgress((current) => ({
         ...current,
         status: 'error',
         error: error instanceof Error ? error.message : t('common.unknown_error'),
       }));
     },
-    [setProgress, t]
+    [setActive, setProgress, t]
   );
 
   const poll = useCallback(
@@ -146,6 +149,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
           const terminal = response.status === 'completed' || response.status === 'cancelled';
           if (terminal && response.results.length === 0) {
             activeRun = null;
+            setActive(false);
             if (response.status === 'completed') await completionHandler?.();
             return;
           }
@@ -163,7 +167,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
         }
       }
     },
-    [finishWithError, resetProgress, setCodexQuota, setProgress, t]
+    [finishWithError, resetProgress, setActive, setCodexQuota, setProgress, t]
   );
 
   const start = useCallback(
@@ -214,12 +218,13 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
         connection,
       };
       activeRun = run;
+      setActive(true);
       const progressSummary = addCodexQuotaJobLocalFailures(summary, localFailures);
       setProgress(createCodexQuotaJobProgress(progressSummary));
       void poll(run);
       return progressSummary;
     },
-    [poll, setCodexQuota, setProgress, setStarting, t]
+    [poll, setActive, setCodexQuota, setProgress, setStarting, t]
   );
 
   const cancel = useCallback(async () => {
@@ -227,6 +232,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
     if (!run) return;
     run.controller.abort();
     activeRun = null;
+    setActive(false);
     try {
       const summary = await cancelCodexQuotaJobAtConnection(run.jobId, run.connection);
       setProgress(
@@ -239,7 +245,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
         error: error instanceof Error ? error.message : t('common.unknown_error'),
       }));
     }
-  }, [setProgress, t]);
+  }, [setActive, setProgress, t]);
 
   useEffect(() => {
     const run = activeRun;
@@ -252,7 +258,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
 
   return {
     progress,
-    isActive: starting || progress.status === 'queued' || progress.status === 'running',
+    isActive: starting || active,
     start,
     cancel,
   };
