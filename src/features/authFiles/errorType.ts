@@ -1,4 +1,6 @@
 import type { AuthFilesErrorTypeFilter } from '@/features/authFiles/uiState';
+import { getAuthFileStatusMessage } from '@/features/authFiles/constants';
+import type { AuthFileItem } from '@/types';
 
 export type KnownAuthFileErrorType = Exclude<AuthFilesErrorTypeFilter, 'all'>;
 
@@ -11,7 +13,13 @@ const AUTH_FILE_AUTHENTICATION_ERROR_PATTERNS = [
   /please try signing in again/,
   /\binvalid(?:ated)?\s+(?:auth(?:entication)?\s+)?token\b/,
   /\btoken\s+(?:has\s+been\s+)?invalidated\b/,
+  /\btoken[_\s-]+(?:revoked|invalidated)\b/,
 ];
+
+export const resolveAuthFileProblemMessage = (
+  file: AuthFileItem,
+  quotaIssue?: string
+): string => getAuthFileStatusMessage(file) || String(quotaIssue ?? '').trim();
 
 export const classifyAuthFileErrorType = (message: string): KnownAuthFileErrorType | null => {
   const normalized = message.trim().toLowerCase();
@@ -26,7 +34,7 @@ export const classifyAuthFileErrorType = (message: string): KnownAuthFileErrorTy
     return 'usage_limit';
   }
 
-  if (normalized.includes('deactivated_workspace')) {
+  if (/\bdeactiv(?:e|ated)[_\s-]*workspace\b/.test(normalized)) {
     return 'deactivated_workspace';
   }
 

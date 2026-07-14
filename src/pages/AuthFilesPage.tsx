@@ -48,7 +48,10 @@ import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModel
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
-import { classifyAuthFileErrorType } from '@/features/authFiles/errorType';
+import {
+  classifyAuthFileErrorType,
+  resolveAuthFileProblemMessage,
+} from '@/features/authFiles/errorType';
 import { filterAuthFilesBySuccessCount } from '@/features/authFiles/successFilter';
 import { sortAuthFiles } from '@/features/authFiles/sort';
 import {
@@ -255,7 +258,7 @@ export function AuthFilesPage() {
   }, [antigravityQuota, claudeQuota, codexQuota, kimiQuota, t, xaiQuota]);
 
   const getFileProblemMessage = useCallback(
-    (file: AuthFileItem) => getAuthFileStatusMessage(file) || quotaIssueByName.get(file.name) || '',
+    (file: AuthFileItem) => resolveAuthFileProblemMessage(file, quotaIssueByName.get(file.name)),
     [quotaIssueByName]
   );
 
