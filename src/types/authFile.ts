@@ -39,6 +39,8 @@ export interface AuthFileItem {
   failed?: unknown;
   recent_requests?: RecentRequestBucket[];
   recentRequests?: RecentRequestBucket[];
+  codex_inventory_plan_group?: string;
+  codexInventoryPlanGroup?: string;
   [key: string]: unknown;
 }
 

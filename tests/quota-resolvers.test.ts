@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import type { AuthFileItem } from '../src/types';
-import { resolveCodexPlanFilterValue } from '../src/utils/quota/resolvers';
+import {
+  matchesCodexPlanFilterValue,
+  resolveCodexPlanFilterValue,
+} from '../src/utils/quota/resolvers';
 
 const createJwt = (payload: Record<string, unknown>): string => {
   const encode = (value: Record<string, unknown>) =>
@@ -88,6 +91,41 @@ describe('resolveCodexPlanFilterValue', () => {
     };
 
     expect(resolveCodexPlanFilterValue(file, 'team')).toBe('regular_team');
+  });
+
+  test('uses persisted inventory plan group before refreshed quota and raw plan type', () => {
+    const file: AuthFileItem = {
+      name: 'codex-account.json',
+      type: 'codex',
+      plan_type: 'team',
+      codex_inventory_plan_group: 'bug_team',
+    };
+
+    expect(resolveCodexPlanFilterValue(file, 'team')).toBe('bug_team');
+  });
+
+  test('matches a persisted Bug Team account only in Bug Team and aggregate Team filters', () => {
+    const file: AuthFileItem = {
+      name: 'codex-account.json',
+      type: 'codex',
+      plan_type: 'team',
+      codex_inventory_plan_group: 'bug_team',
+    };
+
+    expect(matchesCodexPlanFilterValue(file, 'bug_team', 'team')).toBe(true);
+    expect(matchesCodexPlanFilterValue(file, 'k12_team', 'team')).toBe(false);
+    expect(matchesCodexPlanFilterValue(file, 'team', 'team')).toBe(true);
+  });
+
+  test('ignores invalid persisted inventory plan groups', () => {
+    const file: AuthFileItem = {
+      name: 'codex-account.json',
+      type: 'codex',
+      plan_type: 'k12',
+      codex_inventory_plan_group: 'administrator',
+    };
+
+    expect(resolveCodexPlanFilterValue(file)).toBe('k12_team');
   });
 
   test('classifies K12 plan variants as K12 Team', () => {

@@ -42,6 +42,15 @@ const CODEX_PLAN_FILTER_VALUES: Record<string, Exclude<CodexPlanFilterValue, 'al
     free: 'free',
   };
 
+const CODEX_INVENTORY_PLAN_GROUP_VALUES: Record<
+  string,
+  Extract<CodexPlanFilterValue, 'bug_team' | 'k12_team' | 'regular_team'>
+> = {
+  bugteam: 'bug_team',
+  k12team: 'k12_team',
+  regularteam: 'regular_team',
+};
+
 const normalizeCodexPlanFilterKey = (value: string): string =>
   value.replace(/[-_\s]+/g, '');
 
@@ -132,10 +141,36 @@ export function resolveCodexPlanType(file: AuthFileItem): string | null {
   return null;
 }
 
+export function resolveCodexInventoryPlanGroup(
+  file: AuthFileItem
+): Extract<CodexPlanFilterValue, 'bug_team' | 'k12_team' | 'regular_team'> | null {
+  const metadata = toRecord(file.metadata);
+  const attributes = toRecord(file.attributes);
+  const candidates = [
+    file.codex_inventory_plan_group,
+    file.codexInventoryPlanGroup,
+    metadata?.codex_inventory_plan_group,
+    metadata?.codexInventoryPlanGroup,
+    attributes?.codex_inventory_plan_group,
+    attributes?.codexInventoryPlanGroup,
+  ];
+
+  for (const candidate of candidates) {
+    const planGroup = normalizePlanType(candidate);
+    if (!planGroup) continue;
+    const resolved = CODEX_INVENTORY_PLAN_GROUP_VALUES[normalizeCodexPlanFilterKey(planGroup)];
+    if (resolved) return resolved;
+  }
+
+  return null;
+}
+
 export function resolveCodexPlanFilterValue(
   file: AuthFileItem,
   quotaPlanType?: unknown
 ): Exclude<CodexPlanFilterValue, 'all'> {
+  const inventoryPlanGroup = resolveCodexInventoryPlanGroup(file);
+  if (inventoryPlanGroup) return inventoryPlanGroup;
   const planType = normalizePlanType(quotaPlanType) ?? resolveCodexPlanType(file);
   if (!planType) return 'unknown';
   return CODEX_PLAN_FILTER_VALUES[normalizeCodexPlanFilterKey(planType)] ?? 'unknown';
