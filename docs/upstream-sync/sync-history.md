@@ -1,5 +1,78 @@
 # Sync History
 
+## 2026-07-22 Upstream `v1.18.5` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `94e408c` |
+| Sync branch | `sync/upstream-v1.18.5` |
+| Upstream previous baseline | `v1.18.3` / `d3df9b07` |
+| Upstream target tag | `v1.18.5` |
+| Upstream target commit | `6a6a22af` |
+| Upstream non-merge commits adopted | `17` |
+| Changed files from `v1.18.3` to `v1.18.5` | `51` |
+| Upstream release diff | `51 files changed, 1698 insertions(+), 486 deletions(-)` |
+| Local sync working diff before records | `50 files changed, 1662 insertions(+), 458 deletions(-)` |
+| Pre-handoff latest release recheck | `v1.18.5` |
+| Sync status | `local verification passed; commit and PR not yet authorized; not released; not deployed` |
+
+Upstream release themes:
+
+- Add xAI API-key provider management and Kimi provider configuration,
+  resource handling, themes, localization, and domestic/international URLs.
+- Block OAuth configuration writes after load failures and isolate inline quota
+  responses from stale connection generations.
+- Isolate provider recent-usage caches by management connection.
+- Preserve custom sponsor endpoints and improve provider mutation safety.
+
+Sync findings:
+
+- Applied the exact binary-safe `v1.18.3..v1.18.5` release diff rather than
+  unreleased `upstream/main` drift.
+- The provider workbench merge keeps index-targeted Codex mutations and all
+  existing sponsor recovery behavior while accepting Kimi and xAI CRUD paths.
+- Removed a duplicated `cacheGeneration` declaration introduced by the
+  overlapping quota-session patch; the existing generation guard remains
+  active for success and error commits.
+- The release's FennoAI test still expected only Codex and Claude even though
+  its provider definition and release intent expose OpenAI. The final result
+  keeps matching OpenAI compatibility configs visible and editable. See
+  `DEC-20260722-009`.
+- Independent review found two related FennoAI integration defects. The final
+  implementation preserves backend `sourceIndex` after normalization drops
+  malformed rows and excludes FennoAI-owned entries from the generic OpenAI
+  group, preventing wrong-record mutations and duplicate provider cards.
+
+Protected Ergouzi surfaces checked:
+
+- Auth-file filtered/selected batch operations, page size `100`, health,
+  enabled, error, plan, and success-count filters remain present.
+- Whole-pool Codex quota jobs, scoped page refresh, progressive results,
+  auth-file snapshot synchronization, and quota governor settings remain
+  present.
+- Visual-config dirty-field concurrency guards and unknown-key preservation
+  remain covered.
+- The release workflow still builds the single-file `management.html` asset.
+
+Verification:
+
+```bash
+bun run verify
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
+```
+
+Result:
+
+- All `133` tests passed, including FennoAI backend-index and grouping
+  deduplication regressions added after independent review.
+- ESLint, TypeScript compilation, and the Vite single-file production build
+  passed.
+- `dist/index.html` is `2699.27 kB` (`872.10 kB` gzip).
+- Diff check passed and no conflict markers remain.
+- No commit, push, pull request, release, or production deployment has been
+  performed for this sync.
+
 ## 2026-07-13 Upstream `v1.18.3` Sync
 
 | Item | Value |

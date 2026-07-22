@@ -88,7 +88,6 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       buildErrorState: (message: string, status?: number) => unknown;
       renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => unknown;
     };
-
     const cacheGeneration = captureQuotaCacheGeneration();
     updateQuotaState((prev: Record<string, unknown>) => ({
       ...prev,
