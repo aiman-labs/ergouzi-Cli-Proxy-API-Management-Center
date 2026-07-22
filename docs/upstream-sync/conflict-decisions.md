@@ -169,3 +169,24 @@ config concurrency/unknown-key tests, sponsor mutation recovery, and plugin
 trust/version-settling tests. A fully atomic sponsor mutation would require a
 new backend transaction or stable-identity API and is deferred beyond this
 sync.
+
+## DEC-20260722-009: Keep FennoAI OpenAI configurations visible and editable
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | providers / FennoAI |
+| Upstream base | `v1.18.5` / `6a6a22af` |
+| Ergouzi source | `sync/upstream-v1.18.5` |
+
+Final decision: FennoAI remains a three-protocol provider in CPAMC: OpenAI,
+Codex, and Claude. OpenAI-compatible entries named for FennoAI are aggregated
+into its resource so operators can view and edit configurations already
+supported by the provider form. Preserve each normalized entry's backend
+`sourceIndex`, and exclude FennoAI-owned entries from the generic OpenAI group.
+
+Review notes: The upstream release definition and stated fix expose OpenAI, but
+the new aggregation test retained the older two-protocol expectation. Keep the
+test aligned with the visible form contract and retain malformed-row index and
+group-deduplication regressions. If FennoAI OpenAI support is later removed,
+remove the protocol, aggregation, persistence path, and tests together.
