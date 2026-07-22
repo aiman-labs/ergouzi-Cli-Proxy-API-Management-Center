@@ -739,7 +739,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.updateXAIConfig(
             selector.apiKey,
             selector.baseUrl,
-            buildProviderKeyConfig('xai', input, existing) as ProviderKeyConfig
+            buildProviderKeyConfig('xai', input, existing) as ProviderKeyConfig,
+            selector.index
           );
         } else if (brand === 'claude' && selector.brand === 'claude') {
           const existing = resource.raw as ProviderKeyConfig;
@@ -896,7 +897,12 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               selector.index
             );
           } else if (selector.brand === 'xai') {
-            await providersApi.updateXAIConfig(selector.apiKey, selector.baseUrl, next);
+            await providersApi.updateXAIConfig(
+              selector.apiKey,
+              selector.baseUrl,
+              next,
+              selector.index
+            );
           } else if (selector.brand === 'claude' || selector.brand === 'claudeApi') {
             await providersApi.updateClaudeConfig(
               selector.apiKey,

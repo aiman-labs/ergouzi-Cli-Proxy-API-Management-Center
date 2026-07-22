@@ -134,4 +134,64 @@ describe('xAI API key provider', () => {
       },
     ]);
   });
+
+  test('updates only the selected xAI key when identities are duplicated', async () => {
+    const calls: Array<{ method: string; url: string; data?: unknown }> = [];
+    apiClient.get = (async (url: string) => {
+      calls.push({ method: 'GET', url });
+      return {
+        'xai-api-key': [
+          {
+            'api-key': 'duplicate',
+            'base-url': 'https://api.x.ai/v1',
+            prefix: 'first',
+            'future-field': 'first-preserved',
+          },
+          {
+            'api-key': 'duplicate',
+            'base-url': 'https://api.x.ai/v1',
+            prefix: 'second',
+            'future-field': 'second-preserved',
+          },
+        ],
+      };
+    }) as typeof apiClient.get;
+    apiClient.put = (async (url: string, data?: unknown) => {
+      calls.push({ method: 'PUT', url, data });
+      return undefined;
+    }) as typeof apiClient.put;
+
+    await providersApi.updateXAIConfig(
+      'duplicate',
+      'https://api.x.ai/v1',
+      {
+        apiKey: 'duplicate',
+        baseUrl: 'https://api.x.ai/v1',
+        prefix: 'updated',
+      },
+      1
+    );
+
+    expect(calls).toEqual([
+      { method: 'GET', url: '/config' },
+      {
+        method: 'PUT',
+        url: '/xai-api-key',
+        data: [
+          {
+            'api-key': 'duplicate',
+            'base-url': 'https://api.x.ai/v1',
+            prefix: 'first',
+            'future-field': 'first-preserved',
+          },
+          {
+            'future-field': 'second-preserved',
+            'api-key': 'duplicate',
+            prefix: 'updated',
+            'base-url': 'https://api.x.ai/v1',
+          },
+        ],
+      },
+    ]);
+  });
 });

@@ -488,11 +488,17 @@ export const providersApi = {
       )
     ),
 
-  updateXAIConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
+  updateXAIConfig: (
+    apiKey: string,
+    baseUrl: string | undefined,
+    config: ProviderKeyConfig,
+    index: number
+  ) =>
     mutateLatestProviderList('xai-api-key', (latestItems) =>
       replaceLatestProviderRecord(
         latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
+        (record, currentIndex) =>
+          matchesProviderKeyAtIndex(record, currentIndex, apiKey, baseUrl, index),
         serializeProviderKey(config),
         (raw, payload) => mergeProviderKeyPayload(raw, payload, XAI_KEY_FIELDS)
       )
