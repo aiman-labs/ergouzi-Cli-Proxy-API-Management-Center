@@ -136,15 +136,19 @@ The UI language is automatically detected from browser settings and can be manua
 
 - Vite produces a **single HTML** output (`dist/index.html`) with all assets inlined (via `vite-plugin-singlefile`).
 - Tagging `vX.Y.Z` triggers `.github/workflows/release.yml` to publish `dist/management.html`.
-- Ergouzi tags use the `v1.16.6-ergouzi.N` line while this fork tracks the
-  upstream `1.16.6` base.
+- Ergouzi tags use `v<upstream>-ergouzi.N`. Do not infer the current release
+  from this README; use `docs/upstream-sync/sync-history.md` for the sync
+  lifecycle and the private Ops release record for production state.
 - The production-proven asset name is exactly `management.html`; GitHub release
   labels are not enough.
 - The UI version shown on the System page is injected at build time (env `VERSION`, git tag, or `package.json` fallback).
 
 ## Security notes
 
-- The management key is stored in browser `localStorage` using a lightweight obfuscation format (`enc::v1::...`) to avoid plaintext storage; treat it as sensitive.
+- The management key is stored in browser `localStorage` using reversible
+  obfuscation (`enc::v1::...`). This is not encryption and does not protect
+  against XSS, same-origin scripts, browser-profile access, or a compromised
+  local device; treat it as recoverable plaintext.
 - Use a dedicated browser profile/device for management. Be cautious when enabling remote management and evaluate its exposure surface.
 
 ## Troubleshooting

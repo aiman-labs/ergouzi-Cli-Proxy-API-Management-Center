@@ -14,7 +14,7 @@
 | Upstream release diff | `51 files changed, 1698 insertions(+), 486 deletions(-)` |
 | Local sync working diff before records | `50 files changed, 1662 insertions(+), 458 deletions(-)` |
 | Pre-handoff latest release recheck | `v1.18.5` |
-| Sync status | `local verification passed; commit and PR not yet authorized; not released; not deployed` |
+| Status at handoff | `local verification passed; commit and PR not yet authorized; not released; not deployed` |
 
 Upstream release themes:
 
@@ -72,6 +72,17 @@ Result:
 - Diff check passed and no conflict markers remain.
 - No commit, push, pull request, release, or production deployment has been
   performed for this sync.
+
+Closeout recorded 2026-07-23:
+
+- The handoff state above is historical, not the current lifecycle state.
+- PR `#23` was merged as `cb84e02`; local `main` and `origin/main` point to
+  that merge commit, and tag `v1.18.5-ergouzi.1` points to the same commit.
+- Release and production deployment were subsequently completed. Their
+  canonical evidence is the private
+  [CPA release records](https://github.com/aiman-labs/ergouzi-ops/blob/main/docs/runbooks/cpa-fork-release-records.md),
+  section `2026-07-22 CPA v7.2.94-ergouzi.1 + CPAMC v1.18.5-ergouzi.1 联合部署记录`;
+  do not duplicate production hashes or paths here.
 
 ## 2026-07-13 Upstream `v1.18.3` Sync
 
