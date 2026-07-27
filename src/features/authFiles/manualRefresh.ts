@@ -11,6 +11,14 @@ export const getManualRefreshSnapshot = (file: AuthFileItem): string =>
     file.unavailable ?? null,
   ]);
 
+export const getManualRefreshInventorySnapshot = (
+  files: AuthFileItem[],
+  displayedFile: AuthFileItem
+): string =>
+  getManualRefreshSnapshot(
+    files.find((file) => file.name === displayedFile.name) ?? displayedFile
+  );
+
 export const mergeManualRefreshResult = (
   currentFiles: AuthFileItem[],
   refreshedFiles: AuthFileItem[],

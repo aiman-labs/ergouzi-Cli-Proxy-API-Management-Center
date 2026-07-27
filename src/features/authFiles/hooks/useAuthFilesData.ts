@@ -29,6 +29,7 @@ import {
   supportsAuthFileManualRefresh,
 } from '@/features/authFiles/constants';
 import {
+  getManualRefreshInventorySnapshot,
   getManualRefreshSnapshot,
   MANUAL_REFRESH_POLL_ATTEMPTS,
   MANUAL_REFRESH_POLL_INTERVAL_MS,
@@ -502,7 +503,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
       setManualRefreshing((prev) => ({ ...prev, [name]: true }));
 
       try {
-        const initialSnapshot = getManualRefreshSnapshot(item);
+        const initialSnapshot = getManualRefreshInventorySnapshot(files, item);
         await authFilesApi.requestManualRefresh(name);
         showNotification(t('auth_files.manual_refresh_requested', { name }), 'info');
         notifyAuthFilesChanged();
@@ -541,7 +542,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
         });
       }
     },
-    [showNotification, t]
+    [files, showNotification, t]
   );
 
   const handleStatusToggle = useCallback(

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  getManualRefreshInventorySnapshot,
   getManualRefreshSafeStatusTargetNames,
   getManualRefreshSnapshot,
   mergeManualRefreshResult,
@@ -27,6 +28,26 @@ describe('auth file manual refresh', () => {
     };
 
     expect(getManualRefreshSnapshot(afterPatch)).toBe(getManualRefreshSnapshot(before));
+  });
+
+  test('builds the initial snapshot from raw inventory instead of display-only quota errors', () => {
+    const inventoryFile = {
+      name: 'codex.json',
+      status: 'active',
+      status_message: '',
+      last_refresh: '2026-07-27T01:00:00Z',
+    };
+    const displayedFile = {
+      ...inventoryFile,
+      status_message: '401 Unauthorized',
+    };
+
+    expect(getManualRefreshInventorySnapshot([inventoryFile], displayedFile)).toBe(
+      getManualRefreshSnapshot(inventoryFile)
+    );
+    expect(getManualRefreshInventorySnapshot([inventoryFile], displayedFile)).not.toBe(
+      getManualRefreshSnapshot(displayedFile)
+    );
   });
 
   test('detects completed and failed refresh outcomes', () => {

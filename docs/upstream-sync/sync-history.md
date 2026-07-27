@@ -49,7 +49,9 @@ Sync findings:
   bounded polling attempt and retries instead of ending the refresh workflow
   immediately. Files with an active manual refresh are also excluded from
   selected and filtered batch status targets, with a second execution-time
-  guard covering confirmation-dialog races.
+  guard covering confirmation-dialog races. The initial completion snapshot is
+  built from the raw inventory item rather than display-only quota errors, so a
+  synthetic card message cannot end polling after the first read.
 
 Verification:
 
@@ -61,10 +63,10 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
 
 Result:
 
-- All `153` tests passed, including manual-refresh provider resolution,
+- All `154` tests passed, including manual-refresh provider resolution,
   target-only stale-response merging, concurrent deletion protection,
-  batch-status exclusion, result polling, timeout, runtime-gating, and Home log
-  normalization regressions.
+  display-only error isolation, batch-status exclusion, result polling,
+  timeout, runtime-gating, and Home log normalization regressions.
 - ESLint, TypeScript compilation, and the Vite single-file production build
   passed.
 - Diff check passed and no conflict markers remain.
