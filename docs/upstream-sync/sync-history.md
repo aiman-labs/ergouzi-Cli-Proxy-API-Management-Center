@@ -45,7 +45,9 @@ Sync findings:
   found that manual-refresh polling replaced the complete auth-file inventory
   with a potentially stale list response. Polling now merges only the target
   file into the current inventory, preserving concurrent uploads, deletions,
-  and status changes.
+  and status changes. A transient inventory read failure now consumes one
+  bounded polling attempt and retries instead of ending the refresh workflow
+  immediately.
 
 Verification:
 

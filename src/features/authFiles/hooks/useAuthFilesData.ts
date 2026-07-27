@@ -517,7 +517,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
             const data = await authFilesApi.list();
             refreshedFiles = data?.files || [];
           } catch {
-            break;
+            continue;
           }
 
           const refreshedItem = refreshedFiles.find((file) => file.name === name);
