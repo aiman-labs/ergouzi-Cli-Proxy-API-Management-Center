@@ -47,7 +47,9 @@ Sync findings:
   file into the current inventory, preserving concurrent uploads, deletions,
   and status changes. A transient inventory read failure now consumes one
   bounded polling attempt and retries instead of ending the refresh workflow
-  immediately.
+  immediately. Files with an active manual refresh are also excluded from
+  selected and filtered batch status targets, with a second execution-time
+  guard covering confirmation-dialog races.
 
 Verification:
 
@@ -59,10 +61,10 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
 
 Result:
 
-- All `152` tests passed, including manual-refresh provider resolution,
+- All `153` tests passed, including manual-refresh provider resolution,
   target-only stale-response merging, concurrent deletion protection,
-  result polling, timeout, runtime-gating, and Home log normalization
-  regressions.
+  batch-status exclusion, result polling, timeout, runtime-gating, and Home log
+  normalization regressions.
 - ESLint, TypeScript compilation, and the Vite single-file production build
   passed.
 - Diff check passed and no conflict markers remain.

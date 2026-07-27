@@ -586,7 +586,9 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     async (names: string[], enabled: boolean) => {
       if (batchStatusPendingRef.current) return;
 
-      const uniqueNames = Array.from(new Set(names));
+      const uniqueNames = Array.from(new Set(names)).filter(
+        (name) => !manualRefreshPendingRef.current.has(name)
+      );
       if (uniqueNames.length === 0) return;
       if (uniqueNames.some((name) => statusUpdating[name] === true)) return;
 

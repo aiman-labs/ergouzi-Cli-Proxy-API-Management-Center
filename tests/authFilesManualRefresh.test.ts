@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  getManualRefreshSafeStatusTargetNames,
   getManualRefreshSnapshot,
   mergeManualRefreshResult,
 } from '@/features/authFiles/manualRefresh';
@@ -80,5 +81,25 @@ describe('auth file manual refresh', () => {
     expect(mergeManualRefreshResult(currentFiles, staleResponse, 'deleted.json')).toEqual(
       currentFiles
     );
+  });
+
+  test('excludes manually refreshing files from batch status targets', () => {
+    const files = [
+      { name: 'enable.json', disabled: true },
+      { name: 'refreshing-enable.json', disabled: true },
+      { name: 'disable.json', disabled: false },
+      { name: 'refreshing-disable.json', disabled: false },
+    ];
+    const manualRefreshing = {
+      'refreshing-enable.json': true,
+      'refreshing-disable.json': true,
+    };
+
+    expect(getManualRefreshSafeStatusTargetNames(files, manualRefreshing, true)).toEqual([
+      'enable.json',
+    ]);
+    expect(getManualRefreshSafeStatusTargetNames(files, manualRefreshing, false)).toEqual([
+      'disable.json',
+    ]);
   });
 });

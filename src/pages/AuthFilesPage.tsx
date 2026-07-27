@@ -56,6 +56,7 @@ import {
 } from '@/features/authFiles/errorType';
 import { filterAuthFilesBySuccessCount } from '@/features/authFiles/successFilter';
 import { sortAuthFiles } from '@/features/authFiles/sort';
+import { getManualRefreshSafeStatusTargetNames } from '@/features/authFiles/manualRefresh';
 import {
   isAuthFilesEnabledFilter,
   isAuthFilesErrorTypeFilter,
@@ -611,12 +612,12 @@ export function AuthFilesPage() {
     [sorted]
   );
   const filteredEnableTargetNames = useMemo(
-    () => selectableFilteredItems.filter((file) => file.disabled === true).map((file) => file.name),
-    [selectableFilteredItems]
+    () => getManualRefreshSafeStatusTargetNames(selectableFilteredItems, manualRefreshing, true),
+    [manualRefreshing, selectableFilteredItems]
   );
   const filteredDisableTargetNames = useMemo(
-    () => selectableFilteredItems.filter((file) => file.disabled !== true).map((file) => file.name),
-    [selectableFilteredItems]
+    () => getManualRefreshSafeStatusTargetNames(selectableFilteredItems, manualRefreshing, false),
+    [manualRefreshing, selectableFilteredItems]
   );
   const filteredDeleteTargetNames = useMemo(
     () => selectableFilteredItems.map((file) => file.name),
@@ -631,12 +632,12 @@ export function AuthFilesPage() {
     [selectedPageItems]
   );
   const selectedPageEnableTargetNames = useMemo(
-    () => selectedPageItems.filter((file) => file.disabled === true).map((file) => file.name),
-    [selectedPageItems]
+    () => getManualRefreshSafeStatusTargetNames(selectedPageItems, manualRefreshing, true),
+    [manualRefreshing, selectedPageItems]
   );
   const selectedPageDisableTargetNames = useMemo(
-    () => selectedPageItems.filter((file) => file.disabled !== true).map((file) => file.name),
-    [selectedPageItems]
+    () => getManualRefreshSafeStatusTargetNames(selectedPageItems, manualRefreshing, false),
+    [manualRefreshing, selectedPageItems]
   );
   const selectedPageCount = selectedPageNames.length;
   const selectedPageHasStatusUpdating = useMemo(

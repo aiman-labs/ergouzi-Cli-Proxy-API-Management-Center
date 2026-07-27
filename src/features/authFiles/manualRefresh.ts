@@ -23,3 +23,15 @@ export const mergeManualRefreshResult = (
 
   return currentFiles.map((file) => (file.name === targetName ? refreshedTarget : file));
 };
+
+export const getManualRefreshSafeStatusTargetNames = (
+  files: AuthFileItem[],
+  manualRefreshing: Record<string, boolean>,
+  targetDisabled: boolean
+): string[] =>
+  files
+    .filter(
+      (file) =>
+        manualRefreshing[file.name] !== true && (file.disabled === true) === targetDisabled
+    )
+    .map((file) => file.name);
