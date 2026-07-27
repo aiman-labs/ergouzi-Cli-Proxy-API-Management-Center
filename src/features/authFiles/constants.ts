@@ -209,8 +209,7 @@ export const getAuthFileIcon = (type: string, resolvedTheme: ResolvedTheme): str
       : iconEntry.light;
 };
 
-// 与 AI 提供商界面（PROVIDER_LOGOS 的 themeSurface）保持一致：
-// 这些提供商的图标底座颜色随主题切换（浅色主题黑底，深色主题白底）
+// Match PROVIDER_LOGOS themeSurface: black in light mode and white in dark mode.
 export const THEME_SURFACE_ICON_PROVIDERS = new Set(['kimi']);
 
 export const isThemeSurfaceIconProvider = (type: string): boolean =>

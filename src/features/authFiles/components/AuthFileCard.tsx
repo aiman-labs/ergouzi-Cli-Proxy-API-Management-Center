@@ -105,7 +105,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const typeColor = getTypeColor(providerKey, resolvedTheme);
   const typeLabel = getTypeLabel(t, providerKey);
   const providerIcon = getAuthFileIcon(providerKey, resolvedTheme);
-  // 与 AI 提供商界面一致：Kimi 图标底座随主题切换颜色
+  // Match the AI providers screen: Kimi's icon surface follows the active theme.
   const useThemeSurfaceIcon = isThemeSurfaceIconProvider(providerKey);
 
   const resolvedQuotaType = resolveQuotaType(file);
