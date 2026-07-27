@@ -31,9 +31,11 @@ import {
   clampCardPageSize,
   getAuthFileIcon,
   getAuthFileStatusMessage,
+  getThemeSurfaceIconBackground,
   getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
+  isThemeSurfaceIconProvider,
   normalizeProviderKey,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
@@ -168,6 +170,7 @@ export function AuthFilesPage() {
     uploading,
     deleting,
     statusUpdating,
+    manualRefreshing,
     batchStatusUpdating,
     importOptionsOpen,
     fileInputRef,
@@ -178,6 +181,7 @@ export function AuthFilesPage() {
     handleFileChange,
     handleDelete,
     handleDownload,
+    handleManualRefresh,
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,
@@ -861,7 +865,17 @@ export function AuthFilesPage() {
                     <IconFilterAll className={styles.filterAllIcon} size={16} />
                   </span>
                 ) : (
-                  <span className={styles.filterTagIconWrap}>
+                  <span
+                    className={styles.filterTagIconWrap}
+                    style={
+                      isThemeSurfaceIconProvider(type)
+                        ? {
+                            background: getThemeSurfaceIconBackground(resolvedTheme),
+                            borderColor: 'transparent',
+                          }
+                        : undefined
+                    }
+                  >
                     {iconSrc ? (
                       <img src={iconSrc} alt="" className={styles.filterTagIcon} />
                     ) : (
@@ -1220,9 +1234,11 @@ export function AuthFilesPage() {
                     deleting={deleting}
                     statusUpdating={statusUpdating}
                     showQuotaDetails={showQuotaDetails}
+                    manualRefreshing={manualRefreshing}
                     statusBarCache={statusBarCache}
                     onShowModels={showModels}
                     onDownload={handleDownload}
+                    onManualRefresh={handleManualRefresh}
                     onOpenPrefixProxyEditor={openPrefixProxyEditor}
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}

@@ -1,5 +1,57 @@
 # Sync History
 
+## 2026-07-27 Upstream `v1.19.3` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `88025ac4` |
+| Sync branch | `sync/upstream-v1.19.3` |
+| Upstream previous baseline | `v1.18.5` / `6a6a22af` |
+| Upstream target tag | `v1.19.3` |
+| Upstream target commit | `21af5762` |
+| Upstream non-merge commits adopted | `15` |
+| Changed files from `v1.18.5` to `v1.19.3` | `42` |
+| Upstream release diff | `42 files changed, 1515 insertions(+), 1940 deletions(-)` |
+| Pre-PR latest release recheck | `v1.19.3` |
+| Status at handoff | `local verification passed; PR review required; not released; not deployed` |
+
+Upstream release themes:
+
+- Add manual OAuth credential refresh and expand provider/configuration
+  management behavior.
+- Refresh Kimi assets/theme behavior and simplify visual configuration state.
+- Continue provider workbench and localization refinements.
+
+Sync findings:
+
+- Applied the exact binary-safe `v1.18.5..v1.19.3` release diff rather than
+  unreleased `upstream/main` drift.
+- Preserved Ergouzi's auth-file filters, page size `100`, selected and filtered
+  batch operations, scoped refresh, and backend whole-pool quota job UX.
+- Adopted manual OAuth refresh, but resolve the normalized provider and poll
+  the backend inventory for a real result-state change before updating the
+  card. See `DEC-20260727-010`.
+- Kept visual-config dirty-field concurrency behavior while removing the
+  deprecated `codexIdentityConfuse` control introduced upstream.
+
+Verification:
+
+```bash
+bun run verify
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
+```
+
+Result:
+
+- All `148` tests passed, including manual-refresh provider resolution,
+  result polling, and timeout regressions.
+- ESLint, TypeScript compilation, and the Vite single-file production build
+  passed.
+- Diff check passed and no conflict markers remain.
+- No merge, release, or production deployment has been performed for this
+  sync.
+
 ## 2026-07-22 Upstream `v1.18.5` Sync
 
 | Item | Value |

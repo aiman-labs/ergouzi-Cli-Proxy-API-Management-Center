@@ -999,7 +999,6 @@ function getNextDirtyFields(
       'claudeHeaderStabilizeDeviceProfile',
       'codexHeaderUserAgent',
       'codexHeaderBetaFeatures',
-      'codexIdentityConfuse',
       'host',
       'port',
       'tlsEnable',
@@ -1224,7 +1223,6 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
   const payload = asRecord(parsed.payload);
   const streaming = asRecord(parsed.streaming);
   const plugins = asRecord(parsed.plugins);
-  const codex = asRecord(parsed.codex);
   const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
   const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
 
@@ -1305,7 +1303,6 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
       typeof codexHeaderDefaults?.['beta-features'] === 'string'
         ? codexHeaderDefaults['beta-features']
         : '',
-    codexIdentityConfuse: Boolean(codex?.['identity-confuse']),
 
     quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
     quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
@@ -1675,12 +1672,6 @@ export function applyVisualConfigValuesToYaml(
         );
       }
       deleteIfMapEmpty(doc, ['codex-header-defaults']);
-    }
-
-    if (dirtyFields.has('codexIdentityConfuse')) {
-      ensureMapInDoc(doc, ['codex']);
-      setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
-      deleteIfMapEmpty(doc, ['codex']);
     }
 
     const quotaDirty =
