@@ -866,6 +866,7 @@ export function MainLayout() {
           <>
             <span className="nav-text">
               <span className="nav-label">{itemLabel}</span>
+              {itemMeta ? <span className="nav-meta">{itemMeta}</span> : null}
             </span>
             {renderNavBadge(item.badge, item.badgeLabel)}
           </>
@@ -921,6 +922,7 @@ export function MainLayout() {
             <>
               <span className="nav-text">
                 <span className="nav-label">{item.label}</span>
+                {item.meta ? <span className="nav-meta">{item.meta}</span> : null}
               </span>
               <span className="nav-drawer-caret" aria-hidden="true">
                 <IconChevronDown size={14} />

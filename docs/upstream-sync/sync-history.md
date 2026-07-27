@@ -37,6 +37,10 @@ Sync findings:
   branch. Runtime headers/probing, Home response normalization and pagination,
   request-log routing metadata, Home-specific controls, styles, and localized
   messages are restored. See `DEC-20260727-011`.
+- A follow-up review found that the new collapsed-rail tooltip and auth-file
+  badge work had removed visible `nav_meta.*` descriptions from the expanded
+  sidebar. The final layout keeps the new rail behavior and badges while
+  restoring metadata text for expanded and mobile navigation.
 
 Verification:
 

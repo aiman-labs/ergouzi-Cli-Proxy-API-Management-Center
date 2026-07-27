@@ -653,6 +653,16 @@
       white-space: nowrap;
     }
 
+    .nav-meta {
+      margin-top: 2px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: color-mix(in srgb, var(--text-primary) 50%, transparent);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .nav-badge {
       min-width: 18px;
       height: 18px;
