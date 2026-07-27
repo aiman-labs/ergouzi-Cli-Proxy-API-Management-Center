@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { getManualRefreshSnapshot } from '@/features/authFiles/manualRefresh';
+import {
+  getManualRefreshSnapshot,
+  mergeManualRefreshResult,
+} from '@/features/authFiles/manualRefresh';
 import { resolveAuthProvider } from '@/utils/quota';
 
 describe('auth file manual refresh', () => {
@@ -47,5 +50,35 @@ describe('auth file manual refresh', () => {
         unavailable: true,
       })
     ).not.toBe(getManualRefreshSnapshot(before));
+  });
+
+  test('merges only the refreshed target into the current inventory', () => {
+    const currentFiles = [
+      { name: 'target.json', status: 'active' },
+      { name: 'disabled.json', status: 'disabled', disabled: true },
+      { name: 'uploaded.json', status: 'active' },
+    ];
+    const staleResponse = [
+      { name: 'target.json', status: 'error', status_message: '401 Unauthorized' },
+      { name: 'disabled.json', status: 'active', disabled: false },
+    ];
+
+    expect(mergeManualRefreshResult(currentFiles, staleResponse, 'target.json')).toEqual([
+      { name: 'target.json', status: 'error', status_message: '401 Unauthorized' },
+      { name: 'disabled.json', status: 'disabled', disabled: true },
+      { name: 'uploaded.json', status: 'active' },
+    ]);
+  });
+
+  test('does not restore a target deleted while its refresh request was in flight', () => {
+    const currentFiles = [{ name: 'kept.json', status: 'active' }];
+    const staleResponse = [
+      { name: 'deleted.json', status: 'error', status_message: '401 Unauthorized' },
+      { name: 'kept.json', status: 'active' },
+    ];
+
+    expect(mergeManualRefreshResult(currentFiles, staleResponse, 'deleted.json')).toEqual(
+      currentFiles
+    );
   });
 });

@@ -32,6 +32,7 @@ import {
   getManualRefreshSnapshot,
   MANUAL_REFRESH_POLL_ATTEMPTS,
   MANUAL_REFRESH_POLL_INTERVAL_MS,
+  mergeManualRefreshResult,
 } from '@/features/authFiles/manualRefresh';
 import { resolveAuthProvider } from '@/utils/quota';
 
@@ -519,8 +520,10 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
             break;
           }
 
-          setFiles(refreshedFiles);
           const refreshedItem = refreshedFiles.find((file) => file.name === name);
+          setFiles((currentFiles) =>
+            mergeManualRefreshResult(currentFiles, refreshedFiles, name)
+          );
           if (!refreshedItem || getManualRefreshSnapshot(refreshedItem) !== initialSnapshot) {
             break;
           }

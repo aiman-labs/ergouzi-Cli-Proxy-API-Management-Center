@@ -10,3 +10,16 @@ export const getManualRefreshSnapshot = (file: AuthFileItem): string =>
     file['status_message'] ?? file.statusMessage ?? null,
     file.unavailable ?? null,
   ]);
+
+export const mergeManualRefreshResult = (
+  currentFiles: AuthFileItem[],
+  refreshedFiles: AuthFileItem[],
+  targetName: string
+): AuthFileItem[] => {
+  const refreshedTarget = refreshedFiles.find((file) => file.name === targetName);
+  if (!refreshedTarget || !currentFiles.some((file) => file.name === targetName)) {
+    return currentFiles;
+  }
+
+  return currentFiles.map((file) => (file.name === targetName ? refreshedTarget : file));
+};

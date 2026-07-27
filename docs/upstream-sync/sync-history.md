@@ -41,6 +41,11 @@ Sync findings:
   badge work had removed visible `nav_meta.*` descriptions from the expanded
   sidebar. The final layout keeps the new rail behavior and badges while
   restoring metadata text for expanded and mobile navigation.
+- Follow-up reviews also normalized newly added source comments to English and
+  found that manual-refresh polling replaced the complete auth-file inventory
+  with a potentially stale list response. Polling now merges only the target
+  file into the current inventory, preserving concurrent uploads, deletions,
+  and status changes.
 
 Verification:
 
@@ -52,7 +57,8 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
 
 Result:
 
-- All `150` tests passed, including manual-refresh provider resolution,
+- All `152` tests passed, including manual-refresh provider resolution,
+  target-only stale-response merging, concurrent deletion protection,
   result polling, timeout, runtime-gating, and Home log normalization
   regressions.
 - ESLint, TypeScript compilation, and the Vite single-file production build
