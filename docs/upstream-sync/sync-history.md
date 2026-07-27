@@ -33,6 +33,10 @@ Sync findings:
   card. See `DEC-20260727-010`.
 - Kept visual-config dirty-field concurrency behavior while removing the
   deprecated `codexIdentityConfuse` control introduced upstream.
+- Codex review caught an upstream removal of the Home Logs compatibility
+  branch. Runtime headers/probing, Home response normalization and pagination,
+  request-log routing metadata, Home-specific controls, styles, and localized
+  messages are restored. See `DEC-20260727-011`.
 
 Verification:
 
@@ -44,8 +48,9 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
 
 Result:
 
-- All `148` tests passed, including manual-refresh provider resolution,
-  result polling, and timeout regressions.
+- All `150` tests passed, including manual-refresh provider resolution,
+  result polling, timeout, runtime-gating, and Home log normalization
+  regressions.
 - ESLint, TypeScript compilation, and the Vite single-file production build
   passed.
 - Diff check passed and no conflict markers remain.

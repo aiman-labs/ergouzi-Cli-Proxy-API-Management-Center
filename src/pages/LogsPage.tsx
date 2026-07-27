@@ -28,6 +28,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { logsApi, type LogsQuery } from '@/services/api/logs';
+import { versionApi } from '@/services/api/version';
 import { copyToClipboard } from '@/utils/clipboard';
 import { getErrorMessage } from '@/utils/helpers';
 import { downloadBlob } from '@/utils/download';
@@ -35,6 +36,7 @@ import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
 import { HTTP_METHODS, STATUS_GROUPS, resolveStatusGroup, type LogState } from './hooks/logTypes';
 import { parseLogLine } from './hooks/logParsing';
+import { requiresFileLogging } from './hooks/logRuntime';
 import { useLogFilters } from './hooks/useLogFilters';
 import { isNearBottom, useLogScroller } from './hooks/useLogScroller';
 import styles from './LogsPage.module.scss';
@@ -142,10 +144,13 @@ export function LogsPage() {
   const { t } = useTranslation();
   const { showNotification, showConfirmation } = useNotificationStore();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const serverRuntimeKind = useAuthStore((state) => state.serverRuntimeKind);
+  const updateServerRuntimeKind = useAuthStore((state) => state.updateServerRuntimeKind);
   const config = useConfigStore((state) => state.config);
   const requestLogEnabled = config?.requestLog ?? false;
   const loggingToFileEnabled = config?.loggingToFile ?? false;
-  const cpaNeedsFileLogging = !loggingToFileEnabled;
+  const cpaNeedsFileLogging = requiresFileLogging(serverRuntimeKind, loggingToFileEnabled);
+  const isHomeRuntime = serverRuntimeKind === 'home';
   const [fileLoggingRequired, setFileLoggingRequired] = useState(false);
   const showFileLoggingRequired = cpaNeedsFileLogging || fileLoggingRequired;
 
@@ -176,6 +181,7 @@ export function LogsPage() {
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
   const [fullscreenLogs, setFullscreenLogs] = useState(false);
 
+  const requestLogHomeIpByIdRef = useRef<Record<string, string>>({});
   const errorLogViewRequestRef = useRef(0);
   const longPressRef = useRef<{
     timer: number | null;
@@ -186,7 +192,7 @@ export function LogsPage() {
   const logRequestInFlightRef = useRef(false);
   const pendingFullReloadRef = useRef(false);
 
-  // 保存最新游标用于增量获取；新接口优先使用 cursor，旧接口继续使用 after。
+  // 保存最新游标用于增量获取；新 CPA 后端优先使用 cursor，旧接口和 Home 继续使用 after。
   const logPositionRef = useRef<LogPosition>({});
 
   const resetLogPosition = () => {
@@ -213,7 +219,7 @@ export function LogsPage() {
   const disableControls = connectionStatus !== 'connected';
   const refreshDisabled = disableControls || loading || cpaNeedsFileLogging;
   const autoRefreshDisabled = disableControls || showFileLoggingRequired;
-  const clearDisabled = disableControls || showFileLoggingRequired;
+  const clearDisabled = disableControls || showFileLoggingRequired || isHomeRuntime;
 
   async function loadLogs(incremental = false) {
     if (connectionStatus !== 'connected') {
@@ -224,6 +230,7 @@ export function LogsPage() {
     if (cpaNeedsFileLogging) {
       if (!incremental) {
         resetLogPosition();
+        requestLogHomeIpByIdRef.current = {};
         setFileLoggingRequired(false);
         setLogState({ buffer: [], visibleFrom: 0 });
         setError('');
@@ -258,6 +265,14 @@ export function LogsPage() {
 
       updateLogPosition(data, incremental);
 
+      if (data.requestLogHomeIpById) {
+        requestLogHomeIpByIdRef.current = incremental
+          ? { ...requestLogHomeIpByIdRef.current, ...data.requestLogHomeIpById }
+          : data.requestLogHomeIpById;
+      } else if (!incremental) {
+        requestLogHomeIpByIdRef.current = {};
+      }
+
       const newLines = Array.isArray(data.lines) ? data.lines : [];
 
       if (incremental && data.cursorReset) {
@@ -291,6 +306,7 @@ export function LogsPage() {
       if (isLoggingToFileDisabledError(err)) {
         if (!incremental) {
           resetLogPosition();
+          requestLogHomeIpByIdRef.current = {};
           setFileLoggingRequired(true);
           setLogState({ buffer: [], visibleFrom: 0 });
           setError('');
@@ -315,6 +331,10 @@ export function LogsPage() {
   useHeaderRefresh(() => loadLogs(false));
 
   const clearLogs = async () => {
+    if (isHomeRuntime) {
+      showNotification(t('logs.home_clear_unavailable'), 'warning');
+      return;
+    }
     if (cpaNeedsFileLogging) {
       showNotification(t('logs.cpa_file_logging_required'), 'warning');
       return;
@@ -333,6 +353,7 @@ export function LogsPage() {
           await logsApi.clearLogs();
           setLogState({ buffer: [], visibleFrom: 0 });
           resetLogPosition();
+          requestLogHomeIpByIdRef.current = {};
           setFileLoggingRequired(false);
           showNotification(t('logs.clear_success'), 'success');
         } catch (err: unknown) {
@@ -357,6 +378,13 @@ export function LogsPage() {
       setLoadingErrors(false);
       return;
     }
+    if (isHomeRuntime) {
+      setLoadingErrors(false);
+      setErrorLogs([]);
+      setErrorLogsError('');
+      return;
+    }
+
     setLoadingErrors(true);
     setErrorLogsError('');
     try {
@@ -436,11 +464,27 @@ export function LogsPage() {
   useEffect(() => {
     if (connectionStatus === 'connected') {
       resetLogPosition();
+      requestLogHomeIpByIdRef.current = {};
       setFileLoggingRequired(false);
       loadLogs(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionStatus, loggingToFileEnabled]);
+
+  useEffect(() => {
+    if (connectionStatus !== 'connected' || serverRuntimeKind !== 'unknown') return;
+    let cancelled = false;
+    const detectRuntime = async () => {
+      const runtimeKind = await versionApi.detectRuntimeKind();
+      if (!cancelled && (runtimeKind === 'cpa' || runtimeKind === 'home')) {
+        updateServerRuntimeKind(runtimeKind);
+      }
+    };
+    void detectRuntime();
+    return () => {
+      cancelled = true;
+    };
+  }, [connectionStatus, serverRuntimeKind, updateServerRuntimeKind]);
 
   useEffect(() => {
     if (activeTab !== 'errors') return;
@@ -601,7 +645,10 @@ export function LogsPage() {
   const downloadRequestLog = async (id: string) => {
     setRequestLogDownloading(true);
     try {
-      const response = await logsApi.downloadRequestLogById(id);
+      const response = await logsApi.downloadRequestLogById(
+        id,
+        requestLogHomeIpByIdRef.current[id]
+      );
       downloadBlob({
         filename: `request-${id}.log`,
         blob: new Blob([response.data], { type: 'text/plain' }),
@@ -651,7 +698,10 @@ export function LogsPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+        <div className={styles.runtimeNotice}>{t(`logs.runtime_${serverRuntimeKind}`)}</div>
+      </div>
 
       <div className={styles.tabBar}>
         <button
@@ -1100,7 +1150,11 @@ export function LogsPage() {
             <div className="stack">
               <div className="hint">{t('logs.error_logs_description')}</div>
 
-              {requestLogEnabled && (
+              {isHomeRuntime && (
+                <div className="status-badge warning">{t('logs.error_logs_home_unavailable')}</div>
+              )}
+
+              {requestLogEnabled && !isHomeRuntime && (
                 <div>
                   <div className="status-badge warning">
                     {t('logs.error_logs_request_log_enabled')}

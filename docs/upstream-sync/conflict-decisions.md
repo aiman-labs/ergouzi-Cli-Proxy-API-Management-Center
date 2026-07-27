@@ -215,3 +215,26 @@ Review notes: Provider inference must stay centralized so Codex, Kimi, xAI, and
 future OAuth providers use the correct refresh route. Keep the polling bounded
 and reuse the latest backend file snapshot rather than introducing a second
 front-end quota cache.
+
+## DEC-20260727-011: Preserve Home runtime log compatibility
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | logs / Home runtime |
+| Upstream base | `v1.19.3` / `21af5762` |
+| Ergouzi source | `sync/upstream-v1.19.3` |
+
+Final decision: Keep runtime detection from Home/CPA response headers with the
+`/nodes` fallback probe. Only CPA requires `logging-to-file` before loading
+logs. Home `{logs: [...]}` responses are normalized into ordered lines,
+pagination is completed up to the requested limit, and request-log downloads
+retain the record's `home_ip` routing metadata.
+
+Home database logs cannot be cleared from CPAMC, and CPA-only error-log file
+operations stay unavailable in Home mode. Preserve the runtime notice,
+localized recovery messages, and their responsive styles.
+
+Review notes: Do not infer the file-logging gate from configuration alone.
+Removing runtime identity silently disables a supported Home management
+surface even when the generic CPAMC build and CPA-only tests pass.
