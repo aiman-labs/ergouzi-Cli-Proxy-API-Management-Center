@@ -31,9 +31,11 @@ import {
   clampCardPageSize,
   getAuthFileIcon,
   getAuthFileStatusMessage,
+  getThemeSurfaceIconBackground,
   getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
+  isThemeSurfaceIconProvider,
   normalizeProviderKey,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
@@ -54,6 +56,7 @@ import {
 } from '@/features/authFiles/errorType';
 import { filterAuthFilesBySuccessCount } from '@/features/authFiles/successFilter';
 import { sortAuthFiles } from '@/features/authFiles/sort';
+import { getManualRefreshSafeStatusTargetNames } from '@/features/authFiles/manualRefresh';
 import {
   isAuthFilesEnabledFilter,
   isAuthFilesErrorTypeFilter,
@@ -168,6 +171,7 @@ export function AuthFilesPage() {
     uploading,
     deleting,
     statusUpdating,
+    manualRefreshing,
     batchStatusUpdating,
     importOptionsOpen,
     fileInputRef,
@@ -178,6 +182,7 @@ export function AuthFilesPage() {
     handleFileChange,
     handleDelete,
     handleDownload,
+    handleManualRefresh,
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,
@@ -607,12 +612,12 @@ export function AuthFilesPage() {
     [sorted]
   );
   const filteredEnableTargetNames = useMemo(
-    () => selectableFilteredItems.filter((file) => file.disabled === true).map((file) => file.name),
-    [selectableFilteredItems]
+    () => getManualRefreshSafeStatusTargetNames(selectableFilteredItems, manualRefreshing, true),
+    [manualRefreshing, selectableFilteredItems]
   );
   const filteredDisableTargetNames = useMemo(
-    () => selectableFilteredItems.filter((file) => file.disabled !== true).map((file) => file.name),
-    [selectableFilteredItems]
+    () => getManualRefreshSafeStatusTargetNames(selectableFilteredItems, manualRefreshing, false),
+    [manualRefreshing, selectableFilteredItems]
   );
   const filteredDeleteTargetNames = useMemo(
     () => selectableFilteredItems.map((file) => file.name),
@@ -627,12 +632,12 @@ export function AuthFilesPage() {
     [selectedPageItems]
   );
   const selectedPageEnableTargetNames = useMemo(
-    () => selectedPageItems.filter((file) => file.disabled === true).map((file) => file.name),
-    [selectedPageItems]
+    () => getManualRefreshSafeStatusTargetNames(selectedPageItems, manualRefreshing, true),
+    [manualRefreshing, selectedPageItems]
   );
   const selectedPageDisableTargetNames = useMemo(
-    () => selectedPageItems.filter((file) => file.disabled !== true).map((file) => file.name),
-    [selectedPageItems]
+    () => getManualRefreshSafeStatusTargetNames(selectedPageItems, manualRefreshing, false),
+    [manualRefreshing, selectedPageItems]
   );
   const selectedPageCount = selectedPageNames.length;
   const selectedPageHasStatusUpdating = useMemo(
@@ -861,7 +866,17 @@ export function AuthFilesPage() {
                     <IconFilterAll className={styles.filterAllIcon} size={16} />
                   </span>
                 ) : (
-                  <span className={styles.filterTagIconWrap}>
+                  <span
+                    className={styles.filterTagIconWrap}
+                    style={
+                      isThemeSurfaceIconProvider(type)
+                        ? {
+                            background: getThemeSurfaceIconBackground(resolvedTheme),
+                            borderColor: 'transparent',
+                          }
+                        : undefined
+                    }
+                  >
                     {iconSrc ? (
                       <img src={iconSrc} alt="" className={styles.filterTagIcon} />
                     ) : (
@@ -1220,9 +1235,11 @@ export function AuthFilesPage() {
                     deleting={deleting}
                     statusUpdating={statusUpdating}
                     showQuotaDetails={showQuotaDetails}
+                    manualRefreshing={manualRefreshing}
                     statusBarCache={statusBarCache}
                     onShowModels={showModels}
                     onDownload={handleDownload}
+                    onManualRefresh={handleManualRefresh}
                     onOpenPrefixProxyEditor={openPrefixProxyEditor}
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}

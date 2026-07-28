@@ -36,6 +36,7 @@ import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { formatUnixTimestamp } from '@/utils/format';
 import { HTTP_METHODS, STATUS_GROUPS, resolveStatusGroup, type LogState } from './hooks/logTypes';
 import { parseLogLine } from './hooks/logParsing';
+import { requiresFileLogging } from './hooks/logRuntime';
 import { useLogFilters } from './hooks/useLogFilters';
 import { isNearBottom, useLogScroller } from './hooks/useLogScroller';
 import styles from './LogsPage.module.scss';
@@ -148,7 +149,7 @@ export function LogsPage() {
   const config = useConfigStore((state) => state.config);
   const requestLogEnabled = config?.requestLog ?? false;
   const loggingToFileEnabled = config?.loggingToFile ?? false;
-  const cpaNeedsFileLogging = serverRuntimeKind === 'cpa' && !loggingToFileEnabled;
+  const cpaNeedsFileLogging = requiresFileLogging(serverRuntimeKind, loggingToFileEnabled);
   const isHomeRuntime = serverRuntimeKind === 'home';
   const [fileLoggingRequired, setFileLoggingRequired] = useState(false);
   const showFileLoggingRequired = cpaNeedsFileLogging || fileLoggingRequired;

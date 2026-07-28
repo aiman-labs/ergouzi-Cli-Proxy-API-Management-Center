@@ -190,3 +190,51 @@ the new aggregation test retained the older two-protocol expectation. Keep the
 test aligned with the visible form contract and retain malformed-row index and
 group-deduplication regressions. If FennoAI OpenAI support is later removed,
 remove the protocol, aggregation, persistence path, and tests together.
+
+## DEC-20260727-010: Preserve Ergouzi auth operations and settle manual OAuth refreshes
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | auth files / quota refresh |
+| Upstream base | `v1.19.3` / `21af5762` |
+| Ergouzi source | `sync/upstream-v1.19.3` |
+
+Final decision: Keep Ergouzi's multi-dimensional auth-file filters, page size
+`100`, selected/current-filter batch operations, scoped page refresh, and
+whole-pool backend Codex quota jobs while adopting upstream's OAuth manual
+refresh action.
+
+Manual refresh resolves the provider from the normalized auth file, sends the
+backend refresh request, and then polls the auth-file inventory until refresh
+state actually changes or a bounded timeout expires. The UI must not present
+the PATCH acknowledgement as a completed credential refresh, and an unrelated
+timestamp-only update is not sufficient evidence of completion.
+
+Review notes: Provider inference must stay centralized so Codex, Kimi, xAI, and
+future OAuth providers use the correct refresh route. Keep the polling bounded
+and reuse the latest backend file snapshot rather than introducing a second
+front-end quota cache.
+
+## DEC-20260727-011: Preserve Home runtime log compatibility
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | logs / Home runtime |
+| Upstream base | `v1.19.3` / `21af5762` |
+| Ergouzi source | `sync/upstream-v1.19.3` |
+
+Final decision: Keep runtime detection from Home/CPA response headers with the
+`/nodes` fallback probe. Only CPA requires `logging-to-file` before loading
+logs. Home `{logs: [...]}` responses are normalized into ordered lines,
+pagination is completed up to the requested limit, and request-log downloads
+retain the record's `home_ip` routing metadata.
+
+Home database logs cannot be cleared from CPAMC, and CPA-only error-log file
+operations stay unavailable in Home mode. Preserve the runtime notice,
+localized recovery messages, and their responsive styles.
+
+Review notes: Do not infer the file-logging gate from configuration alone.
+Removing runtime identity silently disables a supported Home management
+surface even when the generic CPAMC build and CPA-only tests pass.

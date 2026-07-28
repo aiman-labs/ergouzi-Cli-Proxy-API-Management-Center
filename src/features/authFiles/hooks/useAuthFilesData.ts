@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { apiClient } from '@/services/api/client';
+import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { formatFileSize } from '@/utils/format';
@@ -25,7 +26,16 @@ import {
   hasAuthFileStatusMessage,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
+  supportsAuthFileManualRefresh,
 } from '@/features/authFiles/constants';
+import {
+  getManualRefreshInventorySnapshot,
+  getManualRefreshSnapshot,
+  MANUAL_REFRESH_POLL_ATTEMPTS,
+  MANUAL_REFRESH_POLL_INTERVAL_MS,
+  mergeManualRefreshResult,
+} from '@/features/authFiles/manualRefresh';
+import { resolveAuthProvider } from '@/utils/quota';
 
 type DeleteAllOptions = {
   filter: string;
@@ -54,6 +64,7 @@ export type UseAuthFilesDataResult = {
   deleting: string | null;
   deletingAll: boolean;
   statusUpdating: Record<string, boolean>;
+  manualRefreshing: Record<string, boolean>;
   batchStatusUpdating: boolean;
   importOptionsOpen: boolean;
   fileInputRef: RefObject<HTMLInputElement | null>;
@@ -65,6 +76,7 @@ export type UseAuthFilesDataResult = {
   handleDelete: (name: string) => void;
   handleDeleteAll: (options: DeleteAllOptions) => void;
   handleDownload: (name: string) => Promise<void>;
+  handleManualRefresh: (item: AuthFileItem) => Promise<void>;
   handleStatusToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
   toggleSelect: (name: string) => void;
   selectAllVisible: (visibleFiles: AuthFileItem[]) => void;
@@ -86,11 +98,13 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
+  const [manualRefreshing, setManualRefreshing] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [importOptionsOpen, setImportOptionsOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const manualRefreshPendingRef = useRef<Set<string>>(new Set());
   const batchStatusPendingRef = useRef(false);
   const pendingImportOptionsRef = useRef<AuthFileImportOptions>(DEFAULT_AUTH_FILE_IMPORT_OPTIONS);
   const selectionCount = selectedFiles.size;
@@ -260,6 +274,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
             `${t('auth_files.upload_success')}${suffix}`,
             result.failed.length ? 'warning' : 'success'
           );
+          notifyAuthFilesChanged();
           await loadFiles();
           setImportOptionsOpen(false);
         }
@@ -293,6 +308,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
             const result = await authFilesApi.deleteFile(name);
             showNotification(t('auth_files.delete_success'), 'success');
             applyDeletedFiles(result.files.length > 0 ? result.files : [name]);
+            if (result.deleted > 0) notifyAuthFilesChanged();
           } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : '';
             showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
@@ -346,6 +362,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
               showNotification(t('auth_files.delete_all_success'), 'success');
               setFiles((prev) => prev.filter((file) => isRuntimeOnlyAuthFile(file)));
               deselectAll();
+              notifyAuthFilesChanged();
             } else {
               const filesToDelete = files.filter((file) => {
                 if (isRuntimeOnlyAuthFile(file)) return false;
@@ -380,6 +397,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
               const failed = result.failed.length;
 
               applyDeletedFiles(result.files);
+              if (result.deleted > 0) notifyAuthFilesChanged();
 
               if (failed === 0 && (isDisabledOnly || isEnabledOnly)) {
                 showNotification(
@@ -467,6 +485,66 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     [showNotification, t]
   );
 
+  const handleManualRefresh = useCallback(
+    async (item: AuthFileItem) => {
+      const name = item.name.trim();
+      const provider = resolveAuthProvider(item);
+      if (
+        !name ||
+        item.disabled === true ||
+        isRuntimeOnlyAuthFile(item) ||
+        !supportsAuthFileManualRefresh(provider) ||
+        manualRefreshPendingRef.current.has(name)
+      ) {
+        return;
+      }
+
+      manualRefreshPendingRef.current.add(name);
+      setManualRefreshing((prev) => ({ ...prev, [name]: true }));
+
+      try {
+        const initialSnapshot = getManualRefreshInventorySnapshot(files, item);
+        await authFilesApi.requestManualRefresh(name);
+        showNotification(t('auth_files.manual_refresh_requested', { name }), 'info');
+        notifyAuthFilesChanged();
+
+        for (let attempt = 0; attempt < MANUAL_REFRESH_POLL_ATTEMPTS; attempt += 1) {
+          await new Promise((resolve) => {
+            window.setTimeout(resolve, MANUAL_REFRESH_POLL_INTERVAL_MS);
+          });
+
+          let refreshedFiles: AuthFileItem[];
+          try {
+            const data = await authFilesApi.list();
+            refreshedFiles = data?.files || [];
+          } catch {
+            continue;
+          }
+
+          const refreshedItem = refreshedFiles.find((file) => file.name === name);
+          setFiles((currentFiles) =>
+            mergeManualRefreshResult(currentFiles, refreshedFiles, name)
+          );
+          if (!refreshedItem || getManualRefreshSnapshot(refreshedItem) !== initialSnapshot) {
+            break;
+          }
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('notification.update_failed');
+        showNotification(t('auth_files.manual_refresh_failed', { name, message }), 'error');
+      } finally {
+        manualRefreshPendingRef.current.delete(name);
+        setManualRefreshing((prev) => {
+          if (!prev[name]) return prev;
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    },
+    [files, showNotification, t]
+  );
+
   const handleStatusToggle = useCallback(
     async (item: AuthFileItem, enabled: boolean) => {
       const name = item.name;
@@ -509,7 +587,9 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     async (names: string[], enabled: boolean) => {
       if (batchStatusPendingRef.current) return;
 
-      const uniqueNames = Array.from(new Set(names));
+      const uniqueNames = Array.from(new Set(names)).filter(
+        (name) => !manualRefreshPendingRef.current.has(name)
+      );
       if (uniqueNames.length === 0) return;
       if (uniqueNames.some((name) => statusUpdating[name] === true)) return;
 
@@ -652,6 +732,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
           try {
             const result = await authFilesApi.deleteFiles(uniqueNames);
             applyDeletedFiles(result.files);
+            if (result.deleted > 0) notifyAuthFilesChanged();
 
             if (result.failed.length === 0) {
               showNotification(
@@ -688,6 +769,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     deleting,
     deletingAll,
     statusUpdating,
+    manualRefreshing,
     batchStatusUpdating,
     importOptionsOpen,
     fileInputRef,
@@ -699,6 +781,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     handleDelete,
     handleDeleteAll,
     handleDownload,
+    handleManualRefresh,
     handleStatusToggle,
     toggleSelect,
     selectAllVisible,

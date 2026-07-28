@@ -125,7 +125,7 @@ const normalizeHomeLogs = (data: Record<string, unknown>): LogsResponse => {
   };
 };
 
-const normalizeLogsResponse = (data: unknown): LogsResponse => {
+export const normalizeLogsResponse = (data: unknown): LogsResponse => {
   if (!isRecord(data)) {
     return { lines: [] };
   }

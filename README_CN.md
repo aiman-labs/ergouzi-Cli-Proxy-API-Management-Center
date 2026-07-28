@@ -132,15 +132,18 @@ bun run build
 
 - 使用 Vite 输出 **单文件 HTML**（`dist/index.html`），资源全部内联（`vite-plugin-singlefile`）。
 - 打 `vX.Y.Z` 标签会触发 `.github/workflows/release.yml`，发布 `dist/management.html`。
-- Ergouzi 二开 tag 使用 `v1.16.6-ergouzi.N` 这条线，当前仍以 upstream
-  `1.16.6` 为基线。
+- Ergouzi 二开 tag 使用 `v<upstream>-ergouzi.N`。不要从本 README 推断当前版本；
+  sync lifecycle 以 `docs/upstream-sync/sync-history.md` 为准，生产状态以私有 Ops
+  release record 为准。
 - 生产验证过的 release asset 名必须准确为 `management.html`；GitHub release
   label 不等于 asset name。
 - 系统信息页显示的 UI 版本在构建期注入（优先使用环境变量 `VERSION`，否则使用 git tag / `package.json`）。
 
 ## 安全提示
 
-- 管理密钥会存入浏览器 `localStorage`，并使用轻量混淆格式（`enc::v1::...`）避免明文；仍应视为敏感信息。
+- 管理密钥会存入浏览器 `localStorage`，并使用可逆混淆格式
+  （`enc::v1::...`）。这不是 encryption，不能防止 XSS、同源脚本、浏览器 profile
+  访问或本机失陷；应按可恢复的明文凭据处理。
 - 建议使用独立浏览器配置/设备进行管理；开启远程管理时请谨慎评估暴露面。
 
 ## 常见问题

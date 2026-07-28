@@ -177,6 +177,9 @@
     "health_status_warning": "Предупреждение",
     "health_status_disabled": "Отключено",
     "download_button": "Скачать",
+    "manual_refresh_button": "Обновить учётные данные OAuth",
+    "manual_refresh_requested": "Запрошено обновление учётных данных для \"{{name}}\"",
+    "manual_refresh_failed": "Не удалось запросить обновление учётных данных для \"{{name}}\": {{message}}",
     "delete_button": "Удалить",
     "delete_confirm": "Удалить файл",
     "delete_all_confirm": "Удалить все файлы авторизации? Это действие нельзя отменить!",
@@ -529,6 +532,8 @@
     "plan_label": "План",
     "plan_supergrok": "SuperGrok",
     "plan_supergrok_heavy": "SuperGrok Heavy",
+    "plan_paid": "Платный",
+    "paid_health": "Чат платного API доступен. xAI не предоставляет данные об общей квоте для этих учётных данных OAuth.",
     "pay_as_you_go_label": "Оплата по факту",
     "pay_as_you_go_enabled": "Включено, лимит {{cap}}",
     "pay_as_you_go_disabled": "Отключено"
@@ -998,9 +1003,7 @@
           "timeout": "Timeout",
           "stabilize_device": "Стабилизировать профиль устройства",
           "stabilize_device_desc": "Фиксировать OS/Arch и стабилизировать программный отпечаток для учётных данных/API-ключа",
-          "beta_features": "Beta Features",
-          "codex_identity_confuse": "Codex identity-confuse",
-          "codex_identity_confuse_desc": "При fill-first routing или session affinity переопределяет Codex prompt_cache_key и installation identity под выбранную auth-запись"
+          "beta_features": "Beta Features"
         },
         "network": {
           "title": "Сетевые настройки",
@@ -1524,7 +1527,11 @@
   },
   "sidebar": {
     "toggle_expand": "Развернуть боковую панель",
-    "toggle_collapse": "Свернуть боковую панель"
+    "toggle_collapse": "Свернуть боковую панель",
+    "expand": "Развернуть",
+    "collapse": "Свернуть",
+    "subtitle": "Консоль управления CLI Proxy API",
+    "auth_files_count": "Файлов аутентификации: {{count}}"
   },
   "footer": {
     "api_version": "Версия CLI Proxy API",

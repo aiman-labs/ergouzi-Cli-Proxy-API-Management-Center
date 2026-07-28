@@ -1,5 +1,78 @@
 # Sync History
 
+## 2026-07-27 Upstream `v1.19.3` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `88025ac4` |
+| Sync branch | `sync/upstream-v1.19.3` |
+| Upstream previous baseline | `v1.18.5` / `6a6a22af` |
+| Upstream target tag | `v1.19.3` |
+| Upstream target commit | `21af5762` |
+| Upstream non-merge commits adopted | `15` |
+| Changed files from `v1.18.5` to `v1.19.3` | `42` |
+| Upstream release diff | `42 files changed, 1515 insertions(+), 1940 deletions(-)` |
+| Pre-PR latest release recheck | `v1.19.3` |
+| Status at handoff | `local verification passed; PR review required; not released; not deployed` |
+
+Upstream release themes:
+
+- Add manual OAuth credential refresh and expand provider/configuration
+  management behavior.
+- Refresh Kimi assets/theme behavior and simplify visual configuration state.
+- Continue provider workbench and localization refinements.
+
+Sync findings:
+
+- Applied the exact binary-safe `v1.18.5..v1.19.3` release diff rather than
+  unreleased `upstream/main` drift.
+- Preserved Ergouzi's auth-file filters, page size `100`, selected and filtered
+  batch operations, scoped refresh, and backend whole-pool quota job UX.
+- Adopted manual OAuth refresh, but resolve the normalized provider and poll
+  the backend inventory for a real result-state change before updating the
+  card. See `DEC-20260727-010`.
+- Kept visual-config dirty-field concurrency behavior while removing the
+  deprecated `codexIdentityConfuse` control introduced upstream.
+- Codex review caught an upstream removal of the Home Logs compatibility
+  branch. Runtime headers/probing, Home response normalization and pagination,
+  request-log routing metadata, Home-specific controls, styles, and localized
+  messages are restored. See `DEC-20260727-011`.
+- A follow-up review found that the new collapsed-rail tooltip and auth-file
+  badge work had removed visible `nav_meta.*` descriptions from the expanded
+  sidebar. The final layout keeps the new rail behavior and badges while
+  restoring metadata text for expanded and mobile navigation.
+- Follow-up reviews also normalized newly added source comments to English and
+  found that manual-refresh polling replaced the complete auth-file inventory
+  with a potentially stale list response. Polling now merges only the target
+  file into the current inventory, preserving concurrent uploads, deletions,
+  and status changes. A transient inventory read failure now consumes one
+  bounded polling attempt and retries instead of ending the refresh workflow
+  immediately. Files with an active manual refresh are also excluded from
+  selected and filtered batch status targets, with a second execution-time
+  guard covering confirmation-dialog races. The initial completion snapshot is
+  built from the raw inventory item rather than display-only quota errors, so a
+  synthetic card message cannot end polling after the first read.
+
+Verification:
+
+```bash
+bun run verify
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
+```
+
+Result:
+
+- All `154` tests passed, including manual-refresh provider resolution,
+  target-only stale-response merging, concurrent deletion protection,
+  display-only error isolation, batch-status exclusion, result polling,
+  timeout, runtime-gating, and Home log normalization regressions.
+- ESLint, TypeScript compilation, and the Vite single-file production build
+  passed.
+- Diff check passed and no conflict markers remain.
+- No merge, release, or production deployment has been performed for this
+  sync.
+
 ## 2026-07-22 Upstream `v1.18.5` Sync
 
 | Item | Value |
@@ -14,7 +87,7 @@
 | Upstream release diff | `51 files changed, 1698 insertions(+), 486 deletions(-)` |
 | Local sync working diff before records | `50 files changed, 1662 insertions(+), 458 deletions(-)` |
 | Pre-handoff latest release recheck | `v1.18.5` |
-| Sync status | `local verification passed; commit and PR not yet authorized; not released; not deployed` |
+| Status at handoff | `local verification passed; commit and PR not yet authorized; not released; not deployed` |
 
 Upstream release themes:
 
@@ -72,6 +145,17 @@ Result:
 - Diff check passed and no conflict markers remain.
 - No commit, push, pull request, release, or production deployment has been
   performed for this sync.
+
+Closeout recorded 2026-07-23:
+
+- The handoff state above is historical, not the current lifecycle state.
+- PR `#23` was merged as `cb84e02`; local `main` and `origin/main` point to
+  that merge commit, and tag `v1.18.5-ergouzi.1` points to the same commit.
+- Release and production deployment were subsequently completed. Their
+  canonical evidence is the private
+  [CPA release records](https://github.com/aiman-labs/ergouzi-ops/blob/main/docs/runbooks/cpa-fork-release-records.md),
+  section `2026-07-22 CPA v7.2.94-ergouzi.1 + CPAMC v1.18.5-ergouzi.1 联合部署记录`;
+  do not duplicate production hashes or paths here.
 
 ## 2026-07-13 Upstream `v1.18.3` Sync
 
