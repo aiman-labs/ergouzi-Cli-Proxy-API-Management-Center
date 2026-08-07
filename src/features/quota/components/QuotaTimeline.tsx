@@ -131,6 +131,8 @@ export function QuotaTimeline({
         .filter((lane) => laneHasWindow(lane) && (mode !== 'session' || lane.periodHours === 5)),
     [laneInputs, mode, span.days]
   );
+  const showResetCreditLegend =
+    showCodexResetCreditExpiries && lanes.some((lane) => lane.provider === 'codex');
 
   /** Weekly: one cell per day. Session: one per 6 hours. */
   const cells = useMemo(() => {
@@ -290,7 +292,7 @@ export function QuotaTimeline({
             <span className={`${styles.swatch} ${styles.swatchPast}`} />
             {t('quota_management.windows_legend_elapsed', { defaultValue: 'elapsed' })}
           </span>
-          {showCodexResetCreditExpiries && (
+          {showResetCreditLegend && (
             <span className={styles.legendItem}>
               <span className={styles.swatchCredit} />
               {t('quota_management.windows_legend_reset_credit', {

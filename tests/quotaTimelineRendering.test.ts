@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import '../src/i18n/index';
+import i18n from '../src/i18n/index';
 import { QuotaTimeline } from '../src/features/quota/components/QuotaTimeline';
 import type { QuotaFileEntry } from '../src/features/quota/logic';
 import { buildKimiQuotaRows } from '../src/utils/quota';
@@ -192,7 +192,30 @@ describe('QuotaTimeline rendering', () => {
     );
 
     expect(markup).not.toContain('role="img"');
-    expect(markup).not.toContain('manual reset expiry');
+    expect(markup).not.toContain(i18n.t('quota_management.windows_legend_reset_credit'));
+  });
+
+  test('hides the reset-credit legend when the visible timeline has no Codex lane', () => {
+    const markup = renderToStaticMarkup(
+      createElement(QuotaTimeline, {
+        ...baseProps,
+        showCodexResetCreditExpiries: true,
+        quotaFor: () => ({
+          status: 'success',
+          windows: [
+            {
+              label: '7-day',
+              usedPercent: 25,
+              resetAtMs: new Date(2026, 7, 1, 12).getTime(),
+              periodHours: 168,
+            },
+          ],
+        }),
+      })
+    );
+
+    expect(markup).toContain('weekly-only.json');
+    expect(markup).not.toContain(i18n.t('quota_management.windows_legend_reset_credit'));
   });
 
   test('stays hidden before any credential exposes a usable quota window', () => {
