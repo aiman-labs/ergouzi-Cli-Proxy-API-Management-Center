@@ -197,6 +197,7 @@ export function AuthFilesPage() {
   } = useAuthFilesPrefixProxyEditor({
     disableControls: connectionStatus !== 'connected',
     loadFiles,
+    onFileMutated: (name) => invalidateDerivedCaches([name]),
   });
 
   const disableControls = connectionStatus !== 'connected';
