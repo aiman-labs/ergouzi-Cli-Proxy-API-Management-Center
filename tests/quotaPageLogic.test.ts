@@ -12,6 +12,7 @@ import {
   getCodexStatusTargetNames,
   hasQuotaProblem,
   isCodexStatusMutable,
+  isQuotaBulkRefreshDisabled,
   isQuotaRefreshDisabled,
   isQuotaResetDisabled,
   paginate,
@@ -217,6 +218,13 @@ describe('isQuotaResetDisabled', () => {
     expect(isQuotaRefreshDisabled(true, false, false)).toBe(false);
     expect(isQuotaResetDisabled(true, false, false, true)).toBe(true);
     expect(isQuotaResetDisabled(true, false, false, false)).toBe(false);
+  });
+});
+
+describe('isQuotaBulkRefreshDisabled', () => {
+  test('blocks page and whole-pool refresh while any quota reset is active', () => {
+    expect(isQuotaBulkRefreshDisabled(false, false, false, null)).toBe(false);
+    expect(isQuotaBulkRefreshDisabled(false, false, false, 'codex.json')).toBe(true);
   });
 });
 

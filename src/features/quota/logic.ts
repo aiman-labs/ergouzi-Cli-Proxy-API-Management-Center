@@ -1,6 +1,6 @@
 /**
- * 额度页纯逻辑：文件归类、tab 过滤、计数、分页。
- * React-free —— 由 tests/quotaPageLogic.test.ts 直接消费。
+ * Pure quota-page logic for file grouping, tab filtering, counts, and pagination.
+ * React-free and consumed directly by tests/quotaPageLogic.test.ts.
  */
 
 import type { AuthFileItem } from '@/types';
@@ -219,13 +219,20 @@ export const isQuotaResetDisabled = (
   credentialDisabled: boolean
 ): boolean => credentialDisabled || isQuotaRefreshDisabled(canRefresh, loading, resetting);
 
+export const isQuotaBulkRefreshDisabled = (
+  disableControls: boolean,
+  codexJobActive: boolean,
+  statusActionBusy: boolean,
+  resettingQuotaName: string | null
+): boolean => disableControls || codexJobActive || statusActionBusy || resettingQuotaName !== null;
+
 export interface QuotaPagination<T> {
   pageItems: T[];
   currentPage: number;
   totalPages: number;
 }
 
-/** 页码越界时收敛到有效区间（列表缩短后停留在最后一页而不是空页）。 */
+/** Clamp an out-of-range page so a shortened list stays on its last page instead of an empty page. */
 export function paginate<T>(items: T[], page: number, pageSize: number): QuotaPagination<T> {
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   const currentPage = Math.min(Math.max(1, page), totalPages);

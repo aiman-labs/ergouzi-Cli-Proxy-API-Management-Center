@@ -1,14 +1,14 @@
 /**
- * 额度查询页：提供商 tabs + 统一卡网格。
+ * Quota page: provider tabs and a unified card grid.
  *
- * 保留的行为契约（重设计不改）：
- * - 点击加载：卡片挂载为 idle，额度只在用户点击/刷新时才打上游；
- * - cacheGeneration 会话隔离 + request-id 去重（见 useQuotaBatchLoader）；
- * - 文件列表变化后按 provider 剪枝额度缓存（已删文件不残留）；
- * - useHeaderRefresh 单槽位：本页唯一注册者，全局刷新 = 重取文件列表。
+ * Preserved behavior contracts:
+ * - Click to load: cards mount idle and query upstream only on explicit refresh.
+ * - cacheGeneration isolates sessions and request ids deduplicate batch loads.
+ * - Provider quota caches are pruned after the credential inventory changes.
+ * - This page exclusively owns the single useHeaderRefresh slot.
  */
 
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
@@ -47,6 +47,7 @@ import {
   filterEntriesByTab,
   getCodexStatusTargetNames,
   isCodexStatusMutable,
+  isQuotaBulkRefreshDisabled,
   paginate,
   sortQuotaEntries,
   type QuotaEnabledFilter,
@@ -86,8 +87,8 @@ const readPersistedQuotaPageSize = (): number => {
 };
 
 /**
- * 时间线泳道名 = 卡片标题，两者必须一致。卡片显示的就是文件名，所以这里是恒等。
- * 提到模块级是为了引用稳定 —— 它进了泳道 memo 的依赖数组。
+ * Timeline lane names must match card titles. Cards use file names, so this is
+ * intentionally an identity function kept at module scope for stable memo deps.
  */
 const displayNameFor = (name: string) => name;
 
@@ -114,12 +115,12 @@ export function QuotaPage() {
   const [codexPlanFilter, setCodexPlanFilter] = useState<CodexPlanFilterValue>('all');
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
-  // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
+  // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
   const revealRef = useRevealGroup<HTMLDivElement>();
 
   const disableControls = connectionStatus !== 'connected';
 
-  /* ---------- 文件列表 ---------- */
+  /* ---------- Credential inventory ---------- */
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
@@ -141,8 +142,8 @@ export function QuotaPage() {
     void loadFiles();
   }, [loadFiles]);
 
-  /* ---------- 额度缓存 ----------
-   * 排在归类/排序之前：「最快恢复优先」要读它算排序键。 */
+  /* ---------- Quota cache ----------
+   * Declare before classification because recovery sorting reads this state. */
 
   const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
   const claudeQuota = useQuotaStore((state) => state.claudeQuota);
@@ -167,10 +168,10 @@ export function QuotaPage() {
     [quotaByType]
   );
 
-  /* ---------- 归类 / 过滤 / 排序 / 分页 ---------- */
+  /* ---------- Classification / filtering / sorting / pagination ---------- */
 
-  // 只在「最快恢复优先」下订阅分钟时钟。默认序下不门控的话，pageItems 每分钟
-  // 换一次身份，会反复空转下面那个「刷新全部」的 loading 下降沿 effect。
+  // Subscribe to the minute clock only for recovery sorting. Otherwise pageItems
+  // would change identity every minute and repeatedly wake the refresh-all effect.
   const tick = useNow(sortMode !== 'default');
   const sortNow = sortMode === 'default' ? 0 : tick;
 
@@ -193,7 +194,7 @@ export function QuotaPage() {
     (entry: QuotaFileEntry) => nextRecoveryMs(entry.type, getQuota(entry), sortNow),
     [getQuota, sortNow]
   );
-  // 排序在分页之前：否则「最快恢复」只在当前页内成立。
+  // Sort before pagination so recovery order is global rather than page-local.
   const sortedEntries = useMemo(
     () => sortQuotaEntries(filteredEntries, sortMode, resolveNextRecovery),
     [filteredEntries, sortMode, resolveNextRecovery]
@@ -290,7 +291,7 @@ export function QuotaPage() {
     return { loadedCount: loaded, attentionCount: attention };
   }, [entries, quotaByType]);
 
-  // 剪枝：文件列表落定后，各 provider 缓存只保留仍存在的凭证
+  // Once inventory settles, keep only credentials that still exist in each provider cache.
   useEffect(() => {
     if (loading) return;
     const survivorsByType = new Map<QuotaProviderType, Set<string>>(
@@ -311,7 +312,7 @@ export function QuotaPage() {
     });
   }, [entries, loading]);
 
-  /* ---------- 加载与操作 ---------- */
+  /* ---------- Loading and actions ---------- */
 
   const { batchLoading, loadQuota } = useQuotaBatchLoader();
   const { resettingQuotaName, refreshQuota, resetQuota } = useQuotaActions(disableControls);
@@ -331,6 +332,16 @@ export function QuotaPage() {
     [entries, getQuota]
   );
   const statusActionBusy = batchStatusUpdating || pendingStatusNames.size > 0;
+  const refreshControlsDisabled = isQuotaBulkRefreshDisabled(
+    disableControls,
+    codexJobActive,
+    statusActionBusy,
+    resettingQuotaName
+  );
+  const refreshControlsDisabledRef = useRef(refreshControlsDisabled);
+  useEffect(() => {
+    refreshControlsDisabledRef.current = refreshControlsDisabled;
+  }, [refreshControlsDisabled]);
   const statusControlsDisabled =
     disableControls ||
     loading ||
@@ -484,13 +495,13 @@ export function QuotaPage() {
   );
 
   const handleRefreshPage = useCallback(async () => {
-    if (disableControls || codexJobActive || statusActionBusy) return;
+    if (refreshControlsDisabledRef.current) return;
     await loadQuota(pageItems);
     await loadFiles();
-  }, [codexJobActive, disableControls, loadFiles, loadQuota, pageItems, statusActionBusy]);
+  }, [loadFiles, loadQuota, pageItems]);
 
   const executeRefreshAll = useCallback(async () => {
-    if (disableControls || codexJobActive || statusActionBusy) return;
+    if (refreshControlsDisabledRef.current) return;
     const codexTargets = entries
       .filter((entry) => entry.type === 'codex')
       .map((entry) => entry.file);
@@ -509,19 +520,16 @@ export function QuotaPage() {
       );
     }
   }, [
-    codexJobActive,
-    disableControls,
     entries,
     loadFiles,
     loadQuota,
     showNotification,
     startCodexJob,
-    statusActionBusy,
     t,
   ]);
 
   const handleRefreshAll = useCallback(() => {
-    if (disableControls || codexJobActive || statusActionBusy || entries.length === 0) return;
+    if (refreshControlsDisabledRef.current || entries.length === 0) return;
     showConfirmation({
       title: t('quota_management.refresh_all_confirm_title'),
       message: t('quota_management.refresh_all_confirm_message', { count: entries.length }),
@@ -530,21 +538,17 @@ export function QuotaPage() {
       onConfirm: executeRefreshAll,
     });
   }, [
-    codexJobActive,
-    disableControls,
     entries.length,
     executeRefreshAll,
     showConfirmation,
-    statusActionBusy,
     t,
   ]);
 
   const canUseActions = !statusControlsDisabled;
 
-  /* ---------- 首屏卡片一次性级联入场 ----------
-   * 首批数据渲染后立即翻转 cardsAnimated；已挂载的卡片在挂载时捕获过自己的
-   * 延迟（QuotaCard 内 useState 初始化），后续切 tab/翻页/刷新新挂载的卡片
-   * 拿到 null —— 不重播。 */
+  /* ---------- One-time first-load card reveal ----------
+   * Flip cardsAnimated after the first data render. Mounted cards capture their
+   * delay once; cards mounted by later tabs, pages, or refreshes receive null. */
 
   const [cardsAnimated, setCardsAnimated] = useState(false);
   const enableCardEntrance = !cardsAnimated && !loading && pageItems.length > 0;
@@ -559,7 +563,7 @@ export function QuotaPage() {
     return Math.round((index / (pageItems.length - 1)) * CARD_ENTRANCE_BUDGET_MS);
   };
 
-  /* ---------- 渲染 ---------- */
+  /* ---------- Render ---------- */
 
   const isEmpty = !loading && filteredEntries.length === 0;
 
@@ -572,7 +576,7 @@ export function QuotaPage() {
         refreshing={loading || batchLoading}
         jobActive={codexJobActive}
         progress={codexJobProgress}
-        disableControls={disableControls || statusActionBusy}
+        disableControls={refreshControlsDisabled}
         onRefreshPage={() => void handleRefreshPage()}
         onRefreshAll={handleRefreshAll}
         onCancel={() => void cancelCodexJob()}
