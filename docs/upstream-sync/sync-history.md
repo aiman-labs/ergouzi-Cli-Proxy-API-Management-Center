@@ -728,6 +728,10 @@ Ergouzi integration:
 - Dashboard manual refresh bypasses the short-lived model cache, while its
   auth-file inventory loader rejects superseded or previous-connection
   responses before they can overwrite current health and traffic data.
+- Dashboard credential grouping now reuses the centralized auth-provider
+  resolver, preserving provider-field precedence and xAI aliases. Provider
+  totals, success rates, and sorting are calculated from the same rolling
+  buckets as the visible traffic window instead of lifetime counters.
 
 Verification:
 
@@ -739,7 +743,7 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' .
 
 Result:
 
-- `520/520` tests passed, including a 1600-Codex inventory target regression
+- `522/522` tests passed, including a 1600-Codex inventory target regression
   and a four-worker concurrency bound.
 - ESLint, TypeScript, and the production single-file Vite build passed.
 - The build produced `dist/index.html` as the sole release artifact.

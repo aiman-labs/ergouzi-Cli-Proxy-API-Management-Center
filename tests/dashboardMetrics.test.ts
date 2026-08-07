@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { formatCompactNumber, formatPercent } from '../src/utils/format';
-import { getProviderKeyCounts } from '../src/features/dashboard/hooks/useDashboardOverview';
+import {
+  buildDashboardTraffic,
+  getProviderKeyCounts,
+  providerIdOfAuthFile,
+} from '../src/features/dashboard/hooks/useDashboardOverview';
 import {
   axisMax,
   niceCeil,
@@ -115,6 +119,44 @@ describe('provider key counts', () => {
 
     expect(counts.interactions).toBe(2);
     expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(4);
+  });
+});
+
+describe('dashboard provider traffic', () => {
+  test('uses the shared auth provider resolver for field precedence and aliases', () => {
+    expect(providerIdOfAuthFile({ name: 'xai.json', type: 'claude', provider: 'x-ai' })).toBe(
+      'xai'
+    );
+    expect(providerIdOfAuthFile({ name: 'grok.json', type: 'grok' })).toBe('xai');
+  });
+
+  test('computes provider totals from the rolling buckets instead of lifetime counters', () => {
+    const usage = new Map([
+      [
+        'codex',
+        new Map([
+          [
+            'https://example.com|key',
+            {
+              success: 999,
+              failed: 999,
+              recentRequests: [{ success: 3, failed: 1 }],
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    const { providers } = buildDashboardTraffic(usage, []);
+
+    expect(providers[0]).toMatchObject({
+      id: 'codex',
+      credentials: 1,
+      success: 3,
+      failure: 1,
+      total: 4,
+      successRate: 75,
+    });
   });
 });
 
