@@ -10,8 +10,9 @@
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconRefreshCw } from '@/components/ui/icons';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import type { ResolvedTheme } from '@/types';
-import { resolveQuotaErrorMessage } from '@/utils/quota';
+import { isDisabledAuthFile, resolveQuotaErrorMessage } from '@/utils/quota';
 import {
   getAuthFileIcon,
   getThemeSurfaceIconBackground,
@@ -33,10 +34,13 @@ export type QuotaCardProps = {
   resolvedTheme: ResolvedTheme;
   canRefresh: boolean;
   resetting: boolean;
+  canSetStatus?: boolean;
+  statusUpdating?: boolean;
   /** 首屏级联入场延迟；null = 不入场（切 tab / 翻页 / 刷新新挂载的卡片）。 */
   entranceDelayMs?: number | null;
   onRefresh: () => void;
   onReset: () => void;
+  onStatusChange?: (enabled: boolean) => void;
 };
 
 export function QuotaCard(props: QuotaCardProps) {
@@ -46,9 +50,12 @@ export function QuotaCard(props: QuotaCardProps) {
     resolvedTheme,
     canRefresh,
     resetting,
+    canSetStatus = false,
+    statusUpdating = false,
     entranceDelayMs,
     onRefresh,
     onReset,
+    onStatusChange,
   } = props;
   const { t } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
@@ -100,6 +107,16 @@ export function QuotaCard(props: QuotaCardProps) {
         <span className={styles.fileName} title={file.name}>
           {file.name}
         </span>
+        {onStatusChange && (
+          <span className={styles.statusToggle}>
+            <ToggleSwitch
+              checked={!isDisabledAuthFile(file)}
+              onChange={onStatusChange}
+              disabled={!canSetStatus || statusUpdating}
+              ariaLabel={t('auth_files.status_toggle_label')}
+            />
+          </span>
+        )}
       </header>
 
       <div className={styles.body}>

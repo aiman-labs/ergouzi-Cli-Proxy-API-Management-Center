@@ -686,7 +686,7 @@ Result:
 | Upstream target release | `v1.22.0` / `0eeb747c` |
 | Upstream commits adopted | `75` |
 | Upstream changed paths | `257` |
-| Final changed paths | `295` |
+| Final changed paths | `271` |
 | CatPaw work | `CHORE-094` |
 | Sync status | `prepared for PR; not yet released or deployed` |
 
@@ -713,6 +713,12 @@ Ergouzi integration:
 - Verified that all 257 upstream changed paths are represented in the final
   tree; the additional paths are Ergouzi compatibility code, tests, docs, and
   release workflow assets.
+- Closed the PR review regressions without changing the established operation
+  scopes: auth-file selected actions remain current-page only, so the misleading
+  filtered-result selection entry was removed; the unified Codex quota tab now
+  restores safe account search, normal/problem and plan filters, per-card status
+  toggles, and filtered-result batch enable/disable with concurrency limited to
+  four workers.
 
 Verification:
 
@@ -724,7 +730,7 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' .
 
 Result:
 
-- `505/505` tests passed, including a 1600-Codex inventory target regression
+- `510/510` tests passed, including a 1600-Codex inventory target regression
   and a four-worker concurrency bound.
 - ESLint, TypeScript, and the production single-file Vite build passed.
 - The build produced `dist/index.html` as the sole release artifact.

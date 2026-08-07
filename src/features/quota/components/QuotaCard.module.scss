@@ -85,6 +85,11 @@
   @include text-ellipsis;
 }
 
+.statusToggle {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 /* ---------- body 容器 ---------- */
 
 .body {

@@ -15,11 +15,9 @@ const HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 export type BatchActionBarProps = {
   selectionCount: number;
   selectablePageCount: number;
-  selectableFilteredCount: number;
   disableControls: boolean;
   batchStatusDisabled: boolean;
   onSelectPage: () => void;
-  onSelectFiltered: () => void;
   onInvertPage: () => void;
   onDeselectAll: () => void;
   onDownload: () => void;
@@ -38,11 +36,9 @@ export function BatchActionBar(props: BatchActionBarProps) {
   const {
     selectionCount,
     selectablePageCount,
-    selectableFilteredCount,
     disableControls,
     batchStatusDisabled,
     onSelectPage,
-    onSelectFiltered,
     onInvertPage,
     onDeselectAll,
     onDownload,
@@ -161,14 +157,6 @@ export function BatchActionBar(props: BatchActionBarProps) {
             disabled={selectablePageCount === 0}
           >
             {t('auth_files.batch_select_page')}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onSelectFiltered}
-            disabled={selectableFilteredCount === 0}
-          >
-            {t('auth_files.batch_select_filtered')}
           </Button>
           <Button
             variant="ghost"

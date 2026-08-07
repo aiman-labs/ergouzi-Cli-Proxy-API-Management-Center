@@ -574,10 +574,6 @@ export function AuthFilesPage() {
     () => pageItems.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [pageItems]
   );
-  const selectableFilteredItems = useMemo(
-    () => sorted.filter((file) => !isRuntimeOnlyAuthFile(file)),
-    [sorted]
-  );
   const selectedPageNames = useMemo(
     () =>
       selectablePageItems.filter((file) => selectedFiles.has(file.name)).map((file) => file.name),
@@ -1000,11 +996,9 @@ export function AuthFilesPage() {
       <BatchActionBar
         selectionCount={selectedPageNames.length}
         selectablePageCount={selectablePageItems.length}
-        selectableFilteredCount={selectableFilteredItems.length}
         disableControls={disableControls}
         batchStatusDisabled={batchStatusButtonsDisabled}
         onSelectPage={() => selectAllVisible(pageItems)}
-        onSelectFiltered={() => selectAllVisible(sorted)}
         onInvertPage={() => invertVisibleSelection(pageItems)}
         onDeselectAll={deselectAll}
         onDownload={() => void batchDownload(selectedPageNames)}

@@ -7,7 +7,11 @@ import {
 import {
   buildTabCounts,
   classifyQuotaFiles,
+  filterQuotaEntries,
   filterEntriesByTab,
+  getCodexStatusTargetNames,
+  hasQuotaProblem,
+  isCodexStatusMutable,
   isQuotaRefreshDisabled,
   paginate,
   resolveQuotaProviderType,
@@ -94,6 +98,109 @@ describe('filterEntriesByTab', () => {
       'codex-b.json',
     ]);
     expect(filterEntriesByTab(entries, 'antigravity')).toEqual([]);
+  });
+});
+
+describe('filterQuotaEntries', () => {
+  const entries = classifyQuotaFiles([
+    file('codex-plus.json', 'codex', {
+      email: 'plus@example.com',
+      note: 'primary',
+      account: 'secret-api-key',
+      codex_inventory_plan_group: 'plus',
+    }),
+    file('codex-team.json', 'codex', {
+      disabled: true,
+      status: 'error',
+      statusMessage: '401 unauthorized',
+      codex_inventory_plan_group: 'bug_team',
+    }),
+    file('claude.json', 'claude'),
+  ]);
+  const quotaFor = (entry: QuotaFileEntry) =>
+    entry.file.name === 'codex-plus.json'
+      ? ({ status: 'success', planType: 'plus' } as never)
+      : entry.file.name === 'codex-team.json'
+        ? ({ status: 'error', error: 'token rejected', planType: 'team' } as never)
+        : undefined;
+
+  test('searches safe credential metadata and quota errors without indexing account secrets', () => {
+    expect(
+      filterQuotaEntries(entries, {
+        searchQuery: 'plus@example.com',
+        enabledFilter: 'all',
+        issueFilter: 'all',
+        codexPlanFilter: 'all',
+        quotaFor,
+      }).map((entry) => entry.file.name)
+    ).toEqual(['codex-plus.json']);
+    expect(
+      filterQuotaEntries(entries, {
+        searchQuery: 'token rejected',
+        enabledFilter: 'all',
+        issueFilter: 'all',
+        codexPlanFilter: 'all',
+        quotaFor,
+      }).map((entry) => entry.file.name)
+    ).toEqual(['codex-team.json']);
+    expect(
+      filterQuotaEntries(entries, {
+        searchQuery: 'secret-api-key',
+        enabledFilter: 'all',
+        issueFilter: 'all',
+        codexPlanFilter: 'all',
+        quotaFor,
+      })
+    ).toEqual([]);
+  });
+
+  test('combines enabled state, problem state, and Codex plan filters before pagination', () => {
+    expect(
+      filterQuotaEntries(entries, {
+        searchQuery: '',
+        enabledFilter: 'disabled',
+        issueFilter: 'problem',
+        codexPlanFilter: 'team',
+        quotaFor,
+      }).map((entry) => entry.file.name)
+    ).toEqual(['codex-team.json']);
+    expect(
+      filterQuotaEntries(entries, {
+        searchQuery: '',
+        enabledFilter: 'all',
+        issueFilter: 'normal',
+        codexPlanFilter: 'all',
+        quotaFor,
+      }).map((entry) => entry.file.name)
+    ).toEqual(['claude.json', 'codex-plus.json']);
+  });
+
+  test('treats active as a normal runtime status unless explicit error evidence exists', () => {
+    const active = classifyQuotaFiles([file('active.json', 'codex', { status: 'active' })])[0];
+    expect(hasQuotaProblem(active)).toBe(false);
+    expect(hasQuotaProblem(active, { status: 'error', error: '401' })).toBe(true);
+  });
+});
+
+describe('getCodexStatusTargetNames', () => {
+  test('targets only persistent Codex credentials whose status must change', () => {
+    const entries = classifyQuotaFiles([
+      file('enabled.json', 'codex'),
+      file('disabled.json', 'codex', { disabled: true }),
+      file('disabled-compatible.json', 'codex', {
+        disabled: 'true' as unknown as boolean,
+      }),
+      file('runtime.json', 'codex', { disabled: true, runtimeOnly: true }),
+      file('claude.json', 'claude', { disabled: true }),
+    ]);
+    expect(getCodexStatusTargetNames(entries, true, new Set())).toEqual([
+      'disabled.json',
+      'disabled-compatible.json',
+    ]);
+    expect(getCodexStatusTargetNames(entries, false, new Set(['enabled.json']))).toEqual([]);
+    expect(isCodexStatusMutable(entries.find((entry) => entry.file.name === 'runtime.json')!)).toBe(
+      false
+    );
   });
 });
 

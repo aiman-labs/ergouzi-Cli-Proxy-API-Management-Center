@@ -13,14 +13,18 @@ import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { IconSearch } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useNow } from '@/hooks/useNow';
 import { useRevealGroup } from '@/hooks/motion';
 import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
+import type { CodexPlanFilterValue } from '@/utils/quota';
+import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
@@ -39,10 +43,15 @@ import {
 import {
   buildTabCounts,
   classifyQuotaFiles,
+  filterQuotaEntries,
   filterEntriesByTab,
+  getCodexStatusTargetNames,
+  isCodexStatusMutable,
   paginate,
   sortQuotaEntries,
+  type QuotaEnabledFilter,
   type QuotaFileEntry,
+  type QuotaIssueFilter,
 } from './logic';
 import { nextRecoveryMs } from './resetSchedule';
 import { QUOTA_ADAPTERS, getQuotaSetter, type QuotaCardState } from './providers';
@@ -56,6 +65,19 @@ import styles from './QuotaPage.module.scss';
 const TAB_IDS: string[] = ['all', ...QUOTA_TAB_ORDER];
 const SKELETON_CARD_COUNT = 6;
 const QUOTA_PAGE_SIZE_STORAGE_KEY = 'quota-management:page-size';
+const STATUS_BATCH_CONCURRENCY = 4;
+const CODEX_PLAN_FILTER_VALUES: CodexPlanFilterValue[] = [
+  'all',
+  'plus',
+  'pro',
+  'pro_lite',
+  'team',
+  'bug_team',
+  'k12_team',
+  'regular_team',
+  'free',
+  'unknown',
+];
 
 const readPersistedQuotaPageSize = (): number => {
   if (typeof window === 'undefined') return DEFAULT_QUOTA_PAGE_SIZE;
@@ -86,7 +108,12 @@ export function QuotaPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(readPersistedQuotaPageSize);
   const [pageSizeInput, setPageSizeInput] = useState(String(pageSize));
-  const [enabledFilter, setEnabledFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [enabledFilter, setEnabledFilter] = useState<QuotaEnabledFilter>('all');
+  const [issueFilter, setIssueFilter] = useState<QuotaIssueFilter>('all');
+  const [codexPlanFilter, setCodexPlanFilter] = useState<CodexPlanFilterValue>('all');
+  const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
+  const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -152,12 +179,14 @@ export function QuotaPage() {
   const tabEntries = useMemo(() => filterEntriesByTab(entries, tab), [entries, tab]);
   const filteredEntries = useMemo(
     () =>
-      tabEntries.filter((entry) => {
-        if (enabledFilter === 'enabled') return entry.file.disabled !== true;
-        if (enabledFilter === 'disabled') return entry.file.disabled === true;
-        return true;
+      filterQuotaEntries(tabEntries, {
+        searchQuery,
+        enabledFilter,
+        issueFilter,
+        codexPlanFilter: tab === 'codex' ? codexPlanFilter : 'all',
+        quotaFor: getQuota,
       }),
-    [enabledFilter, tabEntries]
+    [codexPlanFilter, enabledFilter, getQuota, issueFilter, searchQuery, tab, tabEntries]
   );
 
   const resolveNextRecovery = useCallback(
@@ -233,6 +262,22 @@ export function QuotaPage() {
       })),
     [t]
   );
+  const issueFilterOptions = useMemo(
+    () =>
+      ['all', 'normal', 'problem'].map((value) => ({
+        value,
+        label: t(`quota_management.filter_${value}_credentials`),
+      })),
+    [t]
+  );
+  const codexPlanFilterOptions = useMemo(
+    () =>
+      CODEX_PLAN_FILTER_VALUES.map((value) => ({
+        value,
+        label: t(`quota_management.codex_plan_filter_${value}`),
+      })),
+    [t]
+  );
 
   const { loadedCount, attentionCount } = useMemo(() => {
     let loaded = 0;
@@ -277,14 +322,175 @@ export function QuotaPage() {
     cancel: cancelCodexJob,
   } = useCodexQuotaRefreshJob({ enabled: true, onComplete: loadFiles });
 
+  const pendingStatusNames = useMemo(
+    () => new Set(Object.keys(statusUpdating).filter((name) => statusUpdating[name] === true)),
+    [statusUpdating]
+  );
+  const quotaLoading = useMemo(
+    () => entries.some((entry) => getQuota(entry)?.status === 'loading'),
+    [entries, getQuota]
+  );
+  const statusActionBusy = batchStatusUpdating || pendingStatusNames.size > 0;
+  const statusControlsDisabled =
+    disableControls ||
+    loading ||
+    batchLoading ||
+    codexJobActive ||
+    resettingQuotaName !== null ||
+    quotaLoading ||
+    statusActionBusy;
+  const filteredEnableTargetNames = useMemo(
+    () =>
+      tab === 'codex'
+        ? getCodexStatusTargetNames(filteredEntries, true, pendingStatusNames)
+        : [],
+    [filteredEntries, pendingStatusNames, tab]
+  );
+  const filteredDisableTargetNames = useMemo(
+    () =>
+      tab === 'codex'
+        ? getCodexStatusTargetNames(filteredEntries, false, pendingStatusNames)
+        : [],
+    [filteredEntries, pendingStatusNames, tab]
+  );
+
+  const handleStatusToggle = useCallback(
+    async (entry: QuotaFileEntry, enabled: boolean) => {
+      if (!isCodexStatusMutable(entry) || statusControlsDisabled) return;
+      const name = entry.file.name;
+      if (statusUpdating[name] === true) return;
+
+      setStatusUpdating((prev) => ({ ...prev, [name]: true }));
+      try {
+        const result = await authFilesApi.setStatus(name, !enabled);
+        setFiles((current) =>
+          current.map((file) =>
+            file.name === name ? { ...file, disabled: result.disabled } : file
+          )
+        );
+        showNotification(
+          enabled
+            ? t('auth_files.status_enabled_success', { name })
+            : t('auth_files.status_disabled_success', { name }),
+          'success'
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('common.unknown_error');
+        showNotification(`${t('notification.update_failed')}: ${message}`, 'error');
+      } finally {
+        setStatusUpdating((prev) => {
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    },
+    [showNotification, statusControlsDisabled, statusUpdating, t]
+  );
+
+  const executeBatchStatus = useCallback(
+    async (enabled: boolean) => {
+      if (statusControlsDisabled || tab !== 'codex') return;
+      const names = enabled ? filteredEnableTargetNames : filteredDisableTargetNames;
+      if (names.length === 0) return;
+
+      setBatchStatusUpdating(true);
+      setStatusUpdating((prev) => {
+        const next = { ...prev };
+        names.forEach((name) => {
+          next[name] = true;
+        });
+        return next;
+      });
+
+      try {
+        const results = await runLimitedBatch({
+          items: names,
+          concurrency: STATUS_BATCH_CONCURRENCY,
+          worker: async (name) => {
+            try {
+              const result = await authFilesApi.setStatus(name, !enabled);
+              return { name, disabled: result.disabled, ok: true as const };
+            } catch {
+              return { name, disabled: !enabled, ok: false as const };
+            }
+          },
+        });
+        const confirmed = new Map(
+          results.filter((result) => result.ok).map((result) => [result.name, result.disabled])
+        );
+        setFiles((current) =>
+          current.map((file) =>
+            confirmed.has(file.name) ? { ...file, disabled: confirmed.get(file.name) } : file
+          )
+        );
+        const success = confirmed.size;
+        const failed = results.length - success;
+        showNotification(
+          failed === 0
+            ? t('auth_files.batch_status_success', { count: success })
+            : t('auth_files.batch_status_partial', { success, failed }),
+          failed === 0 ? 'success' : 'warning'
+        );
+      } finally {
+        setBatchStatusUpdating(false);
+        setStatusUpdating((prev) => {
+          const next = { ...prev };
+          names.forEach((name) => delete next[name]);
+          return next;
+        });
+      }
+    },
+    [
+      filteredDisableTargetNames,
+      filteredEnableTargetNames,
+      showNotification,
+      statusControlsDisabled,
+      t,
+      tab,
+    ]
+  );
+
+  const confirmBatchStatus = useCallback(
+    (enabled: boolean) => {
+      const names = enabled ? filteredEnableTargetNames : filteredDisableTargetNames;
+      if (names.length === 0) return;
+      showConfirmation({
+        title: t(
+          enabled ? 'auth_files.batch_enable_confirm_title' : 'auth_files.batch_disable_confirm_title'
+        ),
+        message: t(
+          enabled
+            ? 'auth_files.batch_enable_confirm_message'
+            : 'auth_files.batch_disable_confirm_message',
+          { count: names.length, scope: t('auth_files.scope_filtered_result') }
+        ),
+        confirmText: t(
+          enabled
+            ? 'auth_files.batch_enable_confirm_button'
+            : 'auth_files.batch_disable_confirm_button'
+        ),
+        variant: enabled ? 'primary' : 'danger',
+        onConfirm: () => executeBatchStatus(enabled),
+      });
+    },
+    [
+      executeBatchStatus,
+      filteredDisableTargetNames,
+      filteredEnableTargetNames,
+      showConfirmation,
+      t,
+    ]
+  );
+
   const handleRefreshPage = useCallback(async () => {
-    if (disableControls || codexJobActive) return;
+    if (disableControls || codexJobActive || statusActionBusy) return;
     await loadQuota(pageItems);
     await loadFiles();
-  }, [codexJobActive, disableControls, loadFiles, loadQuota, pageItems]);
+  }, [codexJobActive, disableControls, loadFiles, loadQuota, pageItems, statusActionBusy]);
 
   const executeRefreshAll = useCallback(async () => {
-    if (disableControls || codexJobActive) return;
+    if (disableControls || codexJobActive || statusActionBusy) return;
     const codexTargets = entries
       .filter((entry) => entry.type === 'codex')
       .map((entry) => entry.file);
@@ -310,11 +516,12 @@ export function QuotaPage() {
     loadQuota,
     showNotification,
     startCodexJob,
+    statusActionBusy,
     t,
   ]);
 
   const handleRefreshAll = useCallback(() => {
-    if (disableControls || codexJobActive || entries.length === 0) return;
+    if (disableControls || codexJobActive || statusActionBusy || entries.length === 0) return;
     showConfirmation({
       title: t('quota_management.refresh_all_confirm_title'),
       message: t('quota_management.refresh_all_confirm_message', { count: entries.length }),
@@ -322,9 +529,17 @@ export function QuotaPage() {
       variant: 'primary',
       onConfirm: executeRefreshAll,
     });
-  }, [codexJobActive, disableControls, entries.length, executeRefreshAll, showConfirmation, t]);
+  }, [
+    codexJobActive,
+    disableControls,
+    entries.length,
+    executeRefreshAll,
+    showConfirmation,
+    statusActionBusy,
+    t,
+  ]);
 
-  const canUseActions = !disableControls && !loading && !codexJobActive;
+  const canUseActions = !statusControlsDisabled;
 
   /* ---------- 首屏卡片一次性级联入场 ----------
    * 首批数据渲染后立即翻转 cardsAnimated；已挂载的卡片在挂载时捕获过自己的
@@ -357,7 +572,7 @@ export function QuotaPage() {
         refreshing={loading || batchLoading}
         jobActive={codexJobActive}
         progress={codexJobProgress}
-        disableControls={disableControls}
+        disableControls={disableControls || statusActionBusy}
         onRefreshPage={() => void handleRefreshPage()}
         onRefreshAll={handleRefreshAll}
         onCancel={() => void cancelCodexJob()}
@@ -373,11 +588,46 @@ export function QuotaPage() {
             onChange={handleTabChange}
           />
           <div className={styles.controls}>
+            <div className={styles.search}>
+              <Input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.currentTarget.value);
+                  setPage(1);
+                }}
+                placeholder={t('quota_management.search_placeholder')}
+                aria-label={t('quota_management.search_label')}
+                rightElement={<IconSearch className={styles.searchIcon} size={16} />}
+              />
+            </div>
+            <Select
+              value={issueFilter}
+              options={issueFilterOptions}
+              onChange={(value) => {
+                setIssueFilter(value as QuotaIssueFilter);
+                setPage(1);
+              }}
+              ariaLabel={t('quota_management.credential_filter_label')}
+              size="sm"
+            />
+            {tab === 'codex' && (
+              <Select
+                value={codexPlanFilter}
+                options={codexPlanFilterOptions}
+                onChange={(value) => {
+                  setCodexPlanFilter(value as CodexPlanFilterValue);
+                  setPage(1);
+                }}
+                ariaLabel={t('quota_management.codex_plan_filter_label')}
+                size="sm"
+              />
+            )}
             <Select
               value={enabledFilter}
               options={enabledFilterOptions}
               onChange={(value) => {
-                setEnabledFilter(value as 'all' | 'enabled' | 'disabled');
+                setEnabledFilter(value as QuotaEnabledFilter);
                 setPage(1);
               }}
               ariaLabel={t('quota_management.enabled_filter_label')}
@@ -406,6 +656,44 @@ export function QuotaPage() {
             </label>
           </div>
         </div>
+
+        {tab === 'codex' && (
+          <div className={styles.statusActions} data-reveal>
+            <span>
+              {t('quota_management.scope_summary', {
+                filtered: filteredEntries.length,
+                page: pageItems.length,
+              })}
+            </span>
+            <div className={styles.statusActionButtons}>
+              <Button
+                size="sm"
+                onClick={() => confirmBatchStatus(true)}
+                disabled={
+                  statusControlsDisabled || filteredEnableTargetNames.length === 0
+                }
+                loading={batchStatusUpdating}
+              >
+                {t('quota_management.batch_enable_filtered_count', {
+                  count: filteredEnableTargetNames.length,
+                })}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => confirmBatchStatus(false)}
+                disabled={
+                  statusControlsDisabled || filteredDisableTargetNames.length === 0
+                }
+                loading={batchStatusUpdating}
+              >
+                {t('quota_management.batch_disable_filtered_count', {
+                  count: filteredDisableTargetNames.length,
+                })}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className={styles.errorBanner} role="alert">
@@ -447,13 +735,20 @@ export function QuotaPage() {
                 entry={entry}
                 quota={getQuota(entry)}
                 resolvedTheme={resolvedTheme}
-                canRefresh={canUseActions}
+                canRefresh={canUseActions && statusUpdating[entry.file.name] !== true}
                 resetting={resettingQuotaName === entry.file.name}
+                canSetStatus={canUseActions && statusUpdating[entry.file.name] !== true}
+                statusUpdating={statusUpdating[entry.file.name] === true}
                 entranceDelayMs={cardEntranceDelay(index)}
                 onRefresh={() =>
                   void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]).then(loadFiles)
                 }
                 onReset={() => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
+                onStatusChange={
+                  isCodexStatusMutable(entry)
+                    ? (enabled) => void handleStatusToggle(entry, enabled)
+                    : undefined
+                }
               />
             ))}
           </div>

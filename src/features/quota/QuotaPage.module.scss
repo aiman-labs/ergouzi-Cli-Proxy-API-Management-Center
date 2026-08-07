@@ -34,10 +34,32 @@
 }
 
 .controls {
-  display: grid;
-  grid-template-columns: minmax(132px, 1fr) minmax(132px, 1fr) 112px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
-  flex: 0 0 auto;
+  flex: 1 1 560px;
+}
+
+.search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  max-width: 320px;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+
+  :global(.input) {
+    height: 32px;
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+}
+
+.searchIcon {
+  color: var(--text-quaternary);
 }
 
 .pageSizeControl {
@@ -66,7 +88,37 @@
 
   .controls {
     width: 100%;
-    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+
+    > * {
+      flex: 1 1 100%;
+      max-width: none;
+    }
+  }
+}
+
+.statusActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-block: 1px solid var(--border-color);
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.statusActionButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@include mobile {
+  .statusActions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

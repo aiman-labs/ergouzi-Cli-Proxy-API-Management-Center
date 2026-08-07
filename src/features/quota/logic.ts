@@ -4,8 +4,18 @@
  */
 
 import type { AuthFileItem } from '@/types';
-import { isAntigravityFile, isClaudeFile, isCodexFile, isKimiFile, isXaiFile } from '@/utils/quota';
+import {
+  isAntigravityFile,
+  isClaudeFile,
+  isCodexFile,
+  isKimiFile,
+  isXaiFile,
+  matchesCodexPlanFilterValue,
+  resolveAuthFileEnabledFilterValue,
+  type CodexPlanFilterValue,
+} from '@/utils/quota';
 import type { QuotaProviderType } from './providers/types';
+import type { QuotaCardState } from './providers';
 import { QUOTA_TAB_ORDER, type QuotaSortMode, type QuotaTabId } from './constants';
 
 const QUOTA_FILTER_MAP: Record<QuotaProviderType, (file: AuthFileItem) => boolean> = {
@@ -19,6 +29,111 @@ const QUOTA_FILTER_MAP: Record<QuotaProviderType, (file: AuthFileItem) => boolea
 export interface QuotaFileEntry {
   file: AuthFileItem;
   type: QuotaProviderType;
+}
+
+export type QuotaEnabledFilter = 'all' | 'enabled' | 'disabled';
+export type QuotaIssueFilter = 'all' | 'normal' | 'problem';
+
+export interface QuotaFilterState extends QuotaCardState {
+  planType?: string | null;
+}
+
+export interface QuotaEntryFilterOptions {
+  searchQuery: string;
+  enabledFilter: QuotaEnabledFilter;
+  issueFilter: QuotaIssueFilter;
+  codexPlanFilter: CodexPlanFilterValue;
+  quotaFor: (entry: QuotaFileEntry) => QuotaFilterState | undefined;
+}
+
+const HEALTHY_STATUS_MESSAGES = new Set(['ok', 'healthy', 'ready', 'success', 'available']);
+
+const getStatusMessage = (file: AuthFileItem): string => {
+  const value = file.statusMessage ?? file['status_message'];
+  return typeof value === 'string' ? value.trim() : '';
+};
+
+const searchableQuotaText = (entry: QuotaFileEntry, quota?: QuotaFilterState): string =>
+  [
+    entry.file.name,
+    entry.file.type,
+    entry.file.provider,
+    entry.file.email,
+    entry.file.projectId,
+    entry.file.note,
+    entry.file.authIndex,
+    entry.file['auth_index'],
+    entry.file.status,
+    entry.file.statusMessage,
+    entry.file['status_message'],
+    quota?.error,
+    quota?.errorStatus,
+  ]
+    .filter((value) => value !== undefined && value !== null)
+    .map((value) => String(value).toLowerCase())
+    .join('\n');
+
+export function hasQuotaProblem(entry: QuotaFileEntry, quota?: QuotaFilterState): boolean {
+  const file = entry.file;
+  if (file.unavailable === true) return true;
+
+  const status = typeof file.status === 'string' ? file.status.trim().toLowerCase() : '';
+  if (status === 'error') return true;
+
+  const message = getStatusMessage(file).toLowerCase();
+  if (message && !HEALTHY_STATUS_MESSAGES.has(message)) return true;
+
+  return quota?.status === 'error';
+}
+
+export function filterQuotaEntries(
+  entries: QuotaFileEntry[],
+  options: QuotaEntryFilterOptions
+): QuotaFileEntry[] {
+  const query = options.searchQuery.trim().toLowerCase();
+  return entries.filter((entry) => {
+    const quota = options.quotaFor(entry);
+    if (query && !searchableQuotaText(entry, quota).includes(query)) return false;
+
+    const enabledState = resolveAuthFileEnabledFilterValue(entry.file);
+    if (options.enabledFilter !== 'all' && enabledState !== options.enabledFilter) return false;
+
+    if (options.issueFilter !== 'all') {
+      const problem = hasQuotaProblem(entry, quota);
+      if (options.issueFilter === 'problem' ? !problem : problem) return false;
+    }
+
+    if (options.codexPlanFilter !== 'all') {
+      if (entry.type !== 'codex') return false;
+      if (!matchesCodexPlanFilterValue(entry.file, options.codexPlanFilter, quota?.planType)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+const isRuntimeOnly = (file: AuthFileItem): boolean =>
+  file.runtimeOnly === true || String(file.runtimeOnly).toLowerCase() === 'true';
+
+export const isCodexStatusMutable = (entry: QuotaFileEntry): boolean =>
+  entry.type === 'codex' && !isRuntimeOnly(entry.file);
+
+export function getCodexStatusTargetNames(
+  entries: QuotaFileEntry[],
+  enabled: boolean,
+  pendingNames: ReadonlySet<string>
+): string[] {
+  return entries
+    .filter(
+      (entry) =>
+        isCodexStatusMutable(entry) &&
+        !pendingNames.has(entry.file.name) &&
+        (enabled
+          ? resolveAuthFileEnabledFilterValue(entry.file) === 'disabled'
+          : resolveAuthFileEnabledFilterValue(entry.file) === 'enabled')
+    )
+    .map((entry) => entry.file.name);
 }
 
 export const resolveQuotaProviderType = (file: AuthFileItem): QuotaProviderType | null =>
