@@ -732,6 +732,11 @@ Ergouzi integration:
   resolver, preserving provider-field precedence and xAI aliases. Provider
   totals, success rates, and sorting are calculated from the same rolling
   buckets as the visible traffic window instead of lifetime counters.
+- Dashboard API-key usage deduplication is scoped by provider and, when the
+  auth-file response exposes it, base URL. Reusing one key string across
+  providers or endpoints no longer hides unrelated credential traffic.
+  OpenAI-compatible auth-file provider IDs are also aligned with the usage
+  endpoint's compatibility names, preventing duplicate provider rows.
 - Auth-file filtered deletion freezes the exact persistent result names at
   confirmation and intersects them with current inventory at execution, so
   hidden, runtime-only, or newly imported credentials cannot be deleted.
@@ -753,7 +758,7 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' .
 
 Result:
 
-- `525/525` tests passed, including a 1600-Codex inventory target regression
+- `527/527` tests passed, including a 1600-Codex inventory target regression
   and a four-worker concurrency bound.
 - ESLint, TypeScript, and the production single-file Vite build passed.
 - The build produced `dist/index.html` as the sole release artifact.

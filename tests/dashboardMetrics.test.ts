@@ -158,6 +158,86 @@ describe('dashboard provider traffic', () => {
       successRate: 75,
     });
   });
+
+  test('scopes inline API-key deduplication by provider and endpoint', () => {
+    const usage = new Map([
+      [
+        'codex',
+        new Map([
+          [
+            'https://codex.example.com|shared-key',
+            {
+              success: 1,
+              failed: 0,
+              recentRequests: [{ success: 1, failed: 0 }],
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    const { providers } = buildDashboardTraffic(usage, [
+      {
+        name: 'codex-duplicate.json',
+        provider: 'codex',
+        account_type: 'api_key',
+        account: 'shared-key',
+        base_url: 'https://codex.example.com',
+      },
+      {
+        name: 'codex-other-endpoint.json',
+        provider: 'codex',
+        account_type: 'api_key',
+        account: 'shared-key',
+        base_url: 'https://other.example.com',
+      },
+      {
+        name: 'codex-duplicate-without-base.json',
+        provider: 'codex',
+        account_type: 'api_key',
+        account: 'shared-key',
+      },
+      {
+        name: 'claude-shared-key.json',
+        provider: 'claude',
+        account_type: 'api_key',
+        account: 'shared-key',
+      },
+    ]);
+
+    expect(providers.find((provider) => provider.id === 'codex')?.credentials).toBe(2);
+    expect(providers.find((provider) => provider.id === 'claude')?.credentials).toBe(1);
+  });
+
+  test('aligns OpenAI-compatible auth providers with usage compat names', () => {
+    const usage = new Map([
+      [
+        'vast',
+        new Map([
+          [
+            'https://vast.example.com|shared-key',
+            {
+              success: 1,
+              failed: 0,
+              recentRequests: [{ success: 1, failed: 0 }],
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    const { providers } = buildDashboardTraffic(usage, [
+      {
+        name: 'vast.json',
+        provider: 'openai-compatible-vast',
+        account_type: 'api_key',
+        account: 'shared-key',
+      },
+    ]);
+
+    expect(providers).toHaveLength(1);
+    expect(providers[0]).toMatchObject({ id: 'vast', credentials: 1 });
+  });
 });
 
 describe('providerLabel', () => {

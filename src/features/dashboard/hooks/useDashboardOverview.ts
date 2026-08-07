@@ -41,9 +41,20 @@ const apiKeyFromCompositeKey = (compositeKey: string): string => {
   return separatorIndex < 0 ? '' : compositeKey.slice(separatorIndex + 1).trim();
 };
 
-export const providerIdOfAuthFile = (file: AuthFileItem): string => {
-  const candidate = resolveAuthProvider(file);
+const baseUrlOfAuthFile = (file: AuthFileItem): string =>
+  String(file.base_url ?? file['base-url'] ?? file.baseUrl ?? '').trim();
+
+const normalizeDashboardProviderId = (value: string): string => {
+  const candidate = resolveAuthProvider({ name: '', provider: value });
+  const compatibilityPrefix = 'openai-compatible-';
+  if (candidate.startsWith(compatibilityPrefix)) {
+    return candidate.slice(compatibilityPrefix.length) || 'openai';
+  }
   return candidate && candidate !== 'empty' ? candidate : 'unknown';
+};
+
+export const providerIdOfAuthFile = (file: AuthFileItem): string => {
+  return normalizeDashboardProviderId(resolveAuthProvider(file));
 };
 
 const buildTrafficWindow = (bucketGroups: RecentRequestBucket[][]): TrafficWindow => {
@@ -91,6 +102,11 @@ interface ProviderAccumulator {
   bucketGroups: RecentRequestBucket[][];
 }
 
+interface ApiKeyUsageIdentities {
+  compositeKeys: Set<string>;
+  apiKeys: Set<string>;
+}
+
 const createAccumulator = (): ProviderAccumulator => ({
   credentials: 0,
   bucketGroups: [],
@@ -112,7 +128,7 @@ export const buildDashboardTraffic = (
 ): { traffic: TrafficWindow; providers: ProviderTraffic[] } => {
   const accumulators = new Map<string, ProviderAccumulator>();
   const allBucketGroups: RecentRequestBucket[][] = [];
-  const apiKeysFromUsage = new Set<string>();
+  const apiKeyUsageByProvider = new Map<string, ApiKeyUsageIdentities>();
 
   const accumulatorFor = (providerId: string): ProviderAccumulator => {
     const existing = accumulators.get(providerId);
@@ -122,12 +138,21 @@ export const buildDashboardTraffic = (
     return created;
   };
 
-  usageByProvider.forEach((entriesByKey, providerId) => {
+  usageByProvider.forEach((entriesByKey, rawProviderId) => {
+    const providerId = normalizeDashboardProviderId(rawProviderId);
     const accumulator = accumulatorFor(providerId);
+    const identities = apiKeyUsageByProvider.get(providerId) ?? {
+      compositeKeys: new Set<string>(),
+      apiKeys: new Set<string>(),
+    };
+    if (!apiKeyUsageByProvider.has(providerId)) {
+      apiKeyUsageByProvider.set(providerId, identities);
+    }
     entriesByKey.forEach((entry, compositeKey) => {
       const apiKey = apiKeyFromCompositeKey(compositeKey);
       if (apiKey) {
-        apiKeysFromUsage.add(apiKey);
+        identities.compositeKeys.add(compositeKey);
+        identities.apiKeys.add(apiKey);
       }
       accumulator.credentials += 1;
       if (entry.recentRequests.length > 0) {
@@ -138,15 +163,21 @@ export const buildDashboardTraffic = (
   });
 
   (authFiles ?? []).forEach((file) => {
+    const providerId = providerIdOfAuthFile(file);
     const accountType = String(file.account_type ?? '')
       .trim()
       .toLowerCase();
     const account = String(file.account ?? '').trim();
-    if (accountType === 'api_key' && account && apiKeysFromUsage.has(account)) {
-      return;
+    if (accountType === 'api_key' && account) {
+      const identities = apiKeyUsageByProvider.get(providerId);
+      const baseUrl = baseUrlOfAuthFile(file);
+      const isDuplicate = baseUrl
+        ? identities?.compositeKeys.has(`${baseUrl}|${account}`)
+        : identities?.apiKeys.has(account);
+      if (isDuplicate) return;
     }
 
-    const accumulator = accumulatorFor(providerIdOfAuthFile(file));
+    const accumulator = accumulatorFor(providerId);
     const entry = normalizeRecentRequestUsageEntry(file);
     accumulator.credentials += 1;
     if (entry.recentRequests.length > 0) {
