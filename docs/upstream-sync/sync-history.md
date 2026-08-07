@@ -676,17 +676,17 @@ Result:
 - Conflict-marker scan returned no matches.
 - No release or production deployment has been performed for this sync.
 
-## 2026-08-07 Upstream `v1.22.0` Sync
+## 2026-08-07 Upstream `v1.22.2` Sync
 
 | Item | Value |
 |---|---|
 | Ergouzi branch before sync | `5919a8df` |
 | Sync branch | `sync/upstream-v1.22.0` |
 | Upstream previous baseline | `v1.19.3` / `21af5762` |
-| Upstream target release | `v1.22.0` / `0eeb747c` |
-| Upstream commits adopted | `75` |
-| Upstream changed paths | `257` |
-| Final changed paths | `271` |
+| Upstream target release | `v1.22.2` / `f60c8ca` |
+| Upstream commits adopted | `77` |
+| Upstream changed paths | `260` |
+| Final changed paths | `274` |
 | CatPaw work | `CHORE-094` |
 | Sync status | `prepared for PR; not yet released or deployed` |
 
@@ -698,6 +698,9 @@ Upstream release themes:
   dashboard telemetry, and single-file build behavior.
 - Added provider and quota model support required by CPA releases through
   `v7.2.121`.
+- Added the official Codex quota-timeline lane selection correction and the
+  complete Infistar provider configuration, branding, persistence, locale, and
+  regression-test surface from `v1.22.1..v1.22.2`.
 
 Ergouzi integration:
 
@@ -710,7 +713,7 @@ Ergouzi integration:
   into the new config registry and editor.
 - Preserved Home runtime logs, source-aware plugin polling, sponsor protocols,
   duplicate provider index handling, and unknown config fields.
-- Verified that all 257 upstream changed paths are represented in the final
+- Verified that all 260 upstream changed paths are represented in the final
   tree; the additional paths are Ergouzi compatibility code, tests, docs, and
   release workflow assets.
 - Closed the PR review regressions without changing the established operation
@@ -730,11 +733,11 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' .
 
 Result:
 
-- `510/510` tests passed, including a 1600-Codex inventory target regression
+- `517/517` tests passed, including a 1600-Codex inventory target regression
   and a four-worker concurrency bound.
 - ESLint, TypeScript, and the production single-file Vite build passed.
 - The build produced `dist/index.html` as the sole release artifact.
-- All four locale files contain the same 1875 leaf keys.
+- All four locale files contain the same 1880 leaf keys.
 - Conflict-marker and rejected-hunk scans returned no matches.
 - Release and production deployment remain pending PR acceptance.
 

@@ -239,16 +239,16 @@ Review notes: Do not infer the file-logging gate from configuration alone.
 Removing runtime identity silently disables a supported Home management
 surface even when the generic CPAMC build and CPA-only tests pass.
 
-## DEC-20260807-012: Adopt the v1.22.0 redesign without weakening Ergouzi operations
+## DEC-20260807-012: Adopt the v1.22.2 redesign without weakening Ergouzi operations
 
 | Field | Value |
 |---|---|
 | Status | `decided` |
 | Area | auth files / quota / config / providers / logs |
-| Upstream base | `v1.22.0` / `0eeb747c` |
+| Upstream base | `v1.22.2` / `f60c8ca` |
 | Ergouzi source | `sync/upstream-v1.22.0` |
 
-Final decision: adopt the complete upstream `v1.22.0` release, including the
+Final decision: adopt the complete upstream `v1.22.2` release, including the
 new feature-oriented page structure, provider workbench, configuration editor,
 quota timeline, and single-file build changes. Reapply Ergouzi behavior at the
 new ownership boundaries instead of retaining the deleted legacy page modules.
@@ -272,6 +272,12 @@ plan-priority fields in the new section registry and dirty-field YAML merge.
 Provider updates use backend list indexes to disambiguate duplicate identities,
 preserve unknown fields, and retain hidden sponsor entries. Home log runtime
 support and source-aware plugin polling remain supported.
+
+The release-gate retarget also adopts the Codex timeline lane selection fix and
+the complete Infistar provider integration. Infistar-owned OpenAI-compatible
+entries are excluded through the same centralized generic-provider classifier
+used by existing sponsor providers, preserving the fork's duplicate-identity
+and hidden-entry behavior.
 
 Review notes: keep the 1600-credential inventory/concurrency regressions, four
 locale key parity, config-field registry parity, provider duplicate-index

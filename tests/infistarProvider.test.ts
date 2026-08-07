@@ -14,6 +14,7 @@ import {
   resolveInfistarBaseUrl,
 } from '../src/features/providers/infistar';
 import { getSponsorProviderDefinition } from '../src/features/providers/sponsorDefinitions';
+import { isGenericOpenAIProvider } from '../src/features/providers/useProviderWorkbench';
 
 const allProtocolConfig = {
   openaiCompatibility: [
@@ -78,6 +79,13 @@ describe('Infistar sponsor provider', () => {
     expect(resource?.brand).toBe('infistar');
     expect(resource?.name).toBe('无限星河');
     expect(resource?.flags.protocols).toEqual(['openai', 'anthropic', 'gemini', 'codexResponses']);
+  });
+
+  test('does not duplicate Infistar entries in the generic OpenAI group', () => {
+    const entry = allProtocolConfig.openaiCompatibility[0];
+
+    expect(buildInfistarRaw(allProtocolConfig).openai).toHaveLength(1);
+    expect(isGenericOpenAIProvider(entry)).toBe(false);
   });
 
   test('keeps custom endpoints outside the Infistar sponsor group', () => {
