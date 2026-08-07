@@ -16,11 +16,18 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconSearch } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useNow } from '@/hooks/useNow';
 import { useRevealGroup } from '@/hooks/motion';
-import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
+import {
+  captureQuotaCacheGeneration,
+  commitIfQuotaCacheCurrent,
+  useAuthStore,
+  useQuotaStore,
+  useThemeStore,
+} from '@/stores';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import type { CodexPlanFilterValue } from '@/utils/quota';
@@ -61,6 +68,11 @@ import { useQuotaActions } from './hooks/useQuotaActions';
 import { useQuotaBatchLoader } from './hooks/useQuotaBatchLoader';
 import { useCodexQuotaRefreshJob } from '@/components/quota/useCodexQuotaRefreshJob';
 import { readQuotaUiState, writeQuotaUiState } from './uiState';
+import { fetchCodexResetCreditDetails } from './providers/codex/data';
+import {
+  CodexResetDetailScheduler,
+  mergeCodexResetCreditDetails,
+} from './providers/codex/resetDetails';
 import styles from './QuotaPage.module.scss';
 
 const TAB_IDS: string[] = ['all', ...QUOTA_TAB_ORDER];
@@ -113,6 +125,7 @@ export function QuotaPage() {
   const [enabledFilter, setEnabledFilter] = useState<QuotaEnabledFilter>('all');
   const [issueFilter, setIssueFilter] = useState<QuotaIssueFilter>('all');
   const [codexPlanFilter, setCodexPlanFilter] = useState<CodexPlanFilterValue>('all');
+  const [showCodexResetCreditExpiries, setShowCodexResetCreditExpiries] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
@@ -148,6 +161,7 @@ export function QuotaPage() {
   const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
   const claudeQuota = useQuotaStore((state) => state.claudeQuota);
   const codexQuota = useQuotaStore((state) => state.codexQuota);
+  const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
   const kimiQuota = useQuotaStore((state) => state.kimiQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
 
@@ -322,6 +336,45 @@ export function QuotaPage() {
     start: startCodexJob,
     cancel: cancelCodexJob,
   } = useCodexQuotaRefreshJob({ enabled: true, onComplete: loadFiles });
+  const [resetCreditDetailsScheduler] = useState(() => new CodexResetDetailScheduler(4));
+
+  useEffect(() => {
+    resetCreditDetailsScheduler.sync({
+      enabled: showCodexResetCreditExpiries && tab === 'codex',
+      entries: pageItems,
+      quota: codexQuota,
+      cacheGeneration: captureQuotaCacheGeneration(),
+      fetchDetails: async (entry) => {
+        try {
+          return await fetchCodexResetCreditDetails(entry.file, t);
+        } catch (error: unknown) {
+          return {
+            availableCount: null,
+            applicableAvailableCount: null,
+            credits: [],
+            error: error instanceof Error ? error.message : t('common.unknown_error'),
+          };
+        }
+      },
+      commitDetails: ({ name, expected, details, cacheGeneration }) => {
+        commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          setCodexQuota((current) => {
+            const merged = mergeCodexResetCreditDetails(current[name], expected, details);
+            return merged ? { ...current, [name]: merged } : current;
+          });
+        });
+      },
+    });
+    return () => resetCreditDetailsScheduler.pause();
+  }, [
+    codexQuota,
+    pageItems,
+    resetCreditDetailsScheduler,
+    setCodexQuota,
+    showCodexResetCreditExpiries,
+    t,
+    tab,
+  ]);
 
   const pendingStatusNames = useMemo(
     () => new Set(Object.keys(statusUpdating).filter((name) => statusUpdating[name] === true)),
@@ -352,16 +405,12 @@ export function QuotaPage() {
     statusActionBusy;
   const filteredEnableTargetNames = useMemo(
     () =>
-      tab === 'codex'
-        ? getCodexStatusTargetNames(filteredEntries, true, pendingStatusNames)
-        : [],
+      tab === 'codex' ? getCodexStatusTargetNames(filteredEntries, true, pendingStatusNames) : [],
     [filteredEntries, pendingStatusNames, tab]
   );
   const filteredDisableTargetNames = useMemo(
     () =>
-      tab === 'codex'
-        ? getCodexStatusTargetNames(filteredEntries, false, pendingStatusNames)
-        : [],
+      tab === 'codex' ? getCodexStatusTargetNames(filteredEntries, false, pendingStatusNames) : [],
     [filteredEntries, pendingStatusNames, tab]
   );
 
@@ -468,7 +517,9 @@ export function QuotaPage() {
       if (names.length === 0) return;
       showConfirmation({
         title: t(
-          enabled ? 'auth_files.batch_enable_confirm_title' : 'auth_files.batch_disable_confirm_title'
+          enabled
+            ? 'auth_files.batch_enable_confirm_title'
+            : 'auth_files.batch_disable_confirm_title'
         ),
         message: t(
           enabled
@@ -485,13 +536,7 @@ export function QuotaPage() {
         onConfirm: () => executeBatchStatus(enabled),
       });
     },
-    [
-      executeBatchStatus,
-      filteredDisableTargetNames,
-      filteredEnableTargetNames,
-      showConfirmation,
-      t,
-    ]
+    [executeBatchStatus, filteredDisableTargetNames, filteredEnableTargetNames, showConfirmation, t]
   );
 
   const handleRefreshPage = useCallback(async () => {
@@ -519,14 +564,7 @@ export function QuotaPage() {
         'error'
       );
     }
-  }, [
-    entries,
-    loadFiles,
-    loadQuota,
-    showNotification,
-    startCodexJob,
-    t,
-  ]);
+  }, [entries, loadFiles, loadQuota, showNotification, startCodexJob, t]);
 
   const handleRefreshAll = useCallback(() => {
     if (refreshControlsDisabledRef.current || entries.length === 0) return;
@@ -537,12 +575,7 @@ export function QuotaPage() {
       variant: 'primary',
       onConfirm: executeRefreshAll,
     });
-  }, [
-    entries.length,
-    executeRefreshAll,
-    showConfirmation,
-    t,
-  ]);
+  }, [entries.length, executeRefreshAll, showConfirmation, t]);
 
   const canUseActions = !statusControlsDisabled;
 
@@ -670,12 +703,17 @@ export function QuotaPage() {
               })}
             </span>
             <div className={styles.statusActionButtons}>
+              <ToggleSwitch
+                checked={showCodexResetCreditExpiries}
+                onChange={setShowCodexResetCreditExpiries}
+                disabled={disableControls}
+                label={t('quota_management.show_codex_reset_expiry')}
+                ariaLabel={t('quota_management.show_codex_reset_expiry')}
+              />
               <Button
                 size="sm"
                 onClick={() => confirmBatchStatus(true)}
-                disabled={
-                  statusControlsDisabled || filteredEnableTargetNames.length === 0
-                }
+                disabled={statusControlsDisabled || filteredEnableTargetNames.length === 0}
                 loading={batchStatusUpdating}
               >
                 {t('quota_management.batch_enable_filtered_count', {
@@ -686,9 +724,7 @@ export function QuotaPage() {
                 variant="secondary"
                 size="sm"
                 onClick={() => confirmBatchStatus(false)}
-                disabled={
-                  statusControlsDisabled || filteredDisableTargetNames.length === 0
-                }
+                disabled={statusControlsDisabled || filteredDisableTargetNames.length === 0}
                 loading={batchStatusUpdating}
               >
                 {t('quota_management.batch_disable_filtered_count', {
@@ -705,58 +741,63 @@ export function QuotaPage() {
           </div>
         )}
 
-        {loading ? (
-          <div className={styles.grid} aria-hidden="true">
-            {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
-              <Skeleton key={index} height={168} rounded={14} />
-            ))}
-          </div>
-        ) : isEmpty ? (
-          <EmptyState
-            title={
-              tab === 'all'
-                ? t('quota_management.empty_title')
-                : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_title`)
-            }
-            description={
-              tab === 'all'
-                ? t('quota_management.empty_desc')
-                : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_desc`)
-            }
-            action={
-              tab === 'all' ? undefined : (
-                <Button variant="secondary" size="sm" onClick={() => handleTabChange('all')}>
-                  {t('auth_files.filter_all')}
-                </Button>
-              )
-            }
-          />
-        ) : (
-          <div className={styles.grid}>
-            {pageItems.map((entry, index) => (
-              <QuotaCard
-                key={`${entry.type}:${entry.file.name}`}
-                entry={entry}
-                quota={getQuota(entry)}
-                resolvedTheme={resolvedTheme}
-                canRefresh={canUseActions && statusUpdating[entry.file.name] !== true}
-                resetting={resettingQuotaName === entry.file.name}
-                canSetStatus={canUseActions && statusUpdating[entry.file.name] !== true}
-                statusUpdating={statusUpdating[entry.file.name] === true}
-                entranceDelayMs={cardEntranceDelay(index)}
-                onRefresh={() =>
-                  void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]).then(loadFiles)
-                }
-                onReset={() => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
-                onStatusChange={
-                  isCodexStatusMutable(entry)
-                    ? (enabled) => void handleStatusToggle(entry, enabled)
-                    : undefined
-                }
-              />
-            ))}
-          </div>
-        )}
+        <div className={styles.gridViewport}>
+          {loading ? (
+            <div className={styles.grid} aria-hidden="true">
+              {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
+                <Skeleton key={index} height={168} rounded={14} />
+              ))}
+            </div>
+          ) : isEmpty ? (
+            <EmptyState
+              title={
+                tab === 'all'
+                  ? t('quota_management.empty_title')
+                  : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_title`)
+              }
+              description={
+                tab === 'all'
+                  ? t('quota_management.empty_desc')
+                  : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_desc`)
+              }
+              action={
+                tab === 'all' ? undefined : (
+                  <Button variant="secondary" size="sm" onClick={() => handleTabChange('all')}>
+                    {t('auth_files.filter_all')}
+                  </Button>
+                )
+              }
+            />
+          ) : (
+            <div className={styles.grid}>
+              {pageItems.map((entry, index) => (
+                <QuotaCard
+                  key={`${entry.type}:${entry.file.name}`}
+                  entry={entry}
+                  quota={getQuota(entry)}
+                  resolvedTheme={resolvedTheme}
+                  canRefresh={canUseActions && statusUpdating[entry.file.name] !== true}
+                  resetting={resettingQuotaName === entry.file.name}
+                  canSetStatus={canUseActions && statusUpdating[entry.file.name] !== true}
+                  statusUpdating={statusUpdating[entry.file.name] === true}
+                  showCodexResetCreditExpiries={
+                    entry.type === 'codex' && showCodexResetCreditExpiries
+                  }
+                  entranceDelayMs={cardEntranceDelay(index)}
+                  onRefresh={() =>
+                    void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]).then(loadFiles)
+                  }
+                  onReset={() => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
+                  onStatusChange={
+                    isCodexStatusMutable(entry)
+                      ? (enabled) => void handleStatusToggle(entry, enabled)
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
         {!loading && filteredEntries.length > pageSize && (
           <div className={styles.pagination}>
@@ -791,6 +832,7 @@ export function QuotaPage() {
           quotaFor={getQuota}
           displayNameFor={displayNameFor}
           resolvedTheme={resolvedTheme}
+          showCodexResetCreditExpiries={showCodexResetCreditExpiries}
         />
       </section>
     </div>

@@ -69,10 +69,18 @@ describe('CodexQuotaBody', () => {
   });
 
   test('renders reset-credit expiry in local time with a countdown', () => {
-    const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota, classes }));
+    const markup = renderToStaticMarkup(
+      createElement(CodexQuotaBody, { quota, classes, showCodexResetCreditExpiries: true })
+    );
 
     expect(markup).toContain(formatInstantShort(now + 11 * DAY_MS));
     expect(markup).toMatch(/11 days/);
+  });
+
+  test('hides reset-credit expiry details by default', () => {
+    const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota, classes }));
+
+    expect(markup).not.toContain(formatInstantShort(now + 11 * DAY_MS));
   });
 
   test('highlights a credit expiring within the final hour', () => {
@@ -89,7 +97,11 @@ describe('CodexQuotaBody', () => {
       ],
     };
     const markup = renderToStaticMarkup(
-      createElement(CodexQuotaBody, { quota: creditFirst, classes })
+      createElement(CodexQuotaBody, {
+        quota: creditFirst,
+        classes,
+        showCodexResetCreditExpiries: true,
+      })
     );
 
     expect(markup).toContain('codexResetCreditRowSoon');

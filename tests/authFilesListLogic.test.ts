@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import {
   buildWildcardSearch,
+  filterAuthFilesByHealthAndEnabled,
   matchesAuthFileSearch,
   resolveAuthFileDeleteTargets,
   sortAuthFiles,
 } from '../src/features/authFiles/logic';
+import { resolveAuthFilesFilterState } from '../src/features/authFiles/uiState';
 import type { AuthFileItem } from '../src/types';
 
 const authFile = (overrides: Partial<AuthFileItem> = {}): AuthFileItem => ({
@@ -95,6 +97,44 @@ describe('resolveAuthFileDeleteTargets', () => {
     expect(
       resolveAuthFileDeleteTargets(files, ['visible.json', 'runtime.json', 'already-gone.json'])
     ).toEqual(['visible.json']);
+  });
+});
+
+describe('filterAuthFilesByHealthAndEnabled', () => {
+  const files = [
+    authFile({ name: 'enabled-normal.json', disabled: false }),
+    authFile({ name: 'enabled-problem.json', disabled: false, status_message: '401 Unauthorized' }),
+    authFile({ name: 'disabled-problem.json', disabled: true, status_message: '401 Unauthorized' }),
+  ];
+  const getProblemMessage = (file: AuthFileItem) => file.status_message || '';
+
+  test('combines issue status and enabled status independently', () => {
+    expect(
+      filterAuthFilesByHealthAndEnabled(files, 'problem', 'enabled', getProblemMessage).map(
+        (file) => file.name
+      )
+    ).toEqual(['enabled-problem.json']);
+    expect(
+      filterAuthFilesByHealthAndEnabled(files, 'normal', 'all', getProblemMessage).map(
+        (file) => file.name
+      )
+    ).toEqual(['enabled-normal.json']);
+  });
+});
+
+describe('resolveAuthFilesFilterState', () => {
+  test('keeps independent persisted filters and migrates the interim status mode', () => {
+    expect(
+      resolveAuthFilesFilterState({ healthFilter: 'problem', enabledFilter: 'enabled' })
+    ).toEqual({ healthFilter: 'problem', enabledFilter: 'enabled' });
+    expect(resolveAuthFilesFilterState({ statusFilterMode: 'disabled' })).toEqual({
+      healthFilter: 'all',
+      enabledFilter: 'disabled',
+    });
+    expect(resolveAuthFilesFilterState({ statusFilterMode: 'problem' })).toEqual({
+      healthFilter: 'problem',
+      enabledFilter: 'all',
+    });
   });
 });
 

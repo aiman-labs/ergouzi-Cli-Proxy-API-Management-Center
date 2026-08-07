@@ -157,6 +157,44 @@ describe('QuotaTimeline rendering', () => {
     expect(markup).toContain(localExpiry);
   });
 
+  test('hides Codex reset-credit ticks and legend when expiry details are disabled', () => {
+    const markup = renderToStaticMarkup(
+      createElement(QuotaTimeline, {
+        entries: [
+          {
+            file: { name: 'codex-credit.json', type: 'codex' },
+            type: 'codex',
+          },
+        ],
+        displayNameFor: (name: string) => name,
+        resolvedTheme: 'light',
+        now: new Date(2026, 6, 29, 12).getTime(),
+        showCodexResetCreditExpiries: false,
+        quotaFor: () => ({
+          status: 'success',
+          windows: [
+            {
+              label: '7-day',
+              usedPercent: 90,
+              resetAtMs: new Date(2026, 7, 1, 12).getTime(),
+              periodHours: 168,
+            },
+          ],
+          rateLimitResetCredits: [
+            {
+              id: 'credit-1',
+              status: 'available',
+              expiresAt: '2026-08-03T12:00:00Z',
+            },
+          ],
+        }),
+      })
+    );
+
+    expect(markup).not.toContain('role="img"');
+    expect(markup).not.toContain('manual reset expiry');
+  });
+
   test('stays hidden before any credential exposes a usable quota window', () => {
     const markup = renderToStaticMarkup(
       createElement(QuotaTimeline, {

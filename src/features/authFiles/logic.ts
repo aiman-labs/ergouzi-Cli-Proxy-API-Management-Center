@@ -2,6 +2,7 @@
 
 import type { AuthFileItem } from '@/types';
 import { isRuntimeOnlyAuthFile } from './constants';
+import type { AuthFilesEnabledFilter, AuthFilesHealthFilter } from './uiState';
 export { sortAuthFiles } from './sort';
 
 const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -53,3 +54,33 @@ export const resolveAuthFileDeleteTargets = (
     .filter((file) => requested.has(file.name) && !isRuntimeOnlyAuthFile(file))
     .map((file) => file.name);
 };
+
+export const filterAuthFilesByHealthAndEnabled = (
+  files: AuthFileItem[],
+  healthFilter: AuthFilesHealthFilter,
+  enabledFilter: AuthFilesEnabledFilter,
+  getProblemMessage: (file: AuthFileItem) => string
+): AuthFileItem[] =>
+  files.filter((file) => {
+    const hasProblem = Boolean(getProblemMessage(file));
+    if (healthFilter === 'problem' && !hasProblem) return false;
+    if (healthFilter === 'normal' && hasProblem) return false;
+    if (enabledFilter === 'enabled' && file.disabled === true) return false;
+    if (enabledFilter === 'disabled' && file.disabled !== true) return false;
+    return true;
+  });
+
+/** Resolve an exact filtered snapshot for a status change without touching runtime-only files. */
+export const resolveAuthFileStatusTargets = (
+  files: AuthFileItem[],
+  manualRefreshing: Record<string, boolean>,
+  targetDisabled: boolean
+): string[] =>
+  files
+    .filter(
+      (file) =>
+        !isRuntimeOnlyAuthFile(file) &&
+        manualRefreshing[file.name] !== true &&
+        (file.disabled === true) === targetDisabled
+    )
+    .map((file) => file.name);

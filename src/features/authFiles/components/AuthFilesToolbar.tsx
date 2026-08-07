@@ -5,22 +5,23 @@ import { Select } from '@/components/ui/Select';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconSearch, IconSlidersHorizontal, IconTrash2 } from '@/components/ui/icons';
-import {
-  MAX_CARD_PAGE_SIZE,
-  MIN_CARD_PAGE_SIZE,
-} from '@/features/authFiles/constants';
+import { MAX_CARD_PAGE_SIZE, MIN_CARD_PAGE_SIZE } from '@/features/authFiles/constants';
 import type {
+  AuthFilesEnabledFilter,
+  AuthFilesHealthFilter,
   AuthFilesSortMode,
-  AuthFilesStatusFilterMode,
 } from '@/features/authFiles/uiState';
 import styles from './AuthFilesToolbar.module.scss';
 
 export type AuthFilesToolbarProps = {
   search: string;
   onSearchChange: (value: string) => void;
-  statusFilterMode: AuthFilesStatusFilterMode;
-  statusFilterOptions: Array<{ value: AuthFilesStatusFilterMode; label: string }>;
-  onStatusFilterChange: (mode: AuthFilesStatusFilterMode) => void;
+  healthFilter: AuthFilesHealthFilter;
+  healthFilterOptions: Array<{ value: AuthFilesHealthFilter; label: string }>;
+  onHealthFilterChange: (value: AuthFilesHealthFilter) => void;
+  enabledFilter: AuthFilesEnabledFilter;
+  enabledFilterOptions: Array<{ value: AuthFilesEnabledFilter; label: string }>;
+  onEnabledFilterChange: (value: AuthFilesEnabledFilter) => void;
   sortMode: AuthFilesSortMode;
   sortOptions: Array<{ value: string; label: string }>;
   onSortModeChange: (value: string) => void;
@@ -38,16 +39,19 @@ export type AuthFilesToolbarProps = {
 };
 
 /**
- * Workspace toolbar: search, status segment, sorting, and display-settings popover.
+ * Workspace toolbar: search, independent status filters, sorting, and display-settings popover.
  * Delete filtered results stays beside the filters that define its scope.
  */
 export function AuthFilesToolbar(props: AuthFilesToolbarProps) {
   const {
     search,
     onSearchChange,
-    statusFilterMode,
-    statusFilterOptions,
-    onStatusFilterChange,
+    healthFilter,
+    healthFilterOptions,
+    onHealthFilterChange,
+    enabledFilter,
+    enabledFilterOptions,
+    onEnabledFilterChange,
     sortMode,
     sortOptions,
     onSortModeChange,
@@ -101,28 +105,24 @@ export function AuthFilesToolbar(props: AuthFilesToolbarProps) {
         />
       </div>
 
-      <div
-        className={styles.segmented}
-        role="group"
-        aria-label={t('auth_files.problem_filter_label')}
-      >
-        {statusFilterOptions.map((option) => {
-          const isActive = statusFilterMode === option.value;
-          const isProblem = option.value === 'problem';
-          return (
-            <button
-              key={option.value}
-              type="button"
-              className={`${styles.segment} ${isActive ? styles.segmentActive : ''} ${
-                isProblem ? styles.segmentProblem : ''
-              }`}
-              aria-pressed={isActive}
-              onClick={() => onStatusFilterChange(option.value)}
-            >
-              {option.label}
-            </button>
-          );
-        })}
+      <div className={styles.statusFilter}>
+        <Select
+          value={healthFilter}
+          options={healthFilterOptions}
+          onChange={(value) => onHealthFilterChange(value as AuthFilesHealthFilter)}
+          ariaLabel={t('auth_files.health_filter_label')}
+          size="sm"
+        />
+      </div>
+
+      <div className={styles.statusFilter}>
+        <Select
+          value={enabledFilter}
+          options={enabledFilterOptions}
+          onChange={(value) => onEnabledFilterChange(value as AuthFilesEnabledFilter)}
+          ariaLabel={t('auth_files.enabled_filter_label')}
+          size="sm"
+        />
       </div>
 
       <div className={styles.sort}>

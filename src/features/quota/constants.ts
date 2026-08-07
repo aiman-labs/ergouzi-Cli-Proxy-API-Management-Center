@@ -2,9 +2,9 @@ import type { QuotaProviderType } from './providers/types';
 
 /** Provider order used by both tabs and the combined grid. */
 export const QUOTA_TAB_ORDER: readonly QuotaProviderType[] = [
+  'codex',
   'claude',
   'antigravity',
-  'codex',
   'xai',
   'kimi',
 ];

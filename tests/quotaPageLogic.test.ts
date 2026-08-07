@@ -55,10 +55,10 @@ describe('classifyQuotaFiles', () => {
   test('orders entries by provider tab order', () => {
     const entries = classifyQuotaFiles(FILES);
     expect(entries.map((entry) => entry.type)).toEqual([
-      'claude',
-      'claude',
       'codex',
       'codex',
+      'claude',
+      'claude',
       'xai',
       'kimi',
     ]);
@@ -174,7 +174,7 @@ describe('filterQuotaEntries', () => {
         codexPlanFilter: 'all',
         quotaFor,
       }).map((entry) => entry.file.name)
-    ).toEqual(['claude.json', 'codex-plus.json']);
+    ).toEqual(['codex-plus.json', 'claude.json']);
   });
 
   test('treats active as a normal runtime status unless explicit error evidence exists', () => {
@@ -313,9 +313,9 @@ describe('sortQuotaEntries', () => {
       'kimi-a.json',
       'codex-b.json',
       // unresolved tail, in the order classifyQuotaFiles produced
+      'codex-a.json',
       'claude-a.json',
       'claude-off.json',
-      'codex-a.json',
       'grok-a.json',
     ]);
   });
