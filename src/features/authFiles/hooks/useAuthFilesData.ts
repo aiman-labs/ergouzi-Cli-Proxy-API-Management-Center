@@ -35,12 +35,14 @@ import {
   mergeManualRefreshResult,
 } from '@/features/authFiles/manualRefresh';
 import { resolveAuthProvider } from '@/utils/quota';
+import { resolveAuthFileDeleteTargets } from '@/features/authFiles/logic';
 
 type DeleteAllOptions = {
   filter: string;
   problemOnly: boolean;
   disabledOnly: boolean;
   enabledOnly: boolean;
+  targetNames?: string[];
   onResetFilterToAll: () => void;
   onResetProblemOnly: () => void;
   onResetDisabledOnly: () => void;
@@ -174,28 +176,31 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
     setSelectedFiles(new Set());
   }, []);
 
-  const applyDeletedFiles = useCallback((names: string[]) => {
-    const deletedNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
-    if (deletedNames.length === 0) return;
+  const applyDeletedFiles = useCallback(
+    (names: string[]) => {
+      const deletedNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
+      if (deletedNames.length === 0) return;
 
-    invalidateInFlightLoads();
-    onFilesMutatedRef.current?.(deletedNames);
-    const deletedSet = new Set(deletedNames);
-    setFiles((prev) => prev.filter((file) => !deletedSet.has(file.name)));
-    setSelectedFiles((prev) => {
-      if (prev.size === 0) return prev;
-      let changed = false;
-      const next = new Set<string>();
-      prev.forEach((name) => {
-        if (deletedSet.has(name)) {
-          changed = true;
-        } else {
-          next.add(name);
-        }
+      invalidateInFlightLoads();
+      onFilesMutatedRef.current?.(deletedNames);
+      const deletedSet = new Set(deletedNames);
+      setFiles((prev) => prev.filter((file) => !deletedSet.has(file.name)));
+      setSelectedFiles((prev) => {
+        if (prev.size === 0) return prev;
+        let changed = false;
+        const next = new Set<string>();
+        prev.forEach((name) => {
+          if (deletedSet.has(name)) {
+            changed = true;
+          } else {
+            next.add(name);
+          }
+        });
+        return changed ? next : prev;
       });
-      return changed ? next : prev;
-    });
-  }, [invalidateInFlightLoads]);
+    },
+    [invalidateInFlightLoads]
+  );
 
   useEffect(() => {
     if (selectedFiles.size === 0) return;
@@ -374,6 +379,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         problemOnly,
         disabledOnly,
         enabledOnly,
+        targetNames,
         onResetFilterToAll,
         onResetProblemOnly,
         onResetDisabledOnly,
@@ -383,9 +389,10 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
       const isProblemOnly = problemOnly === true;
       const isDisabledOnly = disabledOnly === true;
       const isEnabledOnly = enabledOnly === true;
+      const hasExactTargets = targetNames !== undefined;
       const typeLabel = isFiltered ? getTypeLabel(t, filter) : t('auth_files.filter_all');
       let confirmMessage = t('auth_files.delete_all_confirm');
-      if (isDisabledOnly || isEnabledOnly) {
+      if (hasExactTargets || isDisabledOnly || isEnabledOnly) {
         confirmMessage = t('auth_files.delete_filtered_result_confirm');
       } else if (isProblemOnly) {
         confirmMessage = isFiltered
@@ -403,7 +410,13 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         onConfirm: async () => {
           setDeletingAll(true);
           try {
-            if (!isFiltered && !isProblemOnly && !isDisabledOnly && !isEnabledOnly) {
+            if (
+              !hasExactTargets &&
+              !isFiltered &&
+              !isProblemOnly &&
+              !isDisabledOnly &&
+              !isEnabledOnly
+            ) {
               await authFilesApi.deleteAll();
               showNotification(t('auth_files.delete_all_success'), 'success');
               invalidateInFlightLoads();
@@ -412,23 +425,27 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
               deselectAll();
               notifyAuthFilesChanged();
             } else {
-              const filesToDelete = files.filter((file) => {
-                if (isRuntimeOnlyAuthFile(file)) return false;
-                if (
-                  isFiltered &&
-                  normalizeProviderKey(String(file.type ?? file.provider ?? '')) !== filter
-                ) {
-                  return false;
-                }
-                if (isProblemOnly && !isProblemAuthFile(file)) return false;
-                if (isDisabledOnly && file.disabled !== true) return false;
-                if (isEnabledOnly && file.disabled === true) return false;
-                return true;
-              });
+              const fileNamesToDelete = hasExactTargets
+                ? resolveAuthFileDeleteTargets(files, targetNames)
+                : files
+                    .filter((file) => {
+                      if (isRuntimeOnlyAuthFile(file)) return false;
+                      if (
+                        isFiltered &&
+                        normalizeProviderKey(String(file.type ?? file.provider ?? '')) !== filter
+                      ) {
+                        return false;
+                      }
+                      if (isProblemOnly && !isProblemAuthFile(file)) return false;
+                      if (isDisabledOnly && file.disabled !== true) return false;
+                      if (isEnabledOnly && file.disabled === true) return false;
+                      return true;
+                    })
+                    .map((file) => file.name);
 
-              if (filesToDelete.length === 0) {
+              if (fileNamesToDelete.length === 0) {
                 let emptyMessage = t('auth_files.delete_filtered_none', { type: typeLabel });
-                if (isDisabledOnly || isEnabledOnly) {
+                if (hasExactTargets || isDisabledOnly || isEnabledOnly) {
                   emptyMessage = t('auth_files.delete_filtered_result_none');
                 } else if (isProblemOnly) {
                   emptyMessage = isFiltered
@@ -440,14 +457,14 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
                 return;
               }
 
-              const result = await authFilesApi.deleteFiles(filesToDelete.map((file) => file.name));
+              const result = await authFilesApi.deleteFiles(fileNamesToDelete);
               const success = result.deleted;
               const failed = result.failed.length;
 
               applyDeletedFiles(result.files);
               if (result.deleted > 0) notifyAuthFilesChanged();
 
-              if (failed === 0 && (isDisabledOnly || isEnabledOnly)) {
+              if (failed === 0 && (hasExactTargets || isDisabledOnly || isEnabledOnly)) {
                 showNotification(
                   t('auth_files.delete_filtered_result_success', { count: success }),
                   'success'
@@ -467,7 +484,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
                   t('auth_files.delete_filtered_success', { count: success, type: typeLabel }),
                   'success'
                 );
-              } else if (isDisabledOnly || isEnabledOnly) {
+              } else if (hasExactTargets || isDisabledOnly || isEnabledOnly) {
                 showNotification(
                   t('auth_files.delete_filtered_result_partial', { success, failed }),
                   'warning'
@@ -512,7 +529,15 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         },
       });
     },
-    [applyDeletedFiles, deselectAll, files, invalidateInFlightLoads, showConfirmation, showNotification, t]
+    [
+      applyDeletedFiles,
+      deselectAll,
+      files,
+      invalidateInFlightLoads,
+      showConfirmation,
+      showNotification,
+      t,
+    ]
   );
 
   const handleDownload = useCallback(

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildWildcardSearch,
   matchesAuthFileSearch,
+  resolveAuthFileDeleteTargets,
   sortAuthFiles,
 } from '../src/features/authFiles/logic';
 import type { AuthFileItem } from '../src/types';
@@ -79,6 +80,21 @@ describe('matchesAuthFileSearch', () => {
 
   test('tolerates missing fields', () => {
     expect(search({ name: 'bare.json' }, 'zzz')).toBe(false);
+  });
+});
+
+describe('resolveAuthFileDeleteTargets', () => {
+  test('deletes only the exact filtered persistent snapshot', () => {
+    const files = [
+      authFile({ name: 'visible.json' }),
+      authFile({ name: 'hidden.json' }),
+      authFile({ name: 'runtime.json', runtimeOnly: true }),
+      authFile({ name: 'added-after-confirm.json' }),
+    ];
+
+    expect(
+      resolveAuthFileDeleteTargets(files, ['visible.json', 'runtime.json', 'already-gone.json'])
+    ).toEqual(['visible.json']);
   });
 });
 

@@ -13,6 +13,7 @@ import {
   hasQuotaProblem,
   isCodexStatusMutable,
   isQuotaRefreshDisabled,
+  isQuotaResetDisabled,
   paginate,
   resolveQuotaProviderType,
   sortQuotaEntries,
@@ -208,6 +209,14 @@ describe('isQuotaRefreshDisabled', () => {
   test('blocks a single-card refresh while the same quota is resetting', () => {
     expect(isQuotaRefreshDisabled(true, false, true)).toBe(true);
     expect(isQuotaRefreshDisabled(true, false, false)).toBe(false);
+  });
+});
+
+describe('isQuotaResetDisabled', () => {
+  test('keeps disabled credentials refreshable but blocks reset writes', () => {
+    expect(isQuotaRefreshDisabled(true, false, false)).toBe(false);
+    expect(isQuotaResetDisabled(true, false, false, true)).toBe(true);
+    expect(isQuotaResetDisabled(true, false, false, false)).toBe(false);
   });
 });
 

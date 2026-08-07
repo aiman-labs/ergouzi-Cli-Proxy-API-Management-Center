@@ -212,6 +212,13 @@ export const isQuotaRefreshDisabled = (
   resetting: boolean
 ): boolean => !canRefresh || loading || resetting;
 
+export const isQuotaResetDisabled = (
+  canRefresh: boolean,
+  loading: boolean,
+  resetting: boolean,
+  credentialDisabled: boolean
+): boolean => credentialDisabled || isQuotaRefreshDisabled(canRefresh, loading, resetting);
+
 export interface QuotaPagination<T> {
   pageItems: T[];
   currentPage: number;

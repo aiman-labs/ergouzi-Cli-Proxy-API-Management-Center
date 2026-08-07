@@ -732,6 +732,11 @@ Ergouzi integration:
   resolver, preserving provider-field precedence and xAI aliases. Provider
   totals, success rates, and sorting are calculated from the same rolling
   buckets as the visible traffic window instead of lifetime counters.
+- Auth-file filtered deletion freezes the exact persistent result names at
+  confirmation and intersects them with current inventory at execution, so
+  hidden, runtime-only, or newly imported credentials cannot be deleted.
+- Disabled credentials remain refreshable for operator rechecks, while the
+  quota reset control now reflects the existing prohibition on reset writes.
 
 Verification:
 
@@ -743,7 +748,7 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' .
 
 Result:
 
-- `522/522` tests passed, including a 1600-Codex inventory target regression
+- `524/524` tests passed, including a 1600-Codex inventory target regression
   and a four-worker concurrency bound.
 - ESLint, TypeScript, and the production single-file Vite build passed.
 - The build produced `dist/index.html` as the sole release artifact.

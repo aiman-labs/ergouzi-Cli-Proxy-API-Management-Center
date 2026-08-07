@@ -32,6 +32,7 @@ import { invalidateAuthFileDerivedCaches } from '@/features/authFiles/cacheInval
 import {
   buildWildcardSearch,
   matchesAuthFileSearch,
+  resolveAuthFileDeleteTargets,
   sortAuthFiles,
 } from '@/features/authFiles/logic';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
@@ -555,6 +556,22 @@ export function AuthFilesPage() {
     wildcardSearch,
   ]);
 
+  const hasActiveDeleteFilters =
+    normalizedFilter !== 'all' ||
+    statusFilterMode !== 'all' ||
+    errorTypeFilter !== 'all' ||
+    successCountFilter !== 'all' ||
+    codexPlanFilter !== 'all' ||
+    normalizedSearch.length > 0;
+  const filteredDeleteTargetNames = useMemo(
+    () =>
+      resolveAuthFileDeleteTargets(
+        filtered,
+        filtered.map((file) => file.name)
+      ),
+    [filtered]
+  );
+
   const sorted = useMemo(() => sortAuthFiles(filtered, sortMode), [filtered, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
@@ -702,6 +719,14 @@ export function AuthFilesPage() {
   }, []);
 
   const deleteAllButtonLabel = (() => {
+    if (
+      normalizedSearch.length > 0 ||
+      errorTypeFilter !== 'all' ||
+      successCountFilter !== 'all' ||
+      codexPlanFilter !== 'all'
+    ) {
+      return t('auth_files.delete_filtered_result_button');
+    }
     if (enabledOnly || disabledOnly) {
       return t('auth_files.delete_filtered_result_button');
     }
@@ -786,7 +811,12 @@ export function AuthFilesPage() {
           showQuotaDetails={showQuotaDetails}
           onShowQuotaDetailsChange={setShowQuotaDetails}
           deleteLabel={deleteAllButtonLabel}
-          deleteDisabled={disableControls || loading || deletingAll || files.length === 0}
+          deleteDisabled={
+            disableControls ||
+            loading ||
+            deletingAll ||
+            (hasActiveDeleteFilters ? filteredDeleteTargetNames.length === 0 : files.length === 0)
+          }
           deleteLoading={deletingAll}
           onDelete={() =>
             handleDeleteAll({
@@ -794,6 +824,7 @@ export function AuthFilesPage() {
               problemOnly,
               disabledOnly,
               enabledOnly,
+              targetNames: hasActiveDeleteFilters ? filteredDeleteTargetNames : undefined,
               onResetFilterToAll: () => setFilter('all'),
               onResetProblemOnly: () => setStatusFilterMode('all'),
               onResetDisabledOnly: () => setStatusFilterMode('all'),
