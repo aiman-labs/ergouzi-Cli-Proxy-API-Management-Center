@@ -4,9 +4,9 @@ import { hasAuthFileStatusWarning } from '@/features/authFiles/constants';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import styles from './VaultPulse.module.scss';
 
-/** 谱条最多渲染的凭证数；超出以 mono「+N」尾注表示。 */
+/** Maximum rendered credentials; overflow is summarized by a mono "+N" suffix. */
 const MAX_BARS = 160;
-/** 级联入场总预算（与 useRevealGroup / ThroughputChart 同一 360ms 语汇）。 */
+/** Total stagger budget, matching the 360ms useRevealGroup/ThroughputChart timing. */
 const ENTRANCE_BUDGET_MS = 360;
 
 type PulseState = 'live' | 'idle' | 'warning' | 'problem';
@@ -30,13 +30,13 @@ const STATE_CLASS: Record<PulseState, string> = {
 };
 
 /**
- * VaultPulse —— 凭证谱条，本页的签名元素。
+ * VaultPulse credential spectrum, the page signature element.
  *
- * 与仪表盘 LiveWire 同族异形：wire 是时间维度的流量脉搏，
- * spectrum 是舰队维度的凭证体检。每根竖条对应一个凭证，
- * 颜色 + 高度双通道编码健康态（色盲可辨）：
- * 翡翠=近期有活流量，灰=启用但无数据，琥珀=告警，红=不可用；停用整体淡化。
- * 纯装饰-信息层（aria-hidden），文字等价信息由头部 meta 行承载。
+ * A sibling of dashboard LiveWire: the wire tracks traffic over time, while the
+ * spectrum checks credential health across the fleet. Each bar is one credential.
+ * Color and height redundantly encode health: emerald=recent traffic, gray=enabled
+ * without data, amber=warning, red=unavailable; disabled bars are muted.
+ * This decorative information layer is aria-hidden; the header metadata provides text.
  */
 export function VaultPulse({ files, statusBarCache }: VaultPulseProps) {
   const bars = useMemo<PulseBar[]>(

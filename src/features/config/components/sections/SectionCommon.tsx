@@ -18,8 +18,8 @@ import {
 const Icon = CONFIG_TAB_ICONS.common;
 
 /**
- * 「常用」tab：原简单模式的 8 个高频字段，别名视图（不占分区序号）。
- * 渲染源与正典分区共享（sharedFields），数据同为 useVisualConfig 一份状态。
+ * Common alias tab for the eight high-frequency fields from the old simple mode.
+ * It shares renderers with canonical sections and the same useVisualConfig state.
  */
 export function SectionCommon({
   values,

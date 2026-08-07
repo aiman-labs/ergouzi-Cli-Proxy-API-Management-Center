@@ -4,7 +4,7 @@ import styles from './LiveWire.module.scss';
 
 const VIEW_WIDTH = 100;
 const VIEW_HEIGHT = 40;
-/** 顶部留白，让峰值和呼吸光点都不被裁切 */
+/** Top padding prevents clipping peaks and the breathing glow point. */
 const TOP_PADDING = 6;
 
 interface LiveWireProps {
@@ -14,9 +14,9 @@ interface LiveWireProps {
 }
 
 /**
- * Hero 签名元素：横贯 hero 底部的实时流量脉搏线。
- * 真实桶数据 → 平滑曲线 + 渐变面积，最新一桶的末端带呼吸光点；
- * 无流量时退化为一条安静的虚线基线。
+ * Hero signature: a live traffic pulse spanning the hero footer.
+ * Real buckets produce a smooth curve, area gradient, and breathing endpoint;
+ * no traffic falls back to a quiet dashed baseline.
  */
 export function LiveWire({ points, ariaLabel, className }: LiveWireProps) {
   const gradientId = useId();

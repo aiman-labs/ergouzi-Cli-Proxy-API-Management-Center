@@ -13,10 +13,10 @@ import {
 import type { VisualConfigFieldPath } from '@/types/visualConfig';
 import type { VisualSectionId } from './searchIndex';
 
-/** 编辑模式：可视化表单 or YAML 源码。 */
+/** Editing mode: visual form or YAML source. */
 export type ConfigEditorMode = 'visual' | 'source';
 
-/** 顶部 tabs：'common'（常用，原简单模式的继任者）+ 7 个正典分区。 */
+/** Top tabs: `common`, the successor to simple mode, plus seven canonical sections. */
 export type ConfigTabId = 'common' | VisualSectionId;
 
 export const CONFIG_SECTION_IDS = [
@@ -31,7 +31,7 @@ export const CONFIG_SECTION_IDS = [
 
 export const CONFIG_TAB_IDS: readonly ConfigTabId[] = ['common', ...CONFIG_SECTION_IDS];
 
-/** 分区序号（01–07）。常用 tab 是别名视图，不占序号。 */
+/** Section numbers 01-07; the common alias view has no number. */
 export const SECTION_INDEX_LABELS: Record<VisualSectionId, string> = {
   connectivity: '01',
   network: '02',
@@ -53,7 +53,7 @@ export const CONFIG_TAB_ICONS: Record<ConfigTabId, ComponentType<IconProps>> = {
   payload: IconCode,
 };
 
-/** 常用 tab 的 8 个字段（原简单模式），渲染源与正典分区共享（fields/sharedFields.tsx）。 */
+/** Eight common fields shared with canonical sections through fields/sharedFields.tsx. */
 export const COMMON_FIELD_IDS = [
   'host',
   'port',
@@ -66,8 +66,8 @@ export const COMMON_FIELD_IDS = [
 ] as const;
 
 /**
- * 每个分区承载的校验字段路径（tab 错误徽章的分桶依据）。
- * payload 的校验不走字段路径，由 hasPayloadValidationErrors 旗标补记。
+ * Validation field paths owned by each section, used to bucket tab error badges.
+ * Payload validation uses the separate hasPayloadValidationErrors flag.
  */
 export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualConfigFieldPath[]> =
   {
@@ -111,9 +111,9 @@ export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualC
   };
 
 /**
- * fieldId → useVisualConfig dirtyFields 的键（= VisualConfigValues 叶值键，streaming 用点号叶）。
- * 与搜索索引 58 条一一对应；三方对账由 tests/configFieldParity.test.ts 守护 ——
- * 增删字段时漏改任何一边（索引 / 本表 / 分区 JSX）都会红。
+ * Maps fieldId to useVisualConfig dirtyFields keys, using dotted leaves for streaming.
+ * It matches the 58 search-index entries one-to-one; configFieldParity tests enforce
+ * parity across the index, this table, and section JSX.
  */
 export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   // ── connectivity ──────────────────────────────────────────────────────────
@@ -217,12 +217,12 @@ export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   payloadFilterRules: ['payloadFilterRules'],
 };
 
-/** tab / tabpanel 的 DOM id：单点定义，ConfigTabs 与页面侧面板用同一函数生成 aria 关联。 */
+/** Shared tab and tabpanel DOM ID generator for consistent ARIA relationships. */
 export const configTabDomId = (id: ConfigTabId) => `config-tab-${id}`;
 export const configPanelDomId = (id: ConfigTabId) => `config-panel-${id}`;
 
-/** localStorage 键：mode 沿用旧键（'visual' | 'source' 值域不变）；section 为新键。 */
+/** localStorage keys: mode retains the old visual/source key while section is new. */
 export const CONFIG_MODE_STORAGE_KEY = 'config-management:tab';
 export const CONFIG_SECTION_STORAGE_KEY = 'config-management:section';
-/** 旧「简单/完整」双模式的持久化键，模式轴已删除；挂载时清理。 */
+/** Persisted key from the removed simple/full mode axis, cleared on mount. */
 export const LEGACY_EDITOR_MODE_STORAGE_KEY = 'config-management:editor-mode';

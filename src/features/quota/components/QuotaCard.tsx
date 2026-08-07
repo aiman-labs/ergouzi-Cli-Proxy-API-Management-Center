@@ -1,10 +1,10 @@
 /**
- * 额度卡片：头部（提供商图标 + mono 文件名）+ 四态 body + 动作 footer。
+ * Quota card: provider icon and mono filename header, four-state body, and action footer.
  *
- * - idle：整个 body 是一个点击加载按钮（上游直连有速率考虑，不自动拉取）；
- * - loading：双幽灵行骨架（aria-busy，文字等价视觉隐藏）；
- * - error：失败色条 + footer 刷新即重试；
- * - success：provider Body（穿 QuotaBody.module.scss 全页外衣）。
+ * - idle: the entire body is click-to-load; upstream rate limits preclude automatic loading.
+ * - loading: two ghost-row skeletons with aria-busy and a visually hidden text equivalent.
+ * - error: failure bar with retry through the footer refresh action.
+ * - success: provider body using the full-page QuotaBody.module.scss skin.
  */
 
 import { useState, type CSSProperties } from 'react';
@@ -25,7 +25,7 @@ import { isQuotaRefreshDisabled, isQuotaResetDisabled, type QuotaFileEntry } fro
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
-/** 额度页全页外衣：QuotaBody 模块绑定成类型化契约（缺键在模块初始化即抛）。 */
+/** Full-page quota skin bound to the typed contract; missing keys fail during module initialization. */
 const quotaClasses = bindQuotaClasses(bodyStyles, 'QuotaBody.module.scss');
 
 export type QuotaCardProps = {
@@ -36,7 +36,7 @@ export type QuotaCardProps = {
   resetting: boolean;
   canSetStatus?: boolean;
   statusUpdating?: boolean;
-  /** 首屏级联入场延迟；null = 不入场（切 tab / 翻页 / 刷新新挂载的卡片）。 */
+  /** Initial stagger delay; null disables entry motion for cards mounted after tabs, pages, or refreshes change. */
   entranceDelayMs?: number | null;
   onRefresh: () => void;
   onReset: () => void;
@@ -61,7 +61,7 @@ export function QuotaCard(props: QuotaCardProps) {
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
 
-  // 挂载时捕获一次延迟：后续 props 变 null 不影响本卡（React 19 禁渲染期读 ref）
+  // Capture the delay once on mount; later null props do not affect this card, avoiding render-time ref reads in React 19.
   const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);
   const entranceStyle =
     mountEntranceDelayMs === null

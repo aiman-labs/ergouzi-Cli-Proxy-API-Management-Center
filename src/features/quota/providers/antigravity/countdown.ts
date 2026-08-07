@@ -1,10 +1,10 @@
 const MINUTE_MS = 60_000;
 
 /**
- * 返回下一个可见倒计时文案发生变化的等待时间。
+ * Return the delay until the visible countdown copy changes.
  *
- * 文案以向上取整的分钟展示，所以按最近的分钟边界唤醒即可；已经到期或
- * 无效的时间不再创建定时器。
+ * Copy displays ceiling-rounded minutes, so waking at the nearest minute boundary is sufficient.
+ * Expired or invalid timestamps do not create timers.
  */
 export function getNextAntigravityCountdownUpdateDelay(
   resetTimestamps: readonly number[],

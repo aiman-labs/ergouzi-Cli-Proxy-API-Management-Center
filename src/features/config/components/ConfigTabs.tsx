@@ -12,17 +12,17 @@ import styles from './ConfigTabs.module.scss';
 
 export type ConfigTabsProps = {
   active: ConfigTabId;
-  /** 每 tab 校验错误数（uiState.countSectionErrors 的产物），>0 显示失败色徽章。 */
+  /** Validation count per tab from uiState.countSectionErrors; positive values show a badge. */
   errorCounts: Partial<Record<ConfigTabId, number>>;
-  /** 有待保存修改的 tabs（uiState.resolveDirtyTabs 的产物），显示琥珀脏点。 */
+  /** Tabs with unsaved changes from uiState.resolveDirtyTabs, shown with amber dots. */
   dirtyTabs: ReadonlySet<ConfigTabId>;
   disabled?: boolean;
   onChange: (id: ConfigTabId) => void;
 };
 
 /**
- * 分区 tabs：安静的下划线式（与提供商 tabs 同语汇），图标 + 标签 + 错误徽章 + 脏点。
- * 「常用」是首 tab；tab 切换是高频操作，零动画。
+ * Quiet underline section tabs with icon, label, error badge, and dirty dot.
+ * Common is first; high-frequency tab switching intentionally has no animation.
  */
 export function ConfigTabs({
   active,
@@ -35,7 +35,7 @@ export function ConfigTabs({
   const listRef = useRef<HTMLDivElement | null>(null);
   const buttonRefs = useRef<Partial<Record<ConfigTabId, HTMLButtonElement | null>>>({});
 
-  // 移动端横滚时把激活 tab 带回视野中央；无溢出时不动，避免无谓的页面滚动。
+  // Center the active tab in an overflowing mobile row; avoid scrolling without overflow.
   useEffect(() => {
     const scroller = listRef.current;
     const button = buttonRefs.current[active];

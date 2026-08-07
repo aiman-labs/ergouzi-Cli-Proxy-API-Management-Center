@@ -208,7 +208,7 @@ export function AuthFilesPage() {
   const disabledOnly = statusFilterMode === 'disabled';
   const enabledOnly = statusFilterMode === 'enabled';
 
-  /* ---------- uiState 水合与持久化（localStorage key/形状与旧版完全一致） ---------- */
+  /* ---------- uiState hydration and persistence (legacy localStorage key/shape) ---------- */
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();

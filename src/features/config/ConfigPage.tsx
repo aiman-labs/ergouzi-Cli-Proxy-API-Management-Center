@@ -45,7 +45,7 @@ import { SectionQuota } from './components/sections/SectionQuota';
 import { SectionStreaming } from './components/sections/SectionStreaming';
 import styles from './ConfigPage.module.scss';
 
-/** 首载入场预算：卡片延迟 0.28s + 0.45s 动画，之后关闭 animateIn，切 tab 不再重播。 */
+/** Initial entrance budget: 0.28s delay plus 0.45s animation, then disable replay on tab changes. */
 const ENTRANCE_BUDGET_MS = 800;
 
 export function ConfigPage() {
@@ -76,14 +76,14 @@ export function ConfigPage() {
   const [activeSection, setActiveSection] = useState<ConfigTabId>(() =>
     readSavedSection(localStorage.getItem(CONFIG_SECTION_STORAGE_KEY))
   );
-  // 首载入场：挂载后一个预算周期内为 true；此后切 tab 新挂载的卡片不再播入场。
+  // Enable entrance animation for one budget after mount; later tab mounts do not replay it.
   const [animateCards, setAnimateCards] = useState(true);
   useEffect(() => {
     const timer = window.setTimeout(() => setAnimateCards(false), ENTRANCE_BUDGET_MS);
     return () => window.clearTimeout(timer);
   }, []);
 
-  // 旧「简单/完整」双模式已退役，清掉遗留的持久化键。
+  // Remove the persisted key from the retired simple/full mode split.
   useEffect(() => {
     localStorage.removeItem(LEGACY_EDITOR_MODE_STORAGE_KEY);
   }, []);
@@ -119,7 +119,7 @@ export function ConfigPage() {
     dialog: unsavedChangesDialog,
   });
 
-  // YAML 解析失败：切换到源码模式；修复后仍可重试进入可视化模式。
+  // On YAML parse failure, switch to source mode and allow retry after correction.
   useEffect(() => {
     if (mode !== 'visual' || !visualParseError) return;
 
@@ -131,9 +131,9 @@ export function ConfigPage() {
     );
   }, [mode, showNotification, t, visualParseError]);
 
-  // 可视化 ↔ 源码切换的 dirty 交接（语义与旧 handleTabChange 逐行一致）：
-  // → 源码：仅当可视化有脏字段时把它们写进源码草稿（保留注释/未覆盖字段）；
-  // → 可视化：重新解析草稿，失败则报错并留在源码模式。
+  // Dirty-state handoff between visual and source modes preserves the old semantics:
+  // to source, write dirty visual fields into the draft while preserving comments and untouched fields;
+  // to visual, reparse the draft and remain in source mode on failure.
   const handleModeChange = useCallback(
     (nextMode: ConfigEditorMode) => {
       if (nextMode === mode) return;

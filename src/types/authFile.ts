@@ -24,13 +24,12 @@ export interface AuthFileItem {
   type?: AuthFileType | string;
   provider?: string;
   /**
-   * 凭证账号邮箱（后端 auth_files 两条分支都会填：磁盘扫描读 JSON 的 email 字段，
-   * 注册表读 Metadata/Attributes）。卡片主行用它领衔。
-   * 注意：后端还会下发 account/account_type，但 api-key 类凭证的 account 就是
-   * API key 本身（AccountInfo() → return "api_key", apiKey），**绝不可用于展示或搜索**。
+   * Credential email populated by both auth_files paths: disk JSON and registry metadata.
+   * It leads the card identity. The backend also returns account/account_type, but API-key
+   * credentials expose the API key itself as account, so it must never be displayed or searched.
    */
   email?: string;
-  /** GCP / Vertex 项目 ID，账号邮箱缺失时作为身份回落。 */
+  /** GCP or Vertex project ID used as an identity fallback when email is absent. */
   projectId?: string;
   size?: number;
   authIndex?: string | number | null;
@@ -49,7 +48,7 @@ export interface AuthFileItem {
   note?: string;
   success?: unknown;
   failed?: unknown;
-  /** 归一化后的累计成功/失败计数（由 API 边界从 success/failed 生字段填充）。 */
+  /** Normalized cumulative success/failure counts populated from raw API fields. */
   successCount?: number;
   failureCount?: number;
   recent_requests?: RecentRequestBucket[];

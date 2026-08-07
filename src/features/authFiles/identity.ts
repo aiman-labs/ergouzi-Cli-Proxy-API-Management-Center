@@ -1,18 +1,18 @@
 /**
- * 凭证身份派生：卡片主行显示「账号」而不是文件名。
- * React-free —— 由 tests/authFileIdentity.test.ts 直接消费。
+ * Credential identity derivation: show account identity, not filename, as the card title.
+ * React-free so tests/authFileIdentity.test.ts can consume it directly.
  *
- * 背景：真实文件名形如 codex-<hash8>-<email>-<plan>.json，email 在中段，
- * 单行尾部省略保留下来的恰好是类型徽章已表达过的 provider 前缀。
+ * Real filenames look like codex-<hash8>-<email>-<plan>.json. Email sits in the
+ * middle, so end ellipsis preserves only the provider prefix already shown by the badge.
  *
- * 两条红线：
- * 1. 只读 email / projectId。后端还下发 account，但 api-key 类凭证的 account
- *    就是 API key 本身（sdk/cliproxy/auth/types.go AccountInfo），一旦进入主行、
- *    title 或搜索 haystack 就是密钥泄露；且 oauth 分支的 account 与 email 同源冗余。
- * 2. 不从文件名正则抽 email。codex 以 '-' 分隔，而 '-' 在 local part 与域名里都合法，
- *    codex-abc12345-first-last@example.com-team 无法被任何正则正确切分 —— 只会产出
- *    貌似真实的错值。需要 email 的提供商后端都有 json:"email"，无 email 的 kimi
- *    文件名里本来也没有 email 可抽。
+ * Guardrails:
+ * 1. Read only email/projectId. For API-key credentials, backend account is the API
+ *    key itself (sdk/cliproxy/auth/types.go AccountInfo); exposing it in titles or
+ *    search would leak secrets. OAuth account also duplicates email.
+ * 2. Never regex email from filenames. Codex uses '-' as a separator, but '-' is
+ *    valid in local parts and domains, so filenames such as
+ *    codex-abc12345-first-last@example.com-team are ambiguous. Providers that need
+ *    email already expose json:"email"; Kimi filenames contain no email to recover.
  */
 
 import type { AuthFileItem } from '@/types';
@@ -20,21 +20,21 @@ import type { AuthFileItem } from '@/types';
 export type AuthFileIdentityKind = 'email' | 'projectId' | 'fileName';
 
 export type AuthFileIdentity = {
-  /** 卡片主行。无任何身份线索时为空串——不伪造占位符。 */
+  /** Card title; empty when no identity exists rather than inventing a placeholder. */
   primary: string;
-  /** 主行来源。'fileName' 时主行用 mono 渲染，且副行不再重复。 */
+  /** Title source; fileName uses mono rendering and is not repeated below. */
   kind: AuthFileIdentityKind;
-  /** 卡片副行（去掉 .json 的文件名）；null = 不渲染该行。 */
+  /** Secondary row with the .json suffix removed; null omits the row. */
   secondary: string | null;
-  /** 原始完整文件名，供副行 title 使用。 */
+  /** Original full filename for the secondary-row title. */
   fullName: string;
 };
 
-/** AuthFileItem 有索引签名，后端给非字符串也能通过类型检查——这里挡住。 */
+/** AuthFileItem has an index signature, so reject non-string backend values here. */
 const readIdentityText = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
 
-/** 去掉 .json 后缀（大小写不敏感），仅在剥完仍有内容时生效。 */
+/** Remove a case-insensitive .json suffix only when content remains. */
 export const stripJsonExtension = (name: string): string => {
   const trimmed = name.trim();
   if (trimmed.length <= 5) return trimmed;
@@ -42,9 +42,10 @@ export const stripJsonExtension = (name: string): string => {
 };
 
 /**
- * 身份回落链：email → projectId → 文件名（去 .json）。
- * 刻意与 provider 无关：runtime-only 虚拟凭证（name === email === 频道 ID）
- * 由副行去重守卫结构性处理，比按 provider 白名单更稳。
+ * Identity fallback: email -> projectId -> filename without .json.
+ * This is intentionally provider-agnostic. The secondary-row dedupe structurally
+ * handles runtime-only virtual credentials where name === email === channel ID,
+ * which is more robust than a provider allowlist.
  */
 export const deriveAuthFileIdentity = (file: AuthFileItem): AuthFileIdentity => {
   const fullName = readIdentityText(file.name);

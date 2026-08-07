@@ -4,20 +4,20 @@ import styles from './Sparkline.module.scss';
 
 const VIEW_WIDTH = 100;
 const VIEW_HEIGHT = 32;
-/** 顶部留白，避免峰值贴边被裁切 */
+/** Top padding keeps peaks from clipping against the edge. */
 const TOP_PADDING = 3;
 
 interface SparklineProps {
   points: number[];
-  /** 折线/填充色，默认取主色 */
+  /** Line/fill color; defaults to the primary color. */
   color?: string;
   ariaLabel: string;
   className?: string;
 }
 
 /**
- * 极简迷你折线：2px 线 + 同色 10% 面积。
- * 单序列，因此不需要图例；数值由所在卡片的文本承载。
+ * Minimal sparkline: 2px stroke plus a 10% same-color area.
+ * A single series needs no legend; the containing card provides the value text.
  */
 export function Sparkline({ points, color, ariaLabel, className }: SparklineProps) {
   const gradientId = useId();

@@ -2,11 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import { buildExcludedModels } from '../src/features/providers/useProviderWorkbench';
 
 /**
- * `excluded-models: ['*']` 是「该 provider 已停用」的后端编码。
- * 它的唯一所有者是表单的 `disabled` 开关：载入时被剥离进该 flag，保存时仅凭该 flag 重新追加。
+ * `excluded-models: ['*']` is the backend encoding for a disabled provider.
+ * The form's `disabled` toggle owns it exclusively: loading strips it into that flag, and
+ * saving restores it only from that flag.
  *
- * 这些断言把该不变量钉死，好让排除模型的编辑面（textarea → ExcludedModelsPicker）
- * 无论怎么重写都不可能污染停用语义。
+ * These assertions preserve that invariant so excluded-model editor rewrites cannot corrupt
+ * the disabled state.
  */
 describe('buildExcludedModels — the "*" disable-rule invariant', () => {
   test('appends "*" when disabled', () => {

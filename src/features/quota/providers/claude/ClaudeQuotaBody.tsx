@@ -1,5 +1,5 @@
 /**
- * Claude 额度渲染体：套餐/额外用量 chip 行 + 用量窗口水位条。
+ * Claude quota body with plan/extra-usage chips and usage-window meters.
  */
 
 import { useMemo } from 'react';

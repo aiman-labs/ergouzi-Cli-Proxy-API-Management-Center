@@ -16,7 +16,7 @@ export type UseAuthFilesModelsResult = {
   modelsError: ModelsError;
   showModels: (item: AuthFileItem) => Promise<void>;
   closeModelsModal: () => void;
-  /** 文件集变更后失效缓存；不传 names 则全部清空。 */
+  /** Invalidate caches after file changes; omit names to clear all entries. */
   invalidateModels: (names?: string[]) => void;
 };
 

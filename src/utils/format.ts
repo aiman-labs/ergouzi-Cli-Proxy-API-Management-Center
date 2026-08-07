@@ -40,7 +40,7 @@ export function formatFileSize(bytes: number): string {
 const COMPACT_SUFFIXES = ['', 'K', 'M', 'B', 'T'] as const;
 
 /**
- * 将较大的计数压缩为紧凑形式（1284 → 1.3K），用于统计卡片与图表标签
+ * Compact large counts, such as 1284 to 1.3K, for statistic cards and chart labels.
  */
 export function formatCompactNumber(value: number): string {
   if (!Number.isFinite(value)) return '0';
@@ -54,10 +54,10 @@ export function formatCompactNumber(value: number): string {
     tier += 1;
   }
 
-  // 三位有效数字以内保留一位小数；Number() 顺带去掉 "1.0K" 这类冗余尾巴
+  // Keep one decimal within three significant digits; Number also removes redundant `.0`.
   let rendered = tier === 0 ? Math.round(scaled) : Number(scaled.toFixed(scaled < 100 ? 1 : 0));
 
-  // 四舍五入后又进位到 1000（如 999,999 → 1000K）时再升一档
+  // Promote again when rounding reaches 1000, such as 999,999 becoming 1000K.
   if (rendered >= 1000 && tier < COMPACT_SUFFIXES.length - 1) {
     rendered = 1;
     tier += 1;
@@ -67,7 +67,7 @@ export function formatCompactNumber(value: number): string {
 }
 
 /**
- * 格式化百分比，去掉无意义的 ".0" 尾巴
+ * Format percentages without a redundant `.0` suffix.
  */
 export function formatPercent(value: number, fractionDigits = 1): string {
   if (!Number.isFinite(value)) return '—';

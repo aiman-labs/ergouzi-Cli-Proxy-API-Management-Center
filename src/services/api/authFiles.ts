@@ -236,9 +236,9 @@ const readRuntimeOnlyField = (entry: AuthFileEntry): boolean => {
 };
 
 /**
- * 契约边界归一化：把后端 kebab/snake_case 生字段填充到 AuthFileItem 声明的
- * camelCase 字段上。原始字段全部透传——quota resolvers 仍直接读
- * plan_type / id_token / metadata / attributes 等生字段。
+ * Normalize backend kebab/snake_case fields into AuthFileItem camelCase fields at the API boundary.
+ * Preserve all raw fields because quota resolvers still read plan_type, id_token, metadata,
+ * attributes, and related backend values directly.
  */
 const normalizeAuthFileEntry = (entry: AuthFileEntry): AuthFileEntry => {
   const declaredStatusMessage =
@@ -246,8 +246,8 @@ const normalizeAuthFileEntry = (entry: AuthFileEntry): AuthFileEntry => {
   const statusMessage = readTextField(entry, 'status_message') || declaredStatusMessage;
   const note = readTextField(entry, 'note');
   const email = readTextField(entry, 'email');
-  // account / account_type 故意不归一化：api-key 类凭证的 account 就是 API key 本身
-  // （sdk/cliproxy/auth/types.go AccountInfo），不能进入展示与搜索路径。
+  // Do not normalize account/account_type: API-key credentials expose the API key itself as
+  // account in sdk/cliproxy/auth/types.go AccountInfo, so it must not enter display or search.
   const projectId = readTextField(entry, 'project_id');
   const modified = readDateField(entry);
   const priority = readIntegerField(entry['priority']);

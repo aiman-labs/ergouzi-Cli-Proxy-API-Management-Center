@@ -19,7 +19,7 @@ import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import { AuthFileExcludedModelsField } from './AuthFileExcludedModelsField';
 import styles from './AuthFileDetailsSheet.module.scss';
 
-/** API 边界归一化补写的派生字段——INFO 视图里只展示后端原始形状，避免重复噪音。 */
+/** Derived fields added during API normalization; INFO shows only the raw backend shape. */
 const DERIVED_INFO_KEYS = [
   'successCount',
   'failureCount',
@@ -28,7 +28,7 @@ const DERIVED_INFO_KEYS = [
   'authIndex',
   'statusMessage',
   'modified',
-  // 'email' 不在此列：后端原始键名与 camelCase 同形，删掉会藏起真实数据。
+  // Keep 'email': the raw backend key already matches camelCase, so omitting it would hide real data.
   'projectId',
 ];
 
@@ -44,8 +44,8 @@ export type AuthFileDetailsSheetProps = {
 };
 
 /**
- * 凭证详情/编辑抽屉：替代旧的居中 Modal，与提供商工作台的 Sheet 模式一致。
- * 脏状态下关闭（Escape/遮罩/×/取消）先走确认对话框。
+ * Credential details/editor sheet, replacing the centered modal and matching provider workbench sheets.
+ * Closing dirty state via Escape, backdrop, close, or cancel requires confirmation.
  */
 export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
   const { t } = useTranslation();
@@ -97,7 +97,7 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
         return JSON.stringify(record, null, 2);
       }
     } catch {
-      /* 非 JSON 原样展示 */
+      /* Show non-JSON content verbatim. */
     }
     return fileInfoText;
   }, [fileInfoText]);

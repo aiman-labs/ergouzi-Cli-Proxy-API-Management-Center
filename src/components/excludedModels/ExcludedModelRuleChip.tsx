@@ -3,30 +3,30 @@ import { IconX } from '@/components/ui/icons';
 import styles from './ExcludedModelRuleChip.module.scss';
 
 /**
- * 排除项 chip —— 按**来源**区分三种形态，取代两处近乎重复的手写标记
- * （`AuthFileDetailsSheet.module.scss` 的 `.excludedModelChip` 与
- * `AuthFilesOAuthExcludedEditPage.module.scss` 的 `.customRuleChip`）。
+ * Exclusion chip with three source-based variants, replacing two nearly identical
+ * handwritten markers: `.excludedModelChip` in `AuthFileDetailsSheet.module.scss`
+ * and `.customRuleChip` in `AuthFilesOAuthExcludedEditPage.module.scss`.
  *
- * - `exact`    实线 primary 染色：用户显式勾选的模型，可直接移除。
- * - `wildcard` 虚线：由通配符规则派生出的模型。没有 ✕——要移除得去改那条规则，
- *              直接给个 ✕ 会承诺一件它做不到的事。
- * - `unknown`  虚线弱化：精确规则但目录里没有（如已下线的模型 id），可移除。
+ * - `exact`    Solid primary tint: explicitly selected and directly removable.
+ * - `wildcard` Dashed: derived from a wildcard rule. It has no remove action because
+ *              removal requires editing the source rule.
+ * - `unknown`  Muted dashed: exact rule missing from the catalog, still removable.
  */
 export type ExcludedModelChipVariant = 'exact' | 'wildcard' | 'unknown';
 
 export interface ExcludedModelRuleChipProps {
   label: string;
   variant?: ExcludedModelChipVariant;
-  /** 次要说明，例如派生该 chip 的规则。 */
+  /** Secondary detail, such as the rule that derived this chip. */
   detail?: string;
-  /** 省略即不渲染 ✕。 */
+  /** Omit to render no remove action. */
   onRemove?: () => void;
   removeAriaLabel?: string;
   disabled?: boolean;
   title?: string;
 }
 
-/** chip 的换行容器。单独导出，免得每个消费方各写一遍 flex-wrap。 */
+/** Shared wrapping container so consumers do not duplicate the flex-wrap layout. */
 export function ExcludedModelChipRow({ children }: { children: ReactNode }) {
   return <div className={styles.chipRow}>{children}</div>;
 }

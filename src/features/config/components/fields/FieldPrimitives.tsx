@@ -3,12 +3,12 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { configFieldDomId } from '../../searchIndex';
 import styles from './Field.module.scss';
 
-/** 搜索跳转的脉冲高亮 class（useFieldJump 命令式挂载/移除）。 */
+/** Pulse-highlight class imperatively managed by useFieldJump. */
 export const FIELD_HIGHLIGHT_CLASS: string = styles.fieldHighlightActive;
 
 /**
- * 表单控件宿主 class：收编旧 VisualConfigEditor 的 :global(.form-group/.input/...)
- * 覆盖的作用域根。SectionCard 的内容区自动挂载；脱离卡片渲染表单块（如 Modal 内容）时手动挂。
+ * Form-control host for the old VisualConfigEditor global overrides. SectionCard mounts it
+ * automatically; form blocks rendered outside cards, such as modals, mount it manually.
  */
 export const FIELDS_ROOT_CLASS: string = styles.fieldsRoot;
 
@@ -54,7 +54,7 @@ export function FieldAnchor({ fieldId, children }: { fieldId: string; children: 
   );
 }
 
-/** 带描边容器的字段组（原 SectionSubsection / .subsection）。title 可省略只留容器。 */
+/** Bordered field group replacing SectionSubsection; title may be omitted. */
 export function FieldGroup({
   title,
   description,
@@ -77,7 +77,7 @@ export function FieldGroup({
   );
 }
 
-/** 独立的小组标题行（如 Claude / Codex 请求头小节标题）。 */
+/** Standalone subgroup heading, such as Claude or Codex request-header sections. */
 export function FieldGroupHeading({ title }: { title: string }) {
   return (
     <div className={styles.groupHeader}>
@@ -125,7 +125,7 @@ export function FieldShell({
   );
 }
 
-/** 独立的字段提示行（FieldShell 之外的裸 hint）。 */
+/** Standalone field hint rendered outside FieldShell. */
 export function FieldHint({ id, children }: { id?: string; children: ReactNode }) {
   return (
     <div id={id} className={styles.fieldHint}>
@@ -134,12 +134,12 @@ export function FieldHint({ id, children }: { id?: string; children: ReactNode }
   );
 }
 
-/** 数字输入右侧的「已禁用」pill 宿主（流式 keepalive 的 0/空 提示）。 */
+/** Host for a disabled pill beside numeric inputs, such as zero/empty stream keepalive. */
 export function FieldControl({ children }: { children: ReactNode }) {
   return <div className={styles.fieldControl}>{children}</div>;
 }
 
-/** FieldControl 内的内联 pill。 */
+/** Inline pill within FieldControl. */
 export function InlinePill({ children }: { children: ReactNode }) {
   return <span className={styles.inlinePill}>{children}</span>;
 }

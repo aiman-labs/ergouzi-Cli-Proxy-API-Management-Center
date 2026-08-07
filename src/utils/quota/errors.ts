@@ -4,7 +4,7 @@
 
 import type { TFunction } from 'i18next';
 
-/** 配额接口错误 → 用户可读文案（404=后端需升级，403=检查凭证）。 */
+/** Convert quota API errors to user-facing messages: 404 needs backend upgrade, 403 checks credentials. */
 export const resolveQuotaErrorMessage = (
   t: TFunction,
   status: number | undefined,

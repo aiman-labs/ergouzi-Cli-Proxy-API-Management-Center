@@ -16,7 +16,7 @@ import { getValidationMessage } from '../blocks/shared';
 
 const Icon = CONFIG_TAB_ICONS.streaming;
 
-/** 05 流式传输：keepalive 与 bootstrap 重试；nonstream-keepalive-interval 是顶层 YAML 键。 */
+/** 05 Streaming: keepalive and bootstrap retries; nonstream-keepalive-interval is top-level YAML. */
 export function SectionStreaming({
   values,
   validationErrors,

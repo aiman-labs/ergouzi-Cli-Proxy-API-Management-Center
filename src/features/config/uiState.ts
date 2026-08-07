@@ -1,5 +1,5 @@
-// 配置页 UI 状态的纯函数层：状态机、徽章分桶、脏字段归属、localStorage 读取。
-// 全部无副作用，由 tests/configUiState.test.ts 覆盖。
+// Pure config-page UI state: state machine, badge buckets, dirty ownership, and localStorage reads.
+// All functions are side-effect free and covered by tests/configUiState.test.ts.
 
 import type { VisualConfigValidationErrors } from '@/types/visualConfig';
 import {
@@ -13,10 +13,10 @@ import {
 } from './constants';
 import { CONFIG_FIELD_SEARCH_INDEX, type VisualSectionId } from './searchIndex';
 
-/** 可视化编辑器暴露的配置项总数（头部 meta 行的「N 项配置」）。 */
+/** Total visual-editor fields shown in the header metadata. */
 export const CONFIG_FIELD_COUNT = CONFIG_FIELD_SEARCH_INDEX.length;
 
-/** 叶值键（= useVisualConfig dirtyFields 的键）→ fieldId 反查表。 */
+/** Reverse map from useVisualConfig dirty leaf keys to fieldId. */
 const VALUE_KEY_TO_FIELD_ID: ReadonlyMap<string, string> = (() => {
   const map = new Map<string, string>();
   for (const [fieldId, valueKeys] of Object.entries(FIELD_VALUE_KEYS)) {
@@ -31,12 +31,12 @@ const FIELD_ID_TO_SECTION: ReadonlyMap<string, VisualSectionId> = new Map(
 
 const COMMON_FIELD_ID_SET: ReadonlySet<string> = new Set<string>(COMMON_FIELD_IDS);
 
-/** 常用 tab 渲染的字段对应的叶值键集合（校验错误归属常用 tab 时用）。 */
+/** Dirty leaf keys rendered by the common tab, used for validation ownership. */
 const COMMON_VALUE_KEYS: ReadonlySet<string> = new Set(
   COMMON_FIELD_IDS.flatMap((fieldId) => [...(FIELD_VALUE_KEYS[fieldId] ?? [])])
 );
 
-/** 脏字段集合 → 点亮脏点的 tabs。常用字段同时点亮 common 与其正典分区（两处都渲染它）。 */
+/** Map dirty fields to tab indicators; common fields mark both alias and canonical tabs. */
 export function resolveDirtyTabs(dirtyFields: ReadonlySet<string>): ReadonlySet<ConfigTabId> {
   const tabs = new Set<ConfigTabId>();
   for (const valueKey of dirtyFields) {
@@ -49,7 +49,7 @@ export function resolveDirtyTabs(dirtyFields: ReadonlySet<string>): ReadonlySet<
   return tabs;
 }
 
-/** 每个 tab 的校验错误数（错误徽章）。payload 的校验以旗标计 1。 */
+/** Validation errors per tab; payload validation contributes one via its flag. */
 export function countSectionErrors(
   validationErrors: VisualConfigValidationErrors | undefined,
   hasPayloadValidationErrors: boolean
@@ -72,7 +72,7 @@ export function countSectionErrors(
   return counts;
 }
 
-/** 全页校验错误总数（头部 meta 行）。 */
+/** Total page validation errors for the header metadata. */
 export function countTotalErrors(
   validationErrors: VisualConfigValidationErrors | undefined,
   hasPayloadValidationErrors: boolean
@@ -95,9 +95,9 @@ export type ConfigStatusTone = 'error' | 'warning' | 'busy' | 'muted' | 'ok';
 
 export type ConfigStatus = {
   key: ConfigStatusKey;
-  /** 完整状态文案的 i18n 键。 */
+  /** i18n key for the full status label. */
   labelKey: string;
-  /** 移动端短文案的 i18n 键。validation_blocked 的短键在 config_management 顶层（历史路径 bug 的修正）。 */
+  /** i18n key for the compact mobile label; validation_blocked uses the corrected top-level path. */
   shortLabelKey: string;
   tone: ConfigStatusTone;
 };
@@ -112,7 +112,7 @@ export type ConfigStatusInput = {
   dirty: boolean;
 };
 
-/** 悬浮保存栏 / 状态文案的状态机。优先级自上而下，与旧页 getStatusText 分支序一致。 */
+/** Floating-save-bar status machine, preserving the old getStatusText priority order. */
 export function resolveStatus(input: ConfigStatusInput): ConfigStatus {
   if (input.disconnected) {
     return {
@@ -194,8 +194,9 @@ export type HeaderMetaInput = {
 };
 
 /**
- * 头部 ▍mono meta 行直接消费页面状态机，避免 Header 与保存栏各自推导连接/加载状态。
- * 字段总数常驻；阻断状态优先，编辑状态再补充待保存和校验错误数量。
+ * Header metadata consumes the page state machine directly so Header and save bar do not
+ * derive connection or loading states independently. Field count is always present; blocking
+ * states take priority, then editing state adds dirty and validation counts.
  */
 export function buildHeaderMeta(input: HeaderMetaInput): HeaderMetaSegment[] {
   const segments: HeaderMetaSegment[] = [
@@ -256,7 +257,7 @@ export function buildHeaderMeta(input: HeaderMetaInput): HeaderMetaSegment[] {
   return segments;
 }
 
-/** localStorage 读取：非法/陈旧值回退默认。 */
+/** Read localStorage with fallback for invalid or stale values. */
 export function readSavedMode(raw: string | null): ConfigEditorMode {
   return raw === 'source' ? 'source' : 'visual';
 }

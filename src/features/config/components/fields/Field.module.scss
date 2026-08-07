@@ -1,9 +1,9 @@
 @use '../../../../styles/mixins' as *;
 
-/* 字段原语：表单控件的 scoped 覆盖 + 开关行 / 网格 / 字段组 / 搜索锚点。
-   交互反馈一律引用全局动效 tokens（--dur-* / --ease-out-strong）。 */
+/* Field primitives: scoped form overrides, switch rows, grids, groups, and search anchors.
+   Interaction feedback uses global motion tokens (--dur-* / --ease-out-strong). */
 
-/* ---------- 表单控件宿主（原 .visualEditor 的 :global 覆盖收编于此） ---------- */
+/* ---------- Form-control host for former .visualEditor global overrides ---------- */
 
 .fieldsRoot {
   :global(.form-group) {
@@ -78,7 +78,7 @@
   }
 }
 
-/* ---------- 开关行 ---------- */
+/* ---------- Switch rows ---------- */
 
 .toggleRow {
   display: grid;
@@ -126,7 +126,7 @@
   line-height: 1.55;
 }
 
-/* ---------- 布局原语 ---------- */
+/* ---------- Layout primitives ---------- */
 
 .fieldGrid {
   display: grid;
@@ -149,7 +149,7 @@
   background: var(--border-color);
 }
 
-/* ---------- 搜索锚点与脉冲高亮 ---------- */
+/* ---------- Search anchors and pulse highlight ---------- */
 
 .fieldAnchor {
   display: block;
@@ -174,7 +174,7 @@
   }
 }
 
-/* ---------- 字段组（原 subsection） ---------- */
+/* ---------- Field groups, formerly subsection ---------- */
 
 .group {
   display: flex;
@@ -207,7 +207,7 @@
   line-height: 1.6;
 }
 
-/* ---------- 字段外壳 ---------- */
+/* ---------- Field shell ---------- */
 
 .fieldShell {
   display: flex;
@@ -250,7 +250,7 @@
   font-weight: 700;
 }
 
-/* ---------- 响应式 ---------- */
+/* ---------- Responsive ---------- */
 
 @include mobile {
   .group,
@@ -266,7 +266,7 @@
   }
 }
 
-/* ---------- 无障碍 ---------- */
+/* ---------- Accessibility ---------- */
 
 @media (prefers-reduced-motion: reduce) {
   .fieldsRoot :global(.input),

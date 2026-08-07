@@ -1,6 +1,6 @@
 /**
- * Antigravity 额度数据层：分组配额 + 订阅信息 + 服务器时钟偏移。
- * React-free / SCSS-free。
+ * Antigravity quota data layer: grouped quotas, subscription details, and server-clock offset.
+ * React-free and SCSS-free.
  */
 
 import type { TFunction } from 'i18next';

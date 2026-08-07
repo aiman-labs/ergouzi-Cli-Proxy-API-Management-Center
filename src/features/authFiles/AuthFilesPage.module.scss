@@ -1,7 +1,7 @@
 @use '../../styles/mixins' as *;
 
 /* ============================================================
- * 认证文件页壳层：纯布局，视觉细节都在各组件的 colocated 模块里。
+ * Auth files page shell: layout only; visual details live in colocated component modules.
  * ============================================================ */
 
 .page {
@@ -10,13 +10,13 @@
   gap: 20px;
   width: 100%;
   min-width: 0;
-  /* 底部为悬浮批量条留出实时高度 */
+  /* Reserve the live height of the floating batch bar at the bottom. */
   padding-bottom: calc(
     var(--auth-files-action-bar-height, 0px) + 16px + env(safe-area-inset-bottom, 0px)
   );
 }
 
-/* ---------- 工作区（tabs + 工具栏 + 网格 + 分页） ---------- */
+/* ---------- Workspace (tabs + toolbar + grid + pagination) ---------- */
 
 .workbench {
   display: flex;
@@ -46,7 +46,7 @@
   }
 }
 
-/* ---------- 卡片网格 ---------- */
+/* ---------- Card grid ---------- */
 
 .grid {
   display: grid;
@@ -59,9 +59,9 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
 }
 
-/* provider tab 激活（配额模式）时卡片承载配额区，需要更宽的列。
-   值与 .grid 相同但**必须保留且排在 .gridCompact 之后**：三个类同时挂在网格上，
-   同specificity 靠源序决胜，删掉这条会让「紧凑 + 配额」从 340 掉回 260。 */
+/* Active provider tabs add quota content, so cards need wider columns.
+   This matches .grid but must remain after .gridCompact: all three classes share
+   specificity, so source order wins. Removing it shrinks compact quota cards from 340 to 260. */
 .gridQuota {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
 }
@@ -74,7 +74,7 @@
   justify-content: center;
 }
 
-/* ---------- 分页 ---------- */
+/* ---------- Pagination ---------- */
 
 .pagination {
   display: flex;
@@ -93,7 +93,7 @@
   white-space: nowrap;
 }
 
-/* ---------- OAuth 配置双卡 ---------- */
+/* ---------- OAuth configuration cards ---------- */
 
 .configGrid {
   display: grid;

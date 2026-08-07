@@ -1,6 +1,6 @@
 /**
- * Codex 额度渲染体：套餐 chip 行（elite=Pro 20x 液态铂金 / premium=金卡）、
- * 重置积分明细、用量窗口水位条。
+ * Codex quota body with plan chips (elite is Pro 20x liquid platinum; premium is gold),
+ * reset-credit details, and usage-window meters.
  */
 
 import { useMemo } from 'react';
@@ -24,7 +24,7 @@ import { collectQuotaRowInstants, pickUrgentRowId, resetCreditRowId } from '../.
 import type { QuotaBodyProps, QuotaClassMap } from '../../types';
 
 const getPlanValueClass = (planType: string | null, classes: QuotaClassMap): string => {
-  // elite/premium 顺序契约由 resolvePlanTier 承载（tests/quotaPlanTier.test.ts 守护）。
+  // resolvePlanTier owns the elite/premium ordering contract, guarded by tests/quotaPlanTier.test.ts.
   const tier = resolvePlanTier(planType);
   if (tier === 'elite') return classes.elitePlanValue;
   if (tier === 'premium') return classes.premiumPlanValue;

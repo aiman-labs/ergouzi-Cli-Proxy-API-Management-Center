@@ -1,9 +1,9 @@
 @use '../../../styles/mixins' as *;
 
 /* ============================================================
- * 额度卡片 — 继承凭证卡 statTile 配方（14px 圆角 / 1px 边框 / 82% 透感纸面）。
- * 提供商身份只由图标承载（混合网格下五色渐变卡底会互相打架，已退役）。
- * 遥测内容一律 mono + tabular-nums。
+ * Quota card: inherits the credential-card statTile recipe (14px radius, 1px border, 82% paper surface).
+ * Provider identity is icon-only because five gradient card backgrounds conflict in mixed grids.
+ * Telemetry always uses mono and tabular numerals.
  * ============================================================ */
 
 .card {
@@ -29,7 +29,7 @@
   }
 }
 
-/* 首次数据到达时的一次性级联入场；切 tab / 翻页 / 刷新不重播 */
+/* One-time stagger when data first arrives; tab changes, pagination, and refreshes do not replay it. */
 .cardEnter {
   animation: quota-card-in 0.45s var(--ease-out-strong, ease-out) both;
   animation-delay: var(--card-delay, 0s);
@@ -42,7 +42,7 @@
   }
 }
 
-/* ---------- 头部：品牌图标 + 文件名 ---------- */
+/* ---------- Header: provider icon + filename ---------- */
 
 .head {
   display: flex;
@@ -90,7 +90,7 @@
   margin-left: auto;
 }
 
-/* ---------- body 容器 ---------- */
+/* ---------- Body container ---------- */
 
 .body {
   display: flex;
@@ -99,7 +99,7 @@
   min-width: 0;
 }
 
-/* ---------- idle：整块 body 即点击加载的落点 ---------- */
+/* ---------- Idle: the entire body is the click-to-load target ---------- */
 
 .idleBody {
   display: flex;
@@ -155,7 +155,7 @@
   text-align: center;
 }
 
-/* ---------- loading：双幽灵行骨架 ---------- */
+/* ---------- Loading: two ghost-row skeletons ---------- */
 
 .skeleton {
   display: flex;
@@ -170,7 +170,7 @@
   gap: 6px;
 }
 
-/* 骨架：底色 + 一道 1.2s 匀速扫光（linear —— 环境性匀速运动的唯一例外） */
+/* Skeleton: base fill plus a linear 1.2s sweep, the sole ambient constant-speed motion. */
 .skeletonLabel,
 .skeletonTrack {
   display: block;
@@ -231,7 +231,7 @@
   overflow-wrap: anywhere;
 }
 
-/* ---------- footer 动作 ---------- */
+/* ---------- Footer actions ---------- */
 
 .actionRow {
   display: flex;
@@ -240,7 +240,7 @@
   flex-wrap: wrap;
 }
 
-/* 安静描边药丸（与凭证卡图标动作同族：hover 才显色块） */
+/* Quiet outlined pill, matching credential-card icon actions; fill appears only on hover. */
 .actionPill {
   display: inline-flex;
   align-items: center;

@@ -96,7 +96,7 @@ describe('countSectionErrors', () => {
     expect(counts.quota).toBe(0);
     expect(counts.advanced).toBe(0);
     expect(counts.payload).toBe(0);
-    // port 由常用 tab 渲染，同一错误在两个 tab 都要可见
+    // The common tab renders port, so the same error must be visible in both tabs.
     expect(counts.common).toBe(1);
   });
 
@@ -210,14 +210,14 @@ describe('localStorage readers', () => {
   test('readSavedMode falls back to visual on unknown values', () => {
     expect(readSavedMode('source')).toBe('source');
     expect(readSavedMode('visual')).toBe('visual');
-    expect(readSavedMode('full')).toBe('visual'); // 旧「简单/完整」值域不再合法
+    expect(readSavedMode('full')).toBe('visual'); // Legacy simple/full values are no longer valid.
     expect(readSavedMode(null)).toBe('visual');
   });
 
   test('readSavedSection falls back to common on stale values', () => {
     expect(readSavedSection('payload')).toBe('payload');
     expect(readSavedSection('common')).toBe('common');
-    expect(readSavedSection('server')).toBe('common'); // 历史分区 id 不再存在
+    expect(readSavedSection('server')).toBe('common'); // The legacy section ID no longer exists.
     expect(readSavedSection(null)).toBe('common');
   });
 });

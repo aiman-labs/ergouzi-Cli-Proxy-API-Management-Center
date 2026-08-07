@@ -64,7 +64,7 @@ export const AUTH_FILE_MANUAL_REFRESH_PROVIDERS = new Set([
   'xai',
 ]);
 
-// 标签类型颜色配置：权威版本在 @/utils/quota/constants.ts，此处仅转发
+// Tag-color source of truth lives in @/utils/quota/constants.ts; re-export it here.
 export { TYPE_COLORS } from '@/utils/quota';
 
 export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
@@ -112,7 +112,7 @@ export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   return String(raw).trim();
 };
 
-/** 这些 status_message 视为健康，不触发告警态。 */
+/** These status_message values are healthy and do not trigger warning state. */
 export const HEALTHY_AUTH_FILE_STATUS_MESSAGES = new Set([
   'ok',
   'healthy',
@@ -121,15 +121,15 @@ export const HEALTHY_AUTH_FILE_STATUS_MESSAGES = new Set([
   'available',
 ]);
 
-/** 是否存在非健康的 status_message（卡片告警态 / 谱条琥珀色共用判定）。 */
+/** Whether status_message is unhealthy; shared by card warnings and amber spectrum bars. */
 export const hasAuthFileStatusWarning = (file: AuthFileItem): boolean => {
   const message = getAuthFileStatusMessage(file);
   return Boolean(message) && !HEALTHY_AUTH_FILE_STATUS_MESSAGES.has(message.toLowerCase());
 };
 
 /**
- * 是否为需要用户处理的问题凭证。
- * 主动停用是独立状态，不应进入“问题”筛选或“删除问题凭证”的批量操作。
+ * Whether a credential requires user action.
+ * Manual disablement is separate and must not enter problem filters or problem deletion.
  */
 export const isProblemAuthFile = (file: AuthFileItem): boolean => {
   const status = typeof file.status === 'string' ? file.status.trim().toLowerCase() : '';

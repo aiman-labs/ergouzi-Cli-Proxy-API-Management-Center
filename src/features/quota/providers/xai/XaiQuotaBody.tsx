@@ -1,6 +1,6 @@
 /**
- * xAI 额度渲染体：套餐 chip 行（SuperGrok Heavy / 付费档=金卡）、
- * 周/月账单水位条、按量付费余额。
+ * xAI quota body with plan chips (SuperGrok Heavy and paid tiers use gold),
+ * weekly/monthly billing meters, and pay-as-you-go balance.
  */
 
 import { useMemo } from 'react';

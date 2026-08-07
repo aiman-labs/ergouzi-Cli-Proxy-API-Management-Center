@@ -38,8 +38,8 @@ export type AuthFilesToolbarProps = {
 };
 
 /**
- * 工作区工具栏：搜索 · 状态分段 · 排序 · 显示设置 popover。
- * 「删除筛选结果」放在工具栏最右端——与限定它作用域的过滤器相邻（映射原则）。
+ * Workspace toolbar: search, status segment, sorting, and display-settings popover.
+ * Delete filtered results stays beside the filters that define its scope.
  */
 export function AuthFilesToolbar(props: AuthFilesToolbarProps) {
   const {
@@ -142,7 +142,7 @@ export function AuthFilesToolbar(props: AuthFilesToolbarProps) {
           aria-expanded={displaySettingsOpen}
           aria-controls="auth-files-display-settings"
           title={t('auth_files.display_options_label')}
-        onClick={() => setDisplaySettingsOpen((open) => !open)}
+          onClick={() => setDisplaySettingsOpen((open) => !open)}
         >
           <IconSlidersHorizontal size={15} />
           <span>{t('auth_files.display_options_label')}</span>

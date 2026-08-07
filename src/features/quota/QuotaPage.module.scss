@@ -1,7 +1,7 @@
 @use '../../styles/mixins' as *;
 
 /* ============================================================
- * 额度页壳层：纯布局，视觉细节都在各组件的 colocated 模块里。
+ * Quota page shell: layout only; visual details live in colocated component modules.
  * ============================================================ */
 
 .page {
@@ -12,7 +12,7 @@
   min-width: 0;
 }
 
-/* ---------- 工作区（tabs + 网格 + 分页） ---------- */
+/* ---------- Workspace (tabs + grid + pagination) ---------- */
 
 .workbench {
   display: flex;
@@ -133,9 +133,9 @@
   overflow-wrap: anywhere;
 }
 
-/* ---------- 卡片网格 ----------
- * 列宽由 CSS 决定（不再用 JS 测量）：额度卡承载水位条，取 340px 下限，
- * 与认证文件页配额模式（.gridQuota）同一档。 */
+/* ---------- Card grid ----------
+ * CSS owns column sizing instead of JS measurement. Quota cards contain meters,
+ * so they share the 340px minimum used by auth-file quota mode (.gridQuota). */
 
 .grid {
   display: grid;
@@ -144,7 +144,7 @@
   align-items: stretch;
 }
 
-/* ---------- 分页 ---------- */
+/* ---------- Pagination ---------- */
 
 .pagination {
   display: flex;

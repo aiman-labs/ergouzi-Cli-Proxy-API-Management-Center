@@ -142,10 +142,10 @@ const parseThinkingJson = (value: string | undefined): Record<string, unknown> |
 };
 
 /**
- * `'*'` 是「该 provider 已停用」的编码，其唯一所有者是 `form.disabled`：
- * 载入时 `stripDisableAllModelsRule` 把它剥进该 flag，保存时仅凭该 flag 重新追加。
- * 因此这里必须过滤掉用户在文本里手打的 `'*'`——排除模型的编辑面永远不该能开关停用。
- * 导出仅为让 tests/providerExcludedModelsDisableRule.test.ts 钉住这个不变量。
+ * `'*'` encodes a disabled provider and is owned exclusively by `form.disabled`.
+ * `stripDisableAllModelsRule` moves it into that flag on load, and save restores it only from
+ * the flag. Manual `'*'` input must therefore be filtered from the exclusion editor.
+ * Exported only so providerExcludedModelsDisableRule.test.ts can enforce this invariant.
  */
 export const buildExcludedModels = (
   textValue: string,

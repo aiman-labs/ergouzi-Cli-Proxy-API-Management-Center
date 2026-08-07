@@ -1,7 +1,8 @@
 @use '../../../styles/mixins' as *;
 
-/* 额度页头部：与凭证库/仪表盘同语汇（紧排标题 / ▍mono 遥测 / 墨色药丸）。
- * meta 行遥测语义：已加载数是「活数据」（绿），需关注数走失败色，其余中性。 */
+/* Quota-page header shares the credential-library/dashboard vocabulary: tight title,
+ * mono telemetry with a cursor, and an ink pill. Loaded is live data (green), attention uses
+ * the failure color, and other metadata remains neutral. */
 
 .header {
   display: flex;
@@ -40,7 +41,7 @@
   letter-spacing: 0.02em;
   color: var(--text-secondary);
 
-  /* 终端游标：结构记号，与凭证库 meta 行同语汇 */
+  /* Terminal cursor as a structural marker shared with credential-library metadata. */
   &::before {
     content: '▍';
     color: var(--viz-success);
@@ -72,7 +73,7 @@
   color: var(--viz-failure);
 }
 
-/* ---------- 动作区 ---------- */
+/* ---------- Actions ---------- */
 
 .actions {
   display: flex;
@@ -94,7 +95,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 墨色药丸主按钮（深色主题自动反相） */
+/* Primary ink-pill button, automatically inverted in dark mode. */
 .primaryAction {
   display: inline-flex;
   align-items: center;

@@ -1,9 +1,10 @@
 /**
- * 额度水位条（原 QuotaProgressBar 的类型化后继）。
+ * Typed successor to QuotaProgressBar.
  *
- * dataviz 语法：细轨道退居背景，填充按剩余量三档着色（≥70 绿 / ≥30 琥珀 / <30 红），
- * percent === null 渲染空轨道 —— 未知不着色（Medium 类在 width 0 下不可见，行为与旧版一致）。
- * `index` 写入 `--meter-index`，供全页外衣做逐行入场级差；紧凑外衣不消费该变量。
+ * Dataviz grammar: a subtle track with three remaining-quota fill tiers (>=70 green,
+ * >=30 amber, <30 red). percent === null renders an empty track so unknown values stay uncolored;
+ * the Medium class remains invisible at width 0, matching legacy behavior.
+ * index sets --meter-index for row-by-row entry staggering in the full-page skin; compact skins ignore it.
  */
 
 import type { CSSProperties } from 'react';

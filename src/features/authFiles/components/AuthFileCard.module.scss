@@ -1,8 +1,8 @@
 @use '../../../styles/mixins' as *;
 
 /* ============================================================
- * 凭证卡片 — statTile 配方（14px 圆角 / 1px 边框 / 82% 透感纸面）
- * 遥测内容一律 mono + tabular-nums；品牌色只出现在头像与类型徽章。
+ * Credential card using the statTile recipe (14px radius / 1px border / 82% paper surface).
+ * Telemetry uses mono + tabular-nums; brand color is limited to the avatar and type badge.
  * ============================================================ */
 
 .card {
@@ -42,7 +42,7 @@
   background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
 
   .head,
-  .fileName, /* 满宽文件名副行已移出 .head，必须单列 */
+  .fileName, /* The full-width filename row moved outside .head and needs its own column. */
   .note,
   .health,
   .metaRow {
@@ -50,7 +50,7 @@
   }
 }
 
-/* 首次数据到达时的一次性级联入场；过滤/翻页/轮询不重播 */
+/* One-time staggered entrance on initial data; filters, pagination, and polling do not replay it. */
 .cardEnter {
   animation: card-in 0.45s var(--ease-out-strong, ease-out) both;
   animation-delay: var(--card-delay, 0s);
@@ -63,7 +63,7 @@
   }
 }
 
-/* ---------- 头部：勾选 + 品牌头像 + 身份 ---------- */
+/* ---------- Header: selection + brand avatar + identity ---------- */
 
 .head {
   display: flex;
@@ -177,7 +177,7 @@
   border-color: var(--border-hover);
 }
 
-/* 主行：账号（email / 项目 ID）领衔 */
+/* Primary row: account identity (email / project ID). */
 .account {
   font-size: 13px;
   font-weight: 600;
@@ -187,15 +187,15 @@
   @include text-ellipsis;
 }
 
-/* 无账号线索时主行回落到文件名，沿用 mono 语汇。
-   必须声明在 .account 之后——两者同为单类选择器，letter-spacing 靠源序决胜。 */
+/* Fall back to the filename in mono when no account identity exists.
+   Keep this after .account: both selectors have equal specificity, so source order decides letter-spacing. */
 .accountMono {
   font-family: $font-mono;
   letter-spacing: -0.01em;
 }
 
-/* 副行：满卡宽的文件名。email 在 codex 名字的中段，必须能换行才不丢信息，
-   overflow-wrap + -webkit-box 的组合与本文件 .warning span 同配方。 */
+/* Secondary row: full-width filename. Codex filenames place email in the middle,
+   so wrapping is required; this mirrors the .warning span overflow recipe. */
 .fileName {
   margin: -4px 0 0;
   font-family: $font-mono;
@@ -214,7 +214,7 @@
   @include text-ellipsis;
 }
 
-/* ---------- 告警行 ---------- */
+/* ---------- Warning row ---------- */
 
 .warning {
   display: flex;
@@ -240,7 +240,7 @@
   margin-top: 2px;
 }
 
-/* ---------- 健康区：eyebrow + 计数 + 状态条 ---------- */
+/* ---------- Health area: eyebrow + counts + status bar ---------- */
 
 .health {
   display: flex;
@@ -282,7 +282,7 @@
   color: var(--text-quaternary);
 }
 
-/* 绿色只给活的流量：有计数才点亮 */
+/* Green denotes live traffic only; light it only when counts exist. */
 .countLive.countOk {
   color: var(--viz-success);
 }
@@ -291,7 +291,7 @@
   color: var(--viz-failure);
 }
 
-/* ---------- ProviderStatusBar 注入样式（18 个契约类名） ---------- */
+/* ---------- ProviderStatusBar injected styles (18 contract class names) ---------- */
 
 .statusBar {
   display: flex;
@@ -404,7 +404,7 @@
   color: var(--text-secondary);
 }
 
-/* ---------- 元数据行：size · modified · priority · WRR weight ---------- */
+/* ---------- Metadata row: size · modified · priority · WRR weight ---------- */
 
 .metaRow {
   display: flex;
@@ -454,7 +454,7 @@
   opacity: 0.78;
 }
 
-/* ---------- 页脚动作区 ---------- */
+/* ---------- Footer actions ---------- */
 
 .actions {
   margin-top: auto;
@@ -480,7 +480,7 @@
   gap: 4px;
 }
 
-/* Button 会用 span 包裹 children；将包裹层也设为 flex，避免 SVG 按文本基线偏移。 */
+/* Button wraps children in a span; make it flex to prevent SVG baseline drift. */
 .actions :global(.btn > span) {
   display: inline-flex;
   align-items: center;
@@ -494,7 +494,7 @@
   flex-shrink: 0;
 }
 
-/* 图标按钮：方形紧凑的安静描边风——危险动作静默存在，hover 才显色块 */
+/* Icon buttons stay compact and quiet; destructive color appears only on hover. */
 .card .actions .iconButton {
   display: inline-flex;
   align-items: center;
@@ -526,7 +526,7 @@
   }
 }
 
-/* 按压反馈：所有可点元素 scale 0.96（reduced-motion 下豁免） */
+/* Press feedback: scale interactive elements to 0.96, except under reduced motion. */
 .actions :global(.btn) {
   transition:
     transform var(--dur-press, 160ms) var(--ease-out-strong, ease-out),
@@ -572,7 +572,7 @@
   }
 }
 
-/* ---------- 降级 ---------- */
+/* ---------- Fallbacks ---------- */
 
 @media (prefers-reduced-motion: reduce) {
   .card {

@@ -1,7 +1,7 @@
-// 配置文档的加载 / 保存状态机 —— 从旧 pages/ConfigPage.tsx 逐字提取。
-// 正确性核心，勿随手「顺化」：两阶段保存（预览前 re-fetch → diff → 确认时再 re-fetch，
-// 服务端变更则重新预览不落盘）、可视化模式的规范化 diff、commercial-mode 重启警告、
-// 保存成功后刷新全局 config store。
+// Config document load/save state machine extracted verbatim from the old pages/ConfigPage.tsx.
+// Correctness-critical behavior includes two-phase save with re-fetch before preview and confirm,
+// re-preview on server changes, normalized visual diffs, commercial-mode restart warnings,
+// and refreshing the global config store after a successful save.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,7 +30,7 @@ function normalizeYamlForVisualDiff(yamlContent: string): string {
 }
 
 export type UseConfigDocumentArgs = {
-  /** 当前编辑模式（旧实现中的 activeTab）。 */
+  /** Current editing mode, formerly activeTab. */
   mode: ConfigEditorMode;
   visualDirty: boolean;
   visualParseError: string | null;
@@ -253,7 +253,7 @@ export function useConfigDocument({
     visualParseError,
   ]);
 
-  /** 源码编辑器 onChange：写入内容并标脏。 */
+  /** Source-editor onChange that stores content and marks it dirty. */
   const handleChange = useCallback((value: string) => {
     setContent(value);
     setDirty(true);
@@ -277,7 +277,7 @@ export function useConfigDocument({
     });
   }, [isDirty, loadConfig, showConfirmation, t]);
 
-  /** 无需联网，直接恢复最近一次成功读取的原始服务端 YAML。 */
+  /** Restore the most recently loaded server YAML without a network request. */
   const handleDiscard = useCallback(() => {
     if (!isDirty) return;
 
@@ -302,7 +302,7 @@ export function useConfigDocument({
 
   return {
     content,
-    /** 模式切换握手（可视化→源码时把脏字段写进草稿）需要直接写 content/dirty。 */
+    /** Mode handoff writes content and dirty state directly when moving visual changes to source. */
     setContent,
     setDirty,
     loading,

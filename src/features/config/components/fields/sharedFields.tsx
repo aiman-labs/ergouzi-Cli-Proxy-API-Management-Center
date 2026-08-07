@@ -1,6 +1,6 @@
-// 8 个高频字段的唯一渲染源：SectionCommon（常用 tab）与各正典分区共用这些组件，
-// 两处渲染结构性不可能漂移（旧简单模式靠共享 JSX 常量达成同一目的）。
-// 注意：只挂载激活 tab，所以 FieldAnchor 的 DOM id 不会重复。
+// Single rendering source for eight common fields shared by SectionCommon and canonical sections.
+// This prevents structural drift between the two views. Only the active tab mounts, so
+// FieldAnchor DOM IDs remain unique.
 
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/Input';

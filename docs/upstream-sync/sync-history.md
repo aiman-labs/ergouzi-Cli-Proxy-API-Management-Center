@@ -737,6 +737,11 @@ Ergouzi integration:
   hidden, runtime-only, or newly imported credentials cannot be deleted.
 - Disabled credentials remain refreshable for operator rechecks, while the
   quota reset control now reflects the existing prohibition on reset writes.
+- Page and whole-pool quota refreshes are disabled and guarded while a reset
+  write is active, including delayed refresh-all confirmation callbacks.
+- Source comments introduced by the new feature-owned modules are normalized
+  to English; localized runtime strings, provider names, and locale assertions
+  remain unchanged.
 
 Verification:
 
@@ -748,7 +753,7 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' .
 
 Result:
 
-- `524/524` tests passed, including a 1600-Codex inventory target regression
+- `525/525` tests passed, including a 1600-Codex inventory target regression
   and a four-worker concurrency bound.
 - ESLint, TypeScript, and the production single-file Vite build passed.
 - The build produced `dist/index.html` as the sole release artifact.

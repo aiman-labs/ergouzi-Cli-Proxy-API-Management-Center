@@ -1,26 +1,26 @@
 /**
- * API Key 强度评估。
+ * API key strength assessment.
  *
- * 模型：字符集熵 × 可预测性折扣 → 四档。纯函数，UI 只消费 tier/segments，
- * 因此评分口径的调整不会牵动组件。
+ * Model: character-set entropy times predictability discount, mapped to four tiers.
+ * The UI consumes only tier and segments, so scoring changes remain isolated.
  */
 
 export type ApiKeyStrengthTier = 'weak' | 'fair' | 'good' | 'strong';
 
 export interface ApiKeyStrength {
   tier: ApiKeyStrengthTier;
-  /** 点亮的段数（0–4）；0 表示空输入 */
+  /** Number of lit segments from 0-4; zero means empty input. */
   segments: number;
-  /** 估算熵，向下取整到 bit */
+  /** Estimated entropy floored to whole bits. */
   bits: number;
 }
 
-/** 档位由弱到强，索引即点亮段数 - 1 */
+/** Tiers from weak to strong; index equals lit segments minus one. */
 const TIER_ORDER: readonly ApiKeyStrengthTier[] = ['weak', 'fair', 'good', 'strong'];
 
 export const API_KEY_STRENGTH_SEGMENTS = TIER_ORDER.length;
 
-// 字符集大小：与 isValidApiKeyCharset 允许的 ASCII 可见字符对齐（0x21–0x7E 共 94 个）
+// Character-set size matches the 94 visible ASCII characters accepted by isValidApiKeyCharset.
 const CHARSET_CLASSES: readonly { pattern: RegExp; size: number }[] = [
   { pattern: /[a-z]/, size: 26 },
   { pattern: /[A-Z]/, size: 26 },
@@ -28,7 +28,7 @@ const CHARSET_CLASSES: readonly { pattern: RegExp; size: number }[] = [
   { pattern: /[^a-zA-Z0-9]/, size: 32 },
 ];
 
-/** 一眼可猜的口令片段，命中即大幅折价 */
+/** Obvious password fragments that sharply reduce the score. */
 const GUESSABLE_TOKENS: readonly string[] = [
   'password',
   'passwd',
@@ -46,29 +46,29 @@ const GUESSABLE_TOKENS: readonly string[] = [
   'demo',
 ];
 
-// 重复字符与顺序字符几乎不贡献猜测成本，按残值计入有效长度
+// Repeated and sequential characters add little guessing cost, so count only residual value.
 const REPEAT_WEIGHT = 0.25;
 const SEQUENCE_WEIGHT = 0.35;
 const GUESSABLE_FACTOR = 0.4;
 
-// 熵阈值（bit）。48 位随机 base62 ≈ 285 bit，32 位十六进制 = 128 bit。
+// Entropy thresholds in bits: random 48-char base62 is about 285 bits; 32-char hex is 128 bits.
 const BITS_FOR_FAIR = 40;
 const BITS_FOR_GOOD = 64;
 const BITS_FOR_STRONG = 96;
 
-// 长度封顶：熵再高也挡不住短串被离线爆破，短于阈值就锁在对应档
+// Length caps prevent short strings from reaching high tiers despite estimated entropy.
 const LENGTH_CAPS: readonly { below: number; tier: ApiKeyStrengthTier }[] = [
   { below: 8, tier: 'weak' },
   { below: 16, tier: 'fair' },
   { below: 24, tier: 'good' },
 ];
 
-/** 字符种类过少时，长度带来的熵是假的（如 32 个 a） */
+/** Length overstates entropy when character variety is too low, such as 32 identical characters. */
 const MIN_UNIQUE_FOR_FAIR = 5;
 
 /**
- * 有效长度：与前一字符相同、或延续升/降序列的字符只按残值计入。
- * 随机串几乎不触发折扣，规律串会被显著压缩。
+ * Effective length discounts repeated characters and ascending or descending sequences.
+ * Random strings are mostly unaffected while patterned strings shrink substantially.
  */
 function effectiveLength(key: string): number {
   let total = 0;
@@ -87,7 +87,7 @@ function effectiveLength(key: string): number {
     const delta = code - previous;
     if (delta === 1 || delta === -1) {
       sequenceRun += 1;
-      // 前两个字符仍算新信息，第三个起才是可预测的顺序
+      // The first two characters still add information; predictability starts with the third.
       total += sequenceRun >= 3 ? SEQUENCE_WEIGHT : 1;
       continue;
     }
@@ -100,8 +100,8 @@ function effectiveLength(key: string): number {
 }
 
 /**
- * 最小周期长度：`deadbeefdeadbeef` → 8，`abcabca` → 3，无周期则返回原长。
- * 用 (s + s).indexOf(s, 1) 求解，尾部不完整的周期同样能识别。
+ * Minimum period length: `deadbeefdeadbeef` gives 8 and `abcabca` gives 3; otherwise full length.
+ * Uses (s + s).indexOf(s, 1), which also detects a partial final repetition.
  */
 function smallestPeriod(key: string): number {
   const period = `${key}${key}`.indexOf(key, 1);
@@ -127,7 +127,7 @@ function capTier(tier: ApiKeyStrengthTier, cap: ApiKeyStrengthTier): ApiKeyStren
 }
 
 /**
- * 评估用户自拟 API Key 的强度。仅供参考，不参与保存校验。
+ * Assess a user-defined API key for guidance only, without affecting save validation.
  */
 export function evaluateApiKeyStrength(rawKey: string): ApiKeyStrength {
   const key = rawKey.trim();
@@ -136,7 +136,7 @@ export function evaluateApiKeyStrength(rawKey: string): ApiKeyStrength {
   const pool = charsetSize(key);
   const lowerCased = key.toLowerCase();
   const guessable = GUESSABLE_TOKENS.some((token) => lowerCased.includes(token));
-  // 周期串的猜测成本只等于一个周期，重复部分按残值计入
+  // A periodic string costs roughly one period to guess; repeated portions add residual value.
   const period = smallestPeriod(key);
   const length = effectiveLength(key.slice(0, period)) + (key.length - period) * REPEAT_WEIGHT;
   const bits = Math.floor(length * Math.log2(pool) * (guessable ? GUESSABLE_FACTOR : 1));

@@ -1,5 +1,5 @@
-// 区块编辑器共享的纯工具（载荷/规则部分从旧 VisualConfigEditorBlocks 原样迁出，
-// 独立成文件以规避组件文件导出非组件的 react-refresh 限制）。
+// Pure helpers shared by block editors, extracted from VisualConfigEditorBlocks.
+// Kept separate to satisfy react-refresh restrictions on non-component exports.
 
 import type { useTranslation } from 'react-i18next';
 import type {
@@ -41,12 +41,12 @@ export function buildProtocolOptions(
   return options;
 }
 
-/** API Key 强度条相邻两段点亮的间隔；4 段全亮 = 135ms + 段内 160ms，整组仍在 300ms 内 */
+/** Stagger between API-key strength segments; four segments still complete within 300ms. */
 export const SEGMENT_STAGGER_MS = 45;
 
 /**
- * 强度条段填充的起跑延迟：只有本次新增的段排队，已亮的段和熄灭都不延迟。
- * 因此「生成」一次点亮四段是依次的波，而键入让强度 +1 段是即时的。
+ * Strength-segment start delay: only newly lit segments stagger; existing and clearing segments do not.
+ * Generation creates a four-segment wave, while a one-tier typing increase remains immediate.
  */
 export function segmentFillDelayMs(
   index: number,

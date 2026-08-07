@@ -87,7 +87,7 @@ export function AuthFilesOAuthExcludedEditPage() {
     () => getStringSetSignature(normalizeExcludedRules(excluded[resolvedProviderKey] ?? [])),
     [excluded, resolvedProviderKey]
   );
-  /** 规则集就是选中集本身——「待添加的自定义规则」随 Add 按钮一起消失了。 */
+  /** The rule set is the selection itself; there is no pending custom rule after Add. */
   const effectiveRules = useMemo(() => normalizeExcludedRules(selectedModels), [selectedModels]);
   const effectiveRulesSignature = useMemo(
     () => getStringSetSignature(effectiveRules),

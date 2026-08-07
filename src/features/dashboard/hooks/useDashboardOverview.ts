@@ -35,7 +35,7 @@ const EMPTY_TRAFFIC: TrafficWindow = {
   windowMinutes: 0,
 };
 
-/** `api-key-usage` 的键形如 `<baseUrl>|<apiKey>`，取第一个分隔符之后的部分 */
+/** api-key-usage keys are <baseUrl>|<apiKey>; return everything after the first separator. */
 const apiKeyFromCompositeKey = (compositeKey: string): string => {
   const separatorIndex = compositeKey.indexOf('|');
   return separatorIndex < 0 ? '' : compositeKey.slice(separatorIndex + 1).trim();
@@ -179,11 +179,12 @@ export const buildDashboardTraffic = (
 };
 
 /**
- * 汇总仪表盘所需的全部数据。
+ * Aggregate all data required by the dashboard.
  *
- * 流量数据有两个互不重叠的来源：`api-key-usage`（配置内联的 API Key 凭证）
- * 与 `auth-files`（文件/运行时凭证）。后端对二者的判定条件互斥，但插件提供的
- * 凭证理论上可同时命中，因此这里按 `account_type` + `account` 做一次防御性去重。
+ * Traffic has two disjoint sources: api-key-usage for inline API-key credentials
+ * and auth-files for file/runtime credentials. Backend classification is exclusive,
+ * but plugin credentials could theoretically hit both, so defensively dedupe by
+ * account_type + account.
  */
 export function useDashboardOverview() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
@@ -232,7 +233,7 @@ export function useDashboardOverview() {
         const apiKeys = await resolveApiKeysForModels();
         await fetchModelsFromStore(apiBase, apiKeys[0], forceRefresh);
       } catch {
-        // 模型列表失败不应影响仪表盘其余部分
+        // A model-list failure must not block the rest of the dashboard.
       }
     },
     [connected, apiBase, resolveApiKeysForModels, fetchModelsFromStore]
@@ -318,7 +319,7 @@ export function useDashboardOverview() {
     traffic,
     providers,
     credentials,
-    /** 首屏骨架的判定：配置与凭证都还没回来 */
+    /** Show the initial skeleton while both config and credentials are still pending. */
     initialLoading: connected && !config && authFiles === null,
     authFilesLoading,
     refresh,

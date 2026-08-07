@@ -2266,7 +2266,7 @@ export function useVisualConfig() {
   return {
     visualValues,
     visualDirty,
-    /** 脏字段的叶值键集合（streaming 为点号叶），供 tab 脏点 / 头部计数消费。 */
+    /** Dirty leaf keys, dotted for streaming, used by tab indicators and header counts. */
     visualDirtyFields: dirtyFields as ReadonlySet<string>,
     visualParseError,
     visualValidationErrors,

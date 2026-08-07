@@ -18,8 +18,8 @@ export type ProviderTabsProps = {
 };
 
 /**
- * 提供商过滤 tabs：水平排布、移动端横向滚动。
- * 品牌色只出现在图标上，激活态是文字 + 2px 墨色下划线。
+ * Provider filter tabs: horizontal layout with mobile overflow scrolling.
+ * Brand color is limited to icons; active state uses text plus a 2px ink underline.
  */
 export function ProviderTabs({ types, counts, active, resolvedTheme, onChange }: ProviderTabsProps) {
   const { t } = useTranslation();
@@ -45,7 +45,7 @@ export function ProviderTabs({ types, counts, active, resolvedTheme, onChange }:
               <span
                 className={styles.tabIconWrap}
                 style={
-                  // 与 AI 提供商界面一致：Kimi 图标底座随主题切换颜色
+                  // Match the AI providers view: the Kimi icon base follows the active theme.
                   isThemeSurfaceIconProvider(type)
                     ? { background: getThemeSurfaceIconBackground(resolvedTheme) }
                     : undefined
@@ -54,9 +54,7 @@ export function ProviderTabs({ types, counts, active, resolvedTheme, onChange }:
                 {iconSrc ? (
                   <img src={iconSrc} alt="" className={styles.tabIcon} />
                 ) : (
-                  <span className={styles.tabIconFallback}>
-                    {label.slice(0, 1).toUpperCase()}
-                  </span>
+                  <span className={styles.tabIconFallback}>{label.slice(0, 1).toUpperCase()}</span>
                 )}
               </span>
             )}

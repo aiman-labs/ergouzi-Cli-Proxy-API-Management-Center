@@ -19,11 +19,11 @@ export type QuotaHeaderProps = {
 };
 
 /**
- * 额度页头部：标题领衔 + ▍mono 遥测 meta 行 + 墨色药丸「刷新全部」。
- * 与凭证库头部同语汇（无 eyebrow —— ▍游标挂在 meta 行开头）。
+ * Quota-page header with title, mono telemetry metadata, and an ink-pill refresh-all action.
+ * It shares the credential-library header vocabulary without an eyebrow; the cursor starts the metadata row.
  *
- * 入场：三处 `data-reveal` 交给页面壳的 useRevealGroup 统一编排
- * （标题 0ms → meta 70ms → 动作 140ms → tabs 210ms）。
+ * Three data-reveal nodes are coordinated by the page shell's useRevealGroup:
+ * title at 0ms, metadata at 70ms, actions at 140ms, and tabs at 210ms.
  */
 export function QuotaHeader(props: QuotaHeaderProps) {
   const {
@@ -39,7 +39,7 @@ export function QuotaHeader(props: QuotaHeaderProps) {
     onCancel,
   } = props;
   const { t } = useTranslation();
-  // 批量结果陆续落地时，「已加载」是页面上唯一滚动的数字
+  // Loaded is the only rolling number while batch results arrive.
   const displayLoadedCount = useCountUp(loadedCount);
 
   return (

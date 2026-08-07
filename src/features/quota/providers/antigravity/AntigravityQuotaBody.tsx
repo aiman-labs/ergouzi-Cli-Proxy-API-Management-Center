@@ -1,5 +1,5 @@
 /**
- * Antigravity 额度渲染体：套餐 chip 行（ultra/ultra-lite=金卡）+ 分组水位条。
+ * Antigravity quota body with a plan-chip row (ultra/ultra-lite use gold) and grouped meters.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -124,7 +124,7 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
       ),
     [quota.groups]
   );
-  // 首屏直接显示准确文案；后续 effect 会在最近的分钟边界更新并重新排程。
+  // Show accurate copy on first render; the effect updates and reschedules at the next minute boundary.
   const [nowMs, setNowMs] = useState(() => Date.now() + serverTimeOffsetMs);
 
   useEffect(() => {
