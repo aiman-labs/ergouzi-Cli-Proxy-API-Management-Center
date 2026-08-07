@@ -725,6 +725,9 @@ Ergouzi integration:
 - Auth-file detail PATCHes now invalidate the edited credential's model cache
   and the shared quota cache before reloading inventory, preventing stale
   derived data after proxy, header, or excluded-model changes.
+- Dashboard manual refresh bypasses the short-lived model cache, while its
+  auth-file inventory loader rejects superseded or previous-connection
+  responses before they can overwrite current health and traffic data.
 
 Verification:
 
@@ -736,7 +739,7 @@ rg -n '^(<<<<<<<|=======|>>>>>>>)' .
 
 Result:
 
-- `518/518` tests passed, including a 1600-Codex inventory target regression
+- `520/520` tests passed, including a 1600-Codex inventory target regression
   and a four-worker concurrency bound.
 - ESLint, TypeScript, and the production single-file Vite build passed.
 - The build produced `dist/index.html` as the sole release artifact.

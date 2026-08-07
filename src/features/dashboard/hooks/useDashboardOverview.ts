@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { authFilesApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
 import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
@@ -134,29 +134,45 @@ export function useDashboardOverview() {
 
   const [authFiles, setAuthFiles] = useState<AuthFileItem[] | null>(null);
   const [authFilesLoading, setAuthFilesLoading] = useState(false);
+  const authFilesRequestIdRef = useRef(0);
 
   const loadAuthFiles = useCallback(async () => {
     if (!connected) return;
+    const requestId = ++authFilesRequestIdRef.current;
     setAuthFilesLoading(true);
     try {
       const response = await authFilesApi.list();
+      if (requestId !== authFilesRequestIdRef.current) return;
       setAuthFiles(response.files);
     } catch {
+      if (requestId !== authFilesRequestIdRef.current) return;
       setAuthFiles(null);
     } finally {
-      setAuthFilesLoading(false);
+      if (requestId === authFilesRequestIdRef.current) {
+        setAuthFilesLoading(false);
+      }
     }
   }, [connected]);
 
-  const loadModels = useCallback(async () => {
-    if (!connected || !apiBase) return;
-    try {
-      const apiKeys = await resolveApiKeysForModels();
-      await fetchModelsFromStore(apiBase, apiKeys[0]);
-    } catch {
-      // 模型列表失败不应影响仪表盘其余部分
-    }
-  }, [connected, apiBase, resolveApiKeysForModels, fetchModelsFromStore]);
+  const loadModels = useCallback(
+    async (forceRefresh = false) => {
+      if (!connected || !apiBase) return;
+      try {
+        const apiKeys = await resolveApiKeysForModels();
+        await fetchModelsFromStore(apiBase, apiKeys[0], forceRefresh);
+      } catch {
+        // 模型列表失败不应影响仪表盘其余部分
+      }
+    },
+    [connected, apiBase, resolveApiKeysForModels, fetchModelsFromStore]
+  );
+
+  useEffect(() => {
+    if (connected) return;
+    authFilesRequestIdRef.current += 1;
+    setAuthFiles(null);
+    setAuthFilesLoading(false);
+  }, [connected, apiBase]);
 
   useEffect(() => {
     if (!connected) return;
@@ -170,7 +186,7 @@ export function useDashboardOverview() {
     await Promise.allSettled([
       fetchConfig(true),
       loadAuthFiles(),
-      loadModels(),
+      loadModels(true),
       refreshRecentRequests(),
     ]);
   }, [connected, fetchConfig, loadAuthFiles, loadModels, refreshRecentRequests]);
