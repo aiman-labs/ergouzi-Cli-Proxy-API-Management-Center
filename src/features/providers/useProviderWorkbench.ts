@@ -16,13 +16,16 @@ import {
   codexToResource,
   fennoAIToResource,
   geminiToResource,
+  interactionsToResource,
   openaiToResource,
   qiniuCloudToResource,
+  lmuAIToResource,
   kimiToResource,
   vertexToResource,
   xaiToResource,
 } from './adapters';
 import { PROVIDER_BRAND_ORDER } from './descriptors';
+import { buildThinkingFromLevels } from './thinkingLevels';
 import type {
   ProviderBrand,
   ProviderEntryFormInput,
@@ -60,6 +63,13 @@ import {
   isQiniuCloudGeminiProvider,
   isQiniuCloudOpenAIProvider,
 } from './qiniuCloud';
+import {
+  buildLmuAIRaw,
+  isLmuAIClaudeProvider,
+  isLmuAICodexProvider,
+  isLmuAIGeminiProvider,
+  isLmuAIOpenAIProvider,
+} from './lmuAI';
 import { buildKimiRaw, isKimiClaudeProvider, isKimiOpenAIProvider } from './kimi';
 import { getSponsorProviderDefinition, type SponsorProtocolUrls } from './sponsorDefinitions';
 import { runSponsorMutationWithRecovery } from './sponsorMutationRecovery';
@@ -70,6 +80,7 @@ export const isGenericOpenAIProvider = (item: OpenAIProviderConfig): boolean =>
   !isCode0OpenAIProvider(item) &&
   !isFennoAIOpenAIProvider(item) &&
   !isQiniuCloudOpenAIProvider(item) &&
+  !isLmuAIOpenAIProvider(item) &&
   !isKimiOpenAIProvider(item);
 
 export interface UseProviderWorkbenchResult {
@@ -121,7 +132,13 @@ const parseThinkingJson = (value: string | undefined): Record<string, unknown> |
   return parsed as Record<string, unknown>;
 };
 
-const buildExcludedModels = (
+/**
+ * `'*'` 是「该 provider 已停用」的编码，其唯一所有者是 `form.disabled`：
+ * 载入时 `stripDisableAllModelsRule` 把它剥进该 flag，保存时仅凭该 flag 重新追加。
+ * 因此这里必须过滤掉用户在文本里手打的 `'*'`——排除模型的编辑面永远不该能开关停用。
+ * 导出仅为让 tests/providerExcludedModelsDisableRule.test.ts 钉住这个不变量。
+ */
+export const buildExcludedModels = (
   textValue: string,
   disabled: boolean,
   brand: ProviderBrand
@@ -139,7 +156,7 @@ const buildExcludedModels = (
 
 const buildModelAliases = (
   models: ProviderEntryFormInput['models'] | undefined,
-  includeOpenAIFields = false
+  includeImage = false
 ): ModelAlias[] =>
   (models ?? [])
     .map((m) => {
@@ -148,17 +165,19 @@ const buildModelAliases = (
         alias: m.alias?.trim() || undefined,
         priority: m.priority,
         testModel: m.testModel,
+        thinking: m.thinkingLevelsTouched
+          ? buildThinkingFromLevels(m.thinkingLevels)
+          : parseThinkingJson(m.thinkingJson),
       };
-      if (includeOpenAIFields) {
+      if (includeImage) {
         entry.image = m.image === true;
-        entry.thinking = parseThinkingJson(m.thinkingJson);
       }
       return entry;
     })
     .filter((m) => m.name);
 
 const buildProviderKeyConfig = (
-  brand: 'gemini' | 'codex' | 'xai' | 'claude' | 'vertex',
+  brand: 'gemini' | 'interactions' | 'codex' | 'xai' | 'claude' | 'vertex',
   input: ProviderEntryFormInput,
   existing?: ProviderKeyConfig | GeminiKeyConfig | null
 ): ProviderKeyConfig | GeminiKeyConfig => {
@@ -169,6 +188,7 @@ const buildProviderKeyConfig = (
   const next: ProviderKeyConfig = {
     apiKey: apiKeyChanged ? input.apiKey.trim() : (existing?.apiKey ?? ''),
     priority: input.priority,
+    weight: input.weight,
     prefix: input.prefix.trim() || undefined,
     baseUrl: input.baseUrl.trim() || undefined,
     proxyUrl: input.proxyUrl.trim() || undefined,
@@ -222,6 +242,7 @@ const buildOpenAIConfig = (
         return {
           apiKey: entry.apiKey.trim() || fallbackApiKey,
           proxyUrl: entry.proxyUrl.trim() || undefined,
+          weight: entry.weight,
           authIndex: entry.authIndex?.trim() || undefined,
         };
       })
@@ -257,7 +278,8 @@ const buildSponsorOpenAIConfig = (
   const apiKeyEntries = mergeSponsorOpenAIAPIKeyEntries(
     existing?.apiKeyEntries,
     apiKey,
-    entry.proxyUrl.trim() || undefined
+    entry.proxyUrl.trim() || undefined,
+    entry.weight
   );
 
   return {
@@ -293,6 +315,7 @@ const buildSponsorProviderKeyConfig = (
     proxyUrl: entry.proxyUrl.trim() || undefined,
     prefix: entry.prefix.trim() || undefined,
     priority: entry.priority,
+    weight: entry.weight,
     disableCooling: entry.disableCooling === true,
     excludedModels: excluded,
     models: models.length ? models : undefined,
@@ -318,6 +341,7 @@ const buildSponsorGeminiConfig = (
     proxyUrl: entry.proxyUrl.trim() || undefined,
     prefix: entry.prefix.trim() || undefined,
     priority: entry.priority,
+    weight: entry.weight,
     disableCooling: entry.disableCooling === true,
     excludedModels: excluded,
     models: models.length ? models : undefined,
@@ -445,12 +469,21 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
         case 'gemini':
           resources = (config.geminiApiKeys ?? []).reduce<ProviderResource[]>(
             (out, item, index) => {
-              if (!isCode0GeminiProvider(item) && !isQiniuCloudGeminiProvider(item)) {
+              if (
+                !isCode0GeminiProvider(item) &&
+                !isQiniuCloudGeminiProvider(item) &&
+                !isLmuAIGeminiProvider(item)
+              ) {
                 out.push(geminiToResource(item, index));
               }
               return out;
             },
             []
+          );
+          break;
+        case 'interactions':
+          resources = (config.interactionsApiKeys ?? []).map((item, index) =>
+            interactionsToResource(item, index)
           );
           break;
         case 'codex':
@@ -459,7 +492,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               !isApiKeyFunCodexProvider(item) &&
               !isCode0CodexProvider(item) &&
               !isFennoAICodexProvider(item) &&
-              !isQiniuCloudCodexProvider(item)
+              !isQiniuCloudCodexProvider(item) &&
+              !isLmuAICodexProvider(item)
             ) {
               out.push(codexToResource(item, index));
             }
@@ -477,6 +511,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 !isCode0ClaudeProvider(item) &&
                 !isFennoAIClaudeProvider(item) &&
                 !isQiniuCloudClaudeProvider(item) &&
+                !isLmuAIClaudeProvider(item) &&
                 !isKimiClaudeProvider(item) &&
                 !isClaudeApiProvider(item)
               ) {
@@ -532,6 +567,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           resources = sponsorResource ? [sponsorResource] : [];
           break;
         }
+        case 'lmuAI': {
+          const sponsorResource = lmuAIToResource(buildLmuAIRaw(config));
+          resources = sponsorResource ? [sponsorResource] : [];
+          break;
+        }
         case 'kimi': {
           const sponsorResource = kimiToResource(buildKimiRaw(config));
           resources = sponsorResource ? [sponsorResource] : [];
@@ -563,7 +603,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               ? buildFennoAIRaw(config)
               : brand === 'qiniuCloud'
                 ? buildQiniuCloudRaw(config)
-                : buildKimiRaw(config);
+                : brand === 'lmuAI'
+                  ? buildLmuAIRaw(config)
+                  : buildKimiRaw(config);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
       const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
       const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
@@ -675,6 +717,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.createGeminiKey(
             buildProviderKeyConfig('gemini', input) as GeminiKeyConfig
           );
+        } else if (brand === 'interactions') {
+          await providersApi.createInteractionsKey(
+            buildProviderKeyConfig('interactions', input) as GeminiKeyConfig
+          );
         } else if (brand === 'codex') {
           await providersApi.createCodexConfig(
             buildProviderKeyConfig('codex', input) as ProviderKeyConfig
@@ -700,6 +746,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'code0' ||
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||
+          brand === 'lmuAI' ||
           brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
@@ -724,6 +771,14 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             selector.apiKey,
             selector.baseUrl,
             buildProviderKeyConfig('gemini', input, existing) as GeminiKeyConfig,
+            selector.index
+          );
+        } else if (brand === 'interactions' && selector.brand === 'interactions') {
+          const existing = resource.raw as GeminiKeyConfig;
+          await providersApi.updateInteractionsKey(
+            selector.apiKey,
+            selector.baseUrl,
+            buildProviderKeyConfig('interactions', input, existing) as GeminiKeyConfig,
             selector.index
           );
         } else if (brand === 'codex' && selector.brand === 'codex') {
@@ -776,6 +831,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'code0' ||
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||
+          brand === 'lmuAI' ||
           brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
@@ -797,6 +853,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.deleteGeminiKey(sel.apiKey, sel.baseUrl);
           const next = (config?.geminiApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('gemini-api-key', next);
+        } else if (sel.brand === 'interactions') {
+          await providersApi.deleteInteractionsKey(sel.apiKey, sel.baseUrl);
+          const next = (config?.interactionsApiKeys ?? []).filter((_, i) => i !== sel.index);
+          updateConfigValue('interactions-api-key', next);
         } else if (sel.brand === 'codex') {
           await providersApi.deleteCodexConfig(sel.apiKey, sel.baseUrl);
           const next = (config?.codexApiKeys ?? []).filter((_, i) => i !== sel.index);
@@ -828,6 +888,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           sel.brand === 'code0' ||
           sel.brand === 'fennoAI' ||
           sel.brand === 'qiniuCloud' ||
+          sel.brand === 'lmuAI' ||
           sel.brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(async () => {
@@ -871,10 +932,18 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.updateGeminiKey(
             selector.apiKey,
             selector.baseUrl,
-            {
-              ...current,
-              excludedModels: excluded,
-            },
+            { ...current, excludedModels: excluded },
+            selector.index
+          );
+        } else if (brand === 'interactions' && selector.brand === 'interactions') {
+          const current = resource.raw as GeminiKeyConfig;
+          const excluded = disabled
+            ? withDisableAllModelsRule(current.excludedModels)
+            : withoutDisableAllModelsRule(current.excludedModels);
+          await providersApi.updateInteractionsKey(
+            selector.apiKey,
+            selector.baseUrl,
+            { ...current, excludedModels: excluded },
             selector.index
           );
         } else if (
@@ -925,6 +994,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'code0' ||
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||
+          brand === 'lmuAI' ||
           brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(

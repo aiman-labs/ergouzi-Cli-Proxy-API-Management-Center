@@ -192,7 +192,7 @@ export function LogsPage() {
   const logRequestInFlightRef = useRef(false);
   const pendingFullReloadRef = useRef(false);
 
-  // 保存最新游标用于增量获取；新 CPA 后端优先使用 cursor，旧接口和 Home 继续使用 after。
+  // Prefer cursor for incremental CPA reads; legacy CPA and Home still use after.
   const logPositionRef = useRef<LogPosition>({});
 
   const resetLogPosition = () => {

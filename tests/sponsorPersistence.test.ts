@@ -35,9 +35,14 @@ describe('sponsor persistence', () => {
     ];
 
     expect(
-      mergeSponsorOpenAIAPIKeyEntries(existing, 'updated-first', 'https://new.example')
+      mergeSponsorOpenAIAPIKeyEntries(existing, 'updated-first', 'https://new.example', 7)
     ).toEqual([
-      { apiKey: 'updated-first', proxyUrl: 'https://new.example', authIndex: 'first-index' },
+      {
+        apiKey: 'updated-first',
+        proxyUrl: 'https://new.example',
+        weight: 7,
+        authIndex: 'first-index',
+      },
       { apiKey: 'second', proxyUrl: 'https://second.example', authIndex: 'second-index' },
     ]);
   });

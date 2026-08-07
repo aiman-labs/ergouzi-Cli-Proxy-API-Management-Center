@@ -238,3 +238,42 @@ localized recovery messages, and their responsive styles.
 Review notes: Do not infer the file-logging gate from configuration alone.
 Removing runtime identity silently disables a supported Home management
 surface even when the generic CPAMC build and CPA-only tests pass.
+
+## DEC-20260807-012: Adopt the v1.22.0 redesign without weakening Ergouzi operations
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | auth files / quota / config / providers / logs |
+| Upstream base | `v1.22.0` / `0eeb747c` |
+| Ergouzi source | `sync/upstream-v1.22.0` |
+
+Final decision: adopt the complete upstream `v1.22.0` release, including the
+new feature-oriented page structure, provider workbench, configuration editor,
+quota timeline, and single-file build changes. Reapply Ergouzi behavior at the
+new ownership boundaries instead of retaining the deleted legacy page modules.
+
+The quota page includes disabled credentials, supports page sizes through
+`100`, refreshes the current page directly with global concurrency `4`, and
+uses the CPA backend job for every Codex credential in a whole-inventory
+refresh. Results are published progressively, terminal jobs reload the auth
+inventory, and quota errors remain available to auth-file error filtering in
+the current UI session.
+
+The auth-file page preserves import options, import-time and priority sorting,
+error/success-count/Codex-plan filters, quota details, bounded manual-refresh
+polling, and page-scoped selected-item operations. Batch status changes exclude
+credentials whose manual refresh is active. Search includes operational
+metadata but never the backend `account` field because API-key credentials may
+store the raw secret there.
+
+Visual configuration keeps quota-governor, capacity-alert, and Codex
+plan-priority fields in the new section registry and dirty-field YAML merge.
+Provider updates use backend list indexes to disambiguate duplicate identities,
+preserve unknown fields, and retain hidden sponsor entries. Home log runtime
+support and source-aware plugin polling remain supported.
+
+Review notes: keep the 1600-credential inventory/concurrency regressions, four
+locale key parity, config-field registry parity, provider duplicate-index
+tests, Home log compatibility tests, and the release asset contract as gates
+for later upstream redesigns.

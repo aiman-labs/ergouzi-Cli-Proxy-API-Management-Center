@@ -10,6 +10,7 @@ import type {
   PayloadParamEntry,
   PayloadParamValueType,
   PayloadRule,
+  RoutingStrategy,
   VisualConfigValues,
   VisualConfigValidationErrors,
   PayloadParamValidationErrorCode,
@@ -550,6 +551,17 @@ function parseRawPayloadParamValue(raw: unknown): string {
 function parsePayloadProtocol(raw: unknown): string | undefined {
   if (typeof raw !== 'string') return undefined;
   return raw.trim() ? raw : undefined;
+}
+
+export function parseRoutingStrategy(raw: unknown): RoutingStrategy {
+  const normalized = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (['weighted-round-robin', 'weightedroundrobin', 'wrr'].includes(normalized)) {
+    return 'weighted-round-robin';
+  }
+  if (['fill-first', 'fillfirst', 'ff'].includes(normalized)) return 'fill-first';
+  return 'round-robin';
 }
 
 export function parseDisableImageGenerationMode(raw: unknown): DisableImageGenerationMode {
@@ -2098,7 +2110,140 @@ export function useVisualConfig() {
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
-      const newValues = parseVisualConfigValuesFromYaml(yamlContent);
+      const document = parseDocument(yamlContent);
+      if (document.errors.length > 0) {
+        throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
+      }
+
+      const parsedRaw: unknown = parseYaml(yamlContent) || {};
+      const parsed = asRecord(parsedRaw) ?? {};
+      const tls = asRecord(parsed.tls);
+      const remoteManagement = asRecord(parsed['remote-management']);
+      const quotaExceeded = asRecord(parsed['quota-exceeded']);
+      const routing = asRecord(parsed.routing);
+      const payload = asRecord(parsed.payload);
+      const streaming = asRecord(parsed.streaming);
+      const plugins = asRecord(parsed.plugins);
+      const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
+      const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
+
+      const newValues: VisualConfigValues = {
+        ...parseVisualConfigValuesFromYaml(yamlContent),
+        host: typeof parsed.host === 'string' ? parsed.host : '',
+        port: String(parsed.port ?? ''),
+
+        tlsEnable: Boolean(tls?.enable),
+        tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
+        tlsKey: typeof tls?.key === 'string' ? tls.key : '',
+
+        rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
+        rmSecretKey:
+          typeof remoteManagement?.['secret-key'] === 'string'
+            ? remoteManagement['secret-key']
+            : '',
+        rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
+        rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
+        rmPanelRepo:
+          typeof remoteManagement?.['panel-github-repository'] === 'string'
+            ? remoteManagement['panel-github-repository']
+            : typeof remoteManagement?.['panel-repo'] === 'string'
+              ? remoteManagement['panel-repo']
+              : '',
+
+        authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
+        apiKeysText: resolveApiKeysText(parsed),
+        pluginsEnabled: Boolean(plugins?.enabled),
+        pluginStoreSources: parseStringList(plugins?.['store-sources']),
+        pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
+
+        debug: Boolean(parsed.debug),
+        commercialMode: Boolean(parsed['commercial-mode']),
+        loggingToFile: Boolean(parsed['logging-to-file']),
+        logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
+        errorLogsMaxFiles: String(parsed['error-logs-max-files'] ?? ''),
+        usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
+        redisUsageQueueRetentionSeconds: String(
+          parsed['redis-usage-queue-retention-seconds'] ?? ''
+        ),
+
+        proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
+        forceModelPrefix: Boolean(parsed['force-model-prefix']),
+        passthroughHeaders: Boolean(parsed['passthrough-headers']),
+        requestRetry: String(parsed['request-retry'] ?? ''),
+        maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
+        maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
+        disableCooling: Boolean(parsed['disable-cooling']),
+        disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
+        gptImage2BaseModel:
+          typeof parsed['gpt-image-2-base-model'] === 'string'
+            ? parsed['gpt-image-2-base-model']
+            : '',
+        authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
+        wsAuth: Boolean(parsed['ws-auth']),
+        antigravitySignatureCacheEnabled: Boolean(
+          parsed['antigravity-signature-cache-enabled'] ?? true
+        ),
+        antigravitySignatureBypassStrict: Boolean(parsed['antigravity-signature-bypass-strict']),
+
+        claudeHeaderUserAgent:
+          typeof claudeHeaderDefaults?.['user-agent'] === 'string'
+            ? claudeHeaderDefaults['user-agent']
+            : '',
+        claudeHeaderPackageVersion:
+          typeof claudeHeaderDefaults?.['package-version'] === 'string'
+            ? claudeHeaderDefaults['package-version']
+            : '',
+        claudeHeaderRuntimeVersion:
+          typeof claudeHeaderDefaults?.['runtime-version'] === 'string'
+            ? claudeHeaderDefaults['runtime-version']
+            : '',
+        claudeHeaderOs: typeof claudeHeaderDefaults?.os === 'string' ? claudeHeaderDefaults.os : '',
+        claudeHeaderArch:
+          typeof claudeHeaderDefaults?.arch === 'string' ? claudeHeaderDefaults.arch : '',
+        claudeHeaderTimeout:
+          typeof claudeHeaderDefaults?.timeout === 'string' ? claudeHeaderDefaults.timeout : '',
+        claudeHeaderStabilizeDeviceProfile: Boolean(
+          claudeHeaderDefaults?.['stabilize-device-profile']
+        ),
+        codexHeaderUserAgent:
+          typeof codexHeaderDefaults?.['user-agent'] === 'string'
+            ? codexHeaderDefaults['user-agent']
+            : '',
+        codexHeaderBetaFeatures:
+          typeof codexHeaderDefaults?.['beta-features'] === 'string'
+            ? codexHeaderDefaults['beta-features']
+            : '',
+
+        quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
+        quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
+        quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
+
+        routingStrategy: parseRoutingStrategy(routing?.strategy),
+        routingSessionAffinity: Boolean(
+          routing?.['session-affinity'] ?? routing?.sessionAffinity ?? routing?.['sessionAffinity']
+        ),
+        routingSessionAffinityTTL:
+          typeof routing?.['session-affinity-ttl'] === 'string'
+            ? routing['session-affinity-ttl']
+            : typeof routing?.sessionAffinityTTL === 'string'
+              ? routing.sessionAffinityTTL
+              : typeof routing?.['sessionAffinityTTL'] === 'string'
+                ? routing['sessionAffinityTTL']
+                : '',
+
+        payloadDefaultRules: parsePayloadRules(payload?.default),
+        payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
+        payloadOverrideRules: parsePayloadRules(payload?.override),
+        payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
+        payloadFilterRules: parsePayloadFilterRules(payload?.filter),
+
+        streaming: {
+          keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
+          bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
+          nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
+        },
+      };
+
       dispatch({ type: 'load_success', values: newValues });
       return { ok: true as const };
     } catch (error: unknown) {
@@ -2121,6 +2266,8 @@ export function useVisualConfig() {
   return {
     visualValues,
     visualDirty,
+    /** 脏字段的叶值键集合（streaming 为点号叶），供 tab 脏点 / 头部计数消费。 */
+    visualDirtyFields: dirtyFields as ReadonlySet<string>,
     visualParseError,
     visualValidationErrors,
     visualHasPayloadValidationErrors,

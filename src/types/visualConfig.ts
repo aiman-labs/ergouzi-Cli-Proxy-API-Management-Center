@@ -1,11 +1,10 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
+export type RoutingStrategy = 'round-robin' | 'weighted-round-robin' | 'fill-first';
 export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
 export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =
-  | 'payload_invalid_number'
-  | 'payload_invalid_boolean'
-  | 'payload_invalid_json';
+  'payload_invalid_number' | 'payload_invalid_boolean' | 'payload_invalid_json';
 
 export type VisualConfigFieldPath =
   | 'port'
@@ -172,7 +171,7 @@ export type VisualConfigValues = {
   quotaCapacityPlusWeeklyThreshold: string;
   quotaCapacityTeamFiveHourThreshold: string;
   quotaCapacityTeamWeeklyThreshold: string;
-  routingStrategy: 'round-robin' | 'fill-first';
+  routingStrategy: RoutingStrategy;
   routingCodexProPlanPriority: string;
   routingCodexPlusPlanPriority: string;
   routingCodexTeamPlanPriority: string;

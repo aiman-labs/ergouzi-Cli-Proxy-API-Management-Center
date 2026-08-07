@@ -22,12 +22,13 @@ export const replaceVisibleSponsorEntry = <T>(
 export const mergeSponsorOpenAIAPIKeyEntries = (
   existingEntries: readonly ApiKeyEntry[] | undefined,
   apiKey: string,
-  proxyUrl: string | undefined
+  proxyUrl: string | undefined,
+  weight: number | undefined
 ): ApiKeyEntry[] => {
   if (!apiKey) return [];
   const next = (existingEntries ?? []).map((entry) => ({ ...entry }));
   if (next.length === 0) {
-    return [{ apiKey, proxyUrl }];
+    return [{ apiKey, proxyUrl, weight }];
   }
   const firstNonEmptyIndex = next.findIndex((entry) => entry.apiKey.trim());
   const editableIndex = firstNonEmptyIndex >= 0 ? firstNonEmptyIndex : 0;
@@ -35,6 +36,7 @@ export const mergeSponsorOpenAIAPIKeyEntries = (
     ...next[editableIndex],
     apiKey,
     proxyUrl,
+    weight,
   };
   return next;
 };

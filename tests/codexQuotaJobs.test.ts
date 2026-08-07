@@ -8,7 +8,7 @@ import {
 import {
   buildCodexQuotaDataFromUsageBody,
   CODEX_CONFIG,
-} from '../src/components/quota/quotaConfigs';
+} from '../src/features/quota/providers/codex/data';
 
 const t = ((key: string) => key) as never;
 

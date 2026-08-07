@@ -1,0 +1,17 @@
+.importOptionsEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.importOptionsField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+  }
+}

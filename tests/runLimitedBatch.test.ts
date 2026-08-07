@@ -24,4 +24,30 @@ describe('runLimitedBatch', () => {
     expect(seen).toEqual([1, 2, 3, 4, 5]);
     expect(results).toEqual([10, 20, 30, 40, 50]);
   });
+
+  test('keeps a 1600-item quota batch within four concurrent workers', async () => {
+    let active = 0;
+    let maxActive = 0;
+    let completed = 0;
+    const items = Array.from({ length: 1600 }, (_, index) => index);
+
+    const results = await runLimitedBatch({
+      items,
+      concurrency: 4,
+      worker: async (item) => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await Promise.resolve();
+        active -= 1;
+        return item;
+      },
+      onResult: () => {
+        completed += 1;
+      },
+    });
+
+    expect(maxActive).toBe(4);
+    expect(completed).toBe(1600);
+    expect(results).toEqual(items);
+  });
 });
