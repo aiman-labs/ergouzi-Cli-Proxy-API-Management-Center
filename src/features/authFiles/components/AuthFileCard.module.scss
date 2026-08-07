@@ -1,0 +1,593 @@
+@use '../../../styles/mixins' as *;
+
+/* ============================================================
+ * Credential card using the statTile recipe (14px radius / 1px border / 82% paper surface).
+ * Telemetry uses mono + tabular-nums; brand color is limited to the avatar and type badge.
+ * ============================================================ */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  transition:
+    transform var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
+    border-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
+    box-shadow var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    transform: translateY(-1px);
+    border-color: var(--border-hover);
+    box-shadow: 0 12px 26px -14px rgb(0 0 0 / 0.16);
+  }
+}
+
+.cardCompact {
+  gap: 10px;
+  padding: 13px 14px;
+}
+
+.cardSelected {
+  border-color: color-mix(in srgb, var(--primary-color) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 40%, transparent);
+}
+
+.cardDisabled {
+  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+
+  .head,
+  .fileName, /* The full-width filename row moved outside .head and needs its own column. */
+  .note,
+  .health,
+  .metaRow {
+    opacity: 0.55;
+  }
+}
+
+/* One-time staggered entrance on initial data; filters, pagination, and polling do not replay it. */
+.cardEnter {
+  animation: card-in 0.45s var(--ease-out-strong, ease-out) both;
+  animation-delay: var(--card-delay, 0s);
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+}
+
+/* ---------- Header: selection + brand avatar + identity ---------- */
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.selection {
+  margin-top: 8px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.avatarImage {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.avatarFallback {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.typeBadge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.stateBadge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.6;
+  padding: 2px 8px;
+  border-radius: $radius-full;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.stateDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-quaternary);
+}
+
+.stateActive {
+  color: var(--success-badge-text);
+  border-color: color-mix(in srgb, var(--viz-success) 35%, transparent);
+  background: color-mix(in srgb, var(--viz-success) 8%, transparent);
+
+  .stateDot {
+    background: var(--viz-success);
+  }
+}
+
+.stateWarning {
+  color: var(--amber-text);
+  border-color: var(--amber-30);
+  background: var(--amber-10);
+
+  .stateDot {
+    background: var(--amber-color);
+  }
+}
+
+.stateDisabled {
+  color: var(--text-tertiary);
+  border-color: var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.stateVirtual {
+  color: var(--text-secondary);
+  border-style: dashed;
+  border-color: var(--border-hover);
+}
+
+/* Primary row: account identity (email / project ID). */
+.account {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  @include text-ellipsis;
+}
+
+/* Fall back to the filename in mono when no account identity exists.
+   Keep this after .account: both selectors have equal specificity, so source order decides letter-spacing. */
+.accountMono {
+  font-family: $font-mono;
+  letter-spacing: -0.01em;
+}
+
+/* Secondary row: full-width filename. Codex filenames place email in the middle,
+   so wrapping is required; this mirrors the .warning span overflow recipe. */
+.fileName {
+  margin: -4px 0 0;
+  font-family: $font-mono;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+  @include text-ellipsis-multiline(2);
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  @include text-ellipsis;
+}
+
+/* ---------- Warning row ---------- */
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--warning-text);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  padding: 7px 9px;
+
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    @include text-ellipsis-multiline(2);
+  }
+}
+
+.warningIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---------- Health area: eyebrow + counts + status bar ---------- */
+
+.health {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.healthHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.healthLabel {
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.healthCounts {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.countOk {
+  color: var(--text-quaternary);
+}
+
+.countFail {
+  color: var(--text-quaternary);
+}
+
+/* Green denotes live traffic only; light it only when counts exist. */
+.countLive.countOk {
+  color: var(--viz-success);
+}
+
+.countLive.countFail {
+  color: var(--viz-failure);
+}
+
+/* ---------- ProviderStatusBar injected styles (18 contract class names) ---------- */
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusBlocks {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.statusBlockWrapper {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 3px;
+}
+
+.statusBlock {
+  height: 14px;
+  border-radius: 2px;
+}
+
+.statusBlockIdle {
+  background: color-mix(in srgb, var(--text-quaternary) 26%, transparent);
+}
+
+.statusBlockActive .statusBlock {
+  outline: 1px solid var(--text-secondary);
+  outline-offset: 1px;
+}
+
+.statusRate {
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-quaternary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.statusRateHigh {
+  color: var(--viz-success);
+}
+
+.statusRateMedium {
+  color: var(--quota-medium-color);
+}
+
+.statusRateLow {
+  color: var(--viz-failure);
+}
+
+.statusTooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--floating-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--floating-shadow);
+  pointer-events: none;
+  font-family: $font-mono;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.statusTooltipLeft {
+  left: 0;
+  transform: none;
+}
+
+.statusTooltipRight {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.tooltipTime {
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+}
+
+.tooltipStats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+}
+
+.tooltipSuccess {
+  color: var(--viz-success);
+}
+
+.tooltipFailure {
+  color: var(--viz-failure);
+}
+
+.tooltipRate {
+  color: var(--text-secondary);
+}
+
+/* ---------- Metadata row: size · modified · priority · WRR weight ---------- */
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.metaDivider {
+  color: var(--text-quaternary);
+  user-select: none;
+}
+
+.metaPriority,
+.metaWeight {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: $radius-full;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.metaPriority {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-quaternary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--text-quaternary) 24%, transparent);
+}
+
+.metaWeight {
+  color: var(--primary-active);
+  background: var(--primary-10);
+  border-color: var(--primary-30);
+}
+
+.metaMetricLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: currentColor;
+  opacity: 0.78;
+}
+
+/* ---------- Footer actions ---------- */
+
+.actions {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+}
+
+.actionsMain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.utilityActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Button wraps children in a span; make it flex to prevent SVG baseline drift. */
+.actions :global(.btn > span) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.actions :global(.btn svg) {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Icon buttons stay compact and quiet; destructive color appears only on hover. */
+.card .actions .iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.card .actions .iconButton:global(.btn-danger) {
+  color: var(--danger-color);
+  border-color: color-mix(in srgb, var(--danger-color) 28%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card .actions .iconButton:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    background: var(--bg-tertiary);
+  }
+
+  .card .actions .iconButton:global(.btn-danger):hover:not(:disabled) {
+    color: var(--danger-color);
+    border-color: color-mix(in srgb, var(--danger-color) 45%, transparent);
+    background: var(--destructive-10);
+  }
+}
+
+/* Press feedback: scale interactive elements to 0.96, except under reduced motion. */
+.actions :global(.btn) {
+  transition:
+    transform var(--dur-press, 160ms) var(--ease-out-strong, ease-out),
+    background-color $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+}
+
+.actions :global(.btn:active:not(:disabled)) {
+  transform: scale(0.96);
+}
+
+.toggleWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.toggleLabel {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+@include mobile {
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .actionsMain {
+    width: 100%;
+  }
+
+  .actionsMain > :global(.btn) {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .toggleWrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* ---------- Fallbacks ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .cardEnter {
+    animation: none;
+  }
+
+  .actions :global(.btn) {
+    transition: none;
+  }
+
+  .actions :global(.btn:active:not(:disabled)) {
+    transform: none;
+  }
+}

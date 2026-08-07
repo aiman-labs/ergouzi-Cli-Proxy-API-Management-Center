@@ -86,6 +86,17 @@
   --glass-bg: color-mix(in srgb, var(--bg-primary) 82%, transparent);
   --glass-bg-secondary: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
   --glass-border: color-mix(in srgb, var(--border-color) 60%, transparent);
+
+  // Visualization colors derive from semantic colors, with separate dark-theme steps.
+  // Emerald is reserved exclusively for live traffic.
+  --viz-success: #10b981;
+  --viz-failure: #c65746;
+
+  // Motion vocabulary uses stronger deceleration than the built-in easing.
+  // Press is 160ms, hover is 200ms, and UI motion stays within 300ms.
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-press: 160ms;
+  --dur-hover: 200ms;
 }
 
 // 纯白主题
@@ -243,6 +254,11 @@
   --accent-bg: var(--bg-tertiary);
 
   --glass-border: color-mix(in srgb, var(--border-color) 55%, transparent);
+
+  // On dark cards, #10b981 exceeds the OKLCH 0.48-0.67 range and lacks color-blind separation
+  // from failure red, so the dark theme uses a lower step. All themes pass contrast checks.
+  --viz-success: #0fae78;
+  --viz-failure: #cf4b3a;
 }
 
 @media (max-width: 768px),

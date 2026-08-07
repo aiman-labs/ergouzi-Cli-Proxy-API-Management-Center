@@ -1,0 +1,378 @@
+@use '../../../styles/mixins' as *;
+
+.chart {
+  --chart-height: 208px;
+  --bar-max-width: 24px;
+
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+/* ---------- Legend ---------- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-lg;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.legendValue {
+  font-weight: 650;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.swatchSuccess {
+  background: var(--viz-success);
+}
+
+.swatchFailure {
+  background: var(--viz-failure);
+}
+
+/* ---------- Plot area ---------- */
+
+.plot {
+  display: flex;
+  gap: $spacing-sm;
+  /* Reserve headroom so labels remain visible when bars reach 100%. */
+  padding-top: 22px;
+}
+
+.yAxis {
+  position: relative;
+  width: 40px;
+  height: var(--chart-height);
+  flex: none;
+
+  @include mobile {
+    width: 30px;
+  }
+}
+
+.yTick {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: var(--chart-height);
+}
+
+.gridlines {
+  position: absolute;
+  inset: 0;
+}
+
+.gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-color);
+
+  &:last-child {
+    background: var(--border-primary);
+  }
+}
+
+/* ---------- Bars ---------- */
+
+.columns {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  /*
+   * Keep a 2px surface gap between adjacent bars. Below 24px slots, bars fill
+   * the slot and would merge into an area chart without this gap.
+   */
+  gap: 2px;
+}
+
+.column {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  /* Expand the hit target so the full column height is hoverable. */
+  cursor: default;
+}
+
+.stack {
+  position: relative;
+  width: 100%;
+  max-width: var(--bar-max-width);
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  animation: barGrow 0.42s cubic-bezier(0.4, 0, 0.2, 1) both;
+  /* TSX normalizes stagger by bucket count so the full wave stays within 360ms. */
+  animation-delay: var(--bar-delay, 0ms);
+  transform-origin: bottom center;
+  transition: filter 120ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transition: none;
+  }
+}
+
+.columnActive .stack {
+  filter: brightness(1.06);
+}
+
+.segment {
+  display: block;
+  width: 100%;
+  /* Round the data edge by 4px while keeping the baseline edge square. */
+  border-radius: $radius-sm $radius-sm 0 0;
+}
+
+.segmentSuccess {
+  background: var(--viz-success);
+}
+
+.segmentFailure {
+  background: var(--viz-failure);
+}
+
+/* Separate stacked segments with a 2px surface gap instead of a border. */
+.segmentGap {
+  margin-bottom: 2px;
+}
+
+/* Remove success-segment top rounding when a failure segment sits above it. */
+.segmentSquareTop {
+  border-radius: 0;
+}
+
+.idleTick {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: $radius-full;
+  background: var(--border-primary);
+}
+
+/* TSX derives bottom from bar height; fade in after all bars settle. */
+.peakLabel {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: peakFade 240ms ease-out 620ms backwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.noRequests {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+/* ---------- Tooltip ---------- */
+
+.tooltip {
+  --glass-blur: 10px;
+
+  position: absolute;
+  top: 4px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: $spacing-sm $spacing-md;
+  min-width: 132px;
+  border-radius: $radius-md;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop-filter);
+  -webkit-backdrop-filter: var(--glass-backdrop-filter);
+  box-shadow: var(--shadow-lg);
+  font-size: 12px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  /* Slide between hovered bars with interruptible CSS retargeting; initial entry only fades. */
+  transition:
+    left 200ms var(--ease-out-strong, ease-out),
+    transform 200ms var(--ease-out-strong, ease-out),
+    opacity 150ms ease-out;
+
+  @starting-style {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 150ms ease-out;
+  }
+}
+
+.tooltipTime {
+  font-weight: 650;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  b {
+    margin-left: auto;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.tooltipRate {
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- X axis ---------- */
+
+.xAxis {
+  position: relative;
+  height: 16px;
+  margin-left: 48px;
+
+  @include mobile {
+    margin-left: 38px;
+  }
+}
+
+.xTick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- Data table ---------- */
+
+.tableToggle {
+  font-size: 13px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 5px $spacing-sm;
+    text-align: right;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+  }
+
+  thead th {
+    color: var(--text-tertiary);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody th[scope='row'] {
+    text-align: left;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+}
+
+/* ---------- Empty state ---------- */
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-xl;
+  border-radius: $radius-lg;
+  border: 1px dashed var(--border-primary);
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  text-align: center;
+}
+
+.placeholderTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.placeholderHint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+@keyframes barGrow {
+  from {
+    transform: scaleY(0.02);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes peakFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

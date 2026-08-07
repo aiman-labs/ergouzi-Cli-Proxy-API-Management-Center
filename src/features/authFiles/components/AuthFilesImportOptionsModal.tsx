@@ -11,7 +11,7 @@ import {
   type AuthFileImportPriorityMode,
 } from '@/features/authFiles/importOptions';
 import { parsePriorityValue } from '@/features/authFiles/constants';
-import styles from '@/pages/AuthFilesPage.module.scss';
+import styles from './AuthFilesImportOptionsModal.module.scss';
 
 export type AuthFilesImportOptionsModalProps = {
   open: boolean;

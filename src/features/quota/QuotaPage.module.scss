@@ -1,0 +1,170 @@
+@use '../../styles/mixins' as *;
+
+/* ============================================================
+ * Quota page shell: layout only; visual details live in colocated component modules.
+ * ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------- Workspace (tabs + grid + pagination) ---------- */
+
+.workbench {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tabsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+
+  > :first-child {
+    min-width: 0;
+  }
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1 1 560px;
+}
+
+.search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  max-width: 320px;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+
+  :global(.input) {
+    height: 32px;
+    border-radius: 8px;
+    font-size: 12.5px;
+  }
+}
+
+.searchIcon {
+  color: var(--text-quaternary);
+}
+
+.pageSizeControl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+
+  input {
+    width: 64px;
+    min-height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    padding: 0 8px;
+  }
+}
+
+@include mobile {
+  .tabsRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls {
+    width: 100%;
+    align-items: stretch;
+
+    > * {
+      flex: 1 1 100%;
+      max-width: none;
+    }
+  }
+}
+
+.statusActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-block: 1px solid var(--border-color);
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.statusActionButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@include mobile {
+  .statusActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.errorBanner {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--danger-color);
+  background: var(--bg-error-light);
+  border: 1px solid var(--warning-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Card grid ----------
+ * CSS owns column sizing instead of JS measurement. Quota cards contain meters,
+ * so they share the 340px minimum used by auth-file quota mode (.gridQuota). */
+
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  align-items: stretch;
+}
+
+/* ---------- Pagination ---------- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pageInfo {
+  font-family: $font-mono;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+@include mobile {
+  .page {
+    gap: 16px;
+  }
+}

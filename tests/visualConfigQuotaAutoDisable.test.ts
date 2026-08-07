@@ -5,7 +5,7 @@ import {
   getVisualConfigValidationErrors,
   parseVisualConfigValuesFromYaml,
 } from '../src/hooks/useVisualConfig';
-import { searchConfigFields } from '../src/components/config/configSearchIndex';
+import { searchConfigFields } from '../src/features/config/searchIndex';
 import { DEFAULT_VISUAL_VALUES } from '../src/types/visualConfig';
 
 describe('visual config quota auto-disable YAML mapping', () => {

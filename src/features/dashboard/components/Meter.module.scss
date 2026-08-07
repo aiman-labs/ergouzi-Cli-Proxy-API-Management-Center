@@ -1,0 +1,21 @@
+.track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: $radius-full;
+  overflow: hidden;
+  // Tint the track from the fill so state remains legible across the full meter.
+  background: color-mix(in srgb, var(--meter-fill) 16%, transparent);
+}
+
+.fill {
+  height: 100%;
+  border-radius: $radius-full;
+  background: var(--meter-fill);
+  // Animate refreshed values; inherit the page easing token with an ease fallback.
+  transition: width 360ms var(--ease-out-strong, ease);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}

@@ -6,6 +6,11 @@ import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
 import type { OAuthModelAliasEntry } from '@/types';
 import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
+import {
+  normalizeRecentRequestAuthIndex,
+  normalizeRecentRequestBuckets,
+  normalizeUsageTotal,
+} from '@/utils/recentRequests';
 import { parseTimestampMs } from '@/utils/timestamp';
 
 type StatusError = { status?: number };
@@ -16,9 +21,14 @@ export type AuthFileFieldsPatch = {
   proxy_url?: string;
   headers?: Record<string, string>;
   priority?: number;
+  weight?: number | null;
+  disable_cooling?: boolean;
+  'disable-cooling'?: boolean;
   websockets?: boolean;
   using_api?: boolean;
   note?: string;
+  excluded_models?: string[];
+  'excluded-models'?: string[];
   expired?: string;
 };
 type AuthFileBatchFailure = { name: string; error: string };
@@ -207,7 +217,60 @@ const mergeAuthFileEntries = (entries: AuthFileEntry[]): AuthFileEntry => {
   return merged;
 };
 
-const dedupeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse => {
+const INTEGER_STRING_PATTERN = /^[+-]?\d+$/;
+
+const readIntegerField = (value: unknown): number | undefined => {
+  if (typeof value === 'number') return Number.isSafeInteger(value) ? value : undefined;
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || !INTEGER_STRING_PATTERN.test(trimmed)) return undefined;
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isSafeInteger(parsed) ? parsed : undefined;
+};
+
+const readRuntimeOnlyField = (entry: AuthFileEntry): boolean => {
+  const raw = entry['runtime_only'] ?? entry.runtimeOnly;
+  if (typeof raw === 'boolean') return raw;
+  if (typeof raw === 'string') return raw.trim().toLowerCase() === 'true';
+  return false;
+};
+
+/**
+ * Normalize backend kebab/snake_case fields into AuthFileItem camelCase fields at the API boundary.
+ * Preserve all raw fields because quota resolvers still read plan_type, id_token, metadata,
+ * attributes, and related backend values directly.
+ */
+const normalizeAuthFileEntry = (entry: AuthFileEntry): AuthFileEntry => {
+  const declaredStatusMessage =
+    typeof entry.statusMessage === 'string' ? entry.statusMessage.trim() : '';
+  const statusMessage = readTextField(entry, 'status_message') || declaredStatusMessage;
+  const note = readTextField(entry, 'note');
+  const email = readTextField(entry, 'email');
+  // Do not normalize account/account_type: API-key credentials expose the API key itself as
+  // account in sdk/cliproxy/auth/types.go AccountInfo, so it must not enter display or search.
+  const projectId = readTextField(entry, 'project_id');
+  const modified = readDateField(entry);
+  const priority = readIntegerField(entry['priority']);
+  const weight = readIntegerField(entry['weight']);
+
+  return {
+    ...entry,
+    runtimeOnly: readRuntimeOnlyField(entry),
+    authIndex: normalizeRecentRequestAuthIndex(entry['auth_index'] ?? entry.authIndex),
+    recentRequests: normalizeRecentRequestBuckets(entry.recent_requests ?? entry.recentRequests),
+    successCount: normalizeUsageTotal(entry.success),
+    failureCount: normalizeUsageTotal(entry.failed),
+    ...(statusMessage ? { statusMessage } : {}),
+    ...(modified > 0 ? { modified } : {}),
+    priority,
+    weight,
+    ...(note ? { note } : {}),
+    ...(email ? { email } : {}),
+    ...(projectId ? { projectId } : {}),
+  };
+};
+
+export const normalizeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse => {
   const files = Array.isArray(payload?.files) ? payload.files : [];
   const grouped = new Map<string, AuthFileEntry[]>();
 
@@ -222,7 +285,9 @@ const dedupeAuthFilesResponse = (payload: AuthFilesResponse): AuthFilesResponse 
     grouped.set(key, [entry]);
   });
 
-  const normalizedFiles = Array.from(grouped.values()).map(mergeAuthFileEntries);
+  const normalizedFiles = Array.from(grouped.values()).map((entries) =>
+    normalizeAuthFileEntry(mergeAuthFileEntries(entries))
+  );
   normalizedFiles.sort((left, right) =>
     readTextField(left, 'name').localeCompare(readTextField(right, 'name'), undefined, {
       sensitivity: 'accent',
@@ -345,7 +410,8 @@ export const buildManualRefreshExpiredAt = (nowMs = Date.now()): string =>
   new Date(nowMs - MANUAL_REFRESH_EXPIRY_OFFSET_MS).toISOString();
 
 export const authFilesApi = {
-  list: async () => dedupeAuthFilesResponse(await apiClient.get<AuthFilesResponse>('/auth-files')),
+  list: async () =>
+    normalizeAuthFilesResponse(await apiClient.get<AuthFilesResponse>('/auth-files')),
 
   setStatus: (name: string, disabled: boolean) =>
     apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),
@@ -389,14 +455,18 @@ export const authFilesApi = {
 
   deleteAll: () => apiClient.delete('/auth-files', { params: { all: true } }),
 
-  downloadText: async (name: string): Promise<string> => {
+  download: async (name: string): Promise<Blob> => {
     const response = await apiClient.getRaw(
       `/auth-files/download?name=${encodeURIComponent(name)}`,
       {
         responseType: 'blob',
       }
     );
-    const blob = response.data as Blob;
+    return response.data as Blob;
+  },
+
+  downloadText: async (name: string): Promise<string> => {
+    const blob = await authFilesApi.download(name);
     return blob.text();
   },
 

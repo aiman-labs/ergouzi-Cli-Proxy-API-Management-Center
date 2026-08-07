@@ -7,7 +7,10 @@ import type {
 } from '@/services/api';
 import type { CodexQuotaJobProgress } from '@/stores/useCodexQuotaJobStore';
 import { normalizeAuthIndex } from '@/utils/authIndex';
-import { buildCodexQuotaDataFromUsageBody, CODEX_CONFIG } from './quotaConfigs';
+import {
+  buildCodexQuotaDataFromUsageBody,
+  CODEX_CONFIG,
+} from '@/features/quota/providers/codex/data';
 
 export const canUseQuotaCardActions = (
   sectionDisabled: boolean,

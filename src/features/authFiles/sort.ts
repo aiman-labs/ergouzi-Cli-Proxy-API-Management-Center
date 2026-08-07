@@ -24,6 +24,14 @@ export const getAuthFileImportTime = (file: AuthFileItem): number | null =>
 
 const compareNameAsc = (a: AuthFileItem, b: AuthFileItem): number => a.name.localeCompare(b.name);
 
+const getDisplayIdentity = (file: AuthFileItem): string =>
+  String(file.email ?? file.projectId ?? file.name).trim();
+
+const compareDisplayIdentityAsc = (a: AuthFileItem, b: AuthFileItem): number => {
+  const primary = getDisplayIdentity(a).localeCompare(getDisplayIdentity(b));
+  return primary || compareNameAsc(a, b);
+};
+
 const compareImportTime = (a: AuthFileItem, b: AuthFileItem, direction: 'asc' | 'desc'): number => {
   const ta = getAuthFileImportTime(a);
   const tb = getAuthFileImportTime(b);
@@ -58,7 +66,7 @@ export const sortAuthFiles = (
       return compareNameAsc(a, b);
     });
   } else if (sortMode === 'az') {
-    copy.sort(compareNameAsc);
+    copy.sort(compareDisplayIdentityAsc);
   } else if (sortMode === 'import_desc') {
     copy.sort((a, b) => compareImportTime(a, b, 'desc'));
   } else if (sortMode === 'import_asc') {
@@ -67,6 +75,8 @@ export const sortAuthFiles = (
     copy.sort((a, b) => comparePriority(a, b, 'desc'));
   } else if (sortMode === 'priority_asc') {
     copy.sort((a, b) => comparePriority(a, b, 'asc'));
+  } else if ((sortMode as string) === 'priority') {
+    copy.sort((a, b) => comparePriority(a, b, 'desc'));
   }
   return copy;
 };

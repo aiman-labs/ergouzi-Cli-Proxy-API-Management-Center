@@ -1,0 +1,269 @@
+// Pure config-page UI state: state machine, badge buckets, dirty ownership, and localStorage reads.
+// All functions are side-effect free and covered by tests/configUiState.test.ts.
+
+import type { VisualConfigValidationErrors } from '@/types/visualConfig';
+import {
+  COMMON_FIELD_IDS,
+  CONFIG_SECTION_IDS,
+  CONFIG_TAB_IDS,
+  FIELD_VALUE_KEYS,
+  SECTION_VALIDATION_FIELDS,
+  type ConfigEditorMode,
+  type ConfigTabId,
+} from './constants';
+import { CONFIG_FIELD_SEARCH_INDEX, type VisualSectionId } from './searchIndex';
+
+/** Total visual-editor fields shown in the header metadata. */
+export const CONFIG_FIELD_COUNT = CONFIG_FIELD_SEARCH_INDEX.length;
+
+/** Reverse map from useVisualConfig dirty leaf keys to fieldId. */
+const VALUE_KEY_TO_FIELD_ID: ReadonlyMap<string, string> = (() => {
+  const map = new Map<string, string>();
+  for (const [fieldId, valueKeys] of Object.entries(FIELD_VALUE_KEYS)) {
+    for (const valueKey of valueKeys) map.set(valueKey, fieldId);
+  }
+  return map;
+})();
+
+const FIELD_ID_TO_SECTION: ReadonlyMap<string, VisualSectionId> = new Map(
+  CONFIG_FIELD_SEARCH_INDEX.map((entry) => [entry.fieldId, entry.sectionId])
+);
+
+const COMMON_FIELD_ID_SET: ReadonlySet<string> = new Set<string>(COMMON_FIELD_IDS);
+
+/** Dirty leaf keys rendered by the common tab, used for validation ownership. */
+const COMMON_VALUE_KEYS: ReadonlySet<string> = new Set(
+  COMMON_FIELD_IDS.flatMap((fieldId) => [...(FIELD_VALUE_KEYS[fieldId] ?? [])])
+);
+
+/** Map dirty fields to tab indicators; common fields mark both alias and canonical tabs. */
+export function resolveDirtyTabs(dirtyFields: ReadonlySet<string>): ReadonlySet<ConfigTabId> {
+  const tabs = new Set<ConfigTabId>();
+  for (const valueKey of dirtyFields) {
+    const fieldId = VALUE_KEY_TO_FIELD_ID.get(valueKey);
+    if (!fieldId) continue;
+    const sectionId = FIELD_ID_TO_SECTION.get(fieldId);
+    if (sectionId) tabs.add(sectionId);
+    if (COMMON_FIELD_ID_SET.has(fieldId)) tabs.add('common');
+  }
+  return tabs;
+}
+
+/** Validation errors per tab; payload validation contributes one via its flag. */
+export function countSectionErrors(
+  validationErrors: VisualConfigValidationErrors | undefined,
+  hasPayloadValidationErrors: boolean
+): Record<ConfigTabId, number> {
+  const counts = Object.fromEntries(CONFIG_TAB_IDS.map((tabId) => [tabId, 0])) as Record<
+    ConfigTabId,
+    number
+  >;
+  for (const sectionId of CONFIG_SECTION_IDS) {
+    counts[sectionId] = SECTION_VALIDATION_FIELDS[sectionId].reduce(
+      (total, field) => total + (validationErrors?.[field] ? 1 : 0),
+      0
+    );
+  }
+  if (hasPayloadValidationErrors) counts.payload += 1;
+  counts.common = Object.entries(validationErrors ?? {}).reduce(
+    (total, [field, error]) => total + (error && COMMON_VALUE_KEYS.has(field) ? 1 : 0),
+    0
+  );
+  return counts;
+}
+
+/** Total page validation errors for the header metadata. */
+export function countTotalErrors(
+  validationErrors: VisualConfigValidationErrors | undefined,
+  hasPayloadValidationErrors: boolean
+): number {
+  const fieldErrors = Object.values(validationErrors ?? {}).filter(Boolean).length;
+  return fieldErrors + (hasPayloadValidationErrors ? 1 : 0);
+}
+
+export type ConfigStatusKey =
+  | 'disconnected'
+  | 'loading'
+  | 'load_failed'
+  | 'yaml_error'
+  | 'validation_blocked'
+  | 'saving'
+  | 'dirty'
+  | 'synced';
+
+export type ConfigStatusTone = 'error' | 'warning' | 'busy' | 'muted' | 'ok';
+
+export type ConfigStatus = {
+  key: ConfigStatusKey;
+  /** i18n key for the full status label. */
+  labelKey: string;
+  /** i18n key for the compact mobile label; validation_blocked uses the corrected top-level path. */
+  shortLabelKey: string;
+  tone: ConfigStatusTone;
+};
+
+export type ConfigStatusInput = {
+  disconnected: boolean;
+  loading: boolean;
+  loadFailed: boolean;
+  yamlError: boolean;
+  validationBlocked: boolean;
+  saving: boolean;
+  dirty: boolean;
+};
+
+/** Floating-save-bar status machine, preserving the old getStatusText priority order. */
+export function resolveStatus(input: ConfigStatusInput): ConfigStatus {
+  if (input.disconnected) {
+    return {
+      key: 'disconnected',
+      labelKey: 'config_management.status_disconnected',
+      shortLabelKey: 'config_management.status_disconnected_short',
+      tone: 'muted',
+    };
+  }
+  if (input.loading) {
+    return {
+      key: 'loading',
+      labelKey: 'config_management.status_loading',
+      shortLabelKey: 'config_management.status_loading_short',
+      tone: 'busy',
+    };
+  }
+  if (input.loadFailed) {
+    return {
+      key: 'load_failed',
+      labelKey: 'config_management.status_load_failed',
+      shortLabelKey: 'config_management.status_load_failed_short',
+      tone: 'error',
+    };
+  }
+  if (input.yamlError) {
+    return {
+      key: 'yaml_error',
+      labelKey: 'config_management.visual_mode_unavailable',
+      shortLabelKey: 'config_management.visual_mode_unavailable_short',
+      tone: 'error',
+    };
+  }
+  if (input.validationBlocked) {
+    return {
+      key: 'validation_blocked',
+      labelKey: 'config_management.visual.validation.validation_blocked',
+      shortLabelKey: 'config_management.validation_blocked_short',
+      tone: 'error',
+    };
+  }
+  if (input.saving) {
+    return {
+      key: 'saving',
+      labelKey: 'config_management.status_saving',
+      shortLabelKey: 'config_management.status_saving_short',
+      tone: 'busy',
+    };
+  }
+  if (input.dirty) {
+    return {
+      key: 'dirty',
+      labelKey: 'config_management.status_dirty',
+      shortLabelKey: 'config_management.status_dirty_short',
+      tone: 'warning',
+    };
+  }
+  return {
+    key: 'synced',
+    labelKey: 'config_management.status_loaded',
+    shortLabelKey: 'config_management.status_loaded_short',
+    tone: 'ok',
+  };
+}
+
+export type HeaderMetaSegment = {
+  key: 'fields' | ConfigStatusKey | 'dirty_source' | 'errors';
+  labelKey: string;
+  count?: number;
+  tone: 'muted' | 'warning' | 'error' | 'ok';
+};
+
+export type HeaderMetaInput = {
+  fieldCount: number;
+  status: ConfigStatus;
+  dirtyCount: number;
+  sourceDirty: boolean;
+  errorCount: number;
+};
+
+/**
+ * Header metadata consumes the page state machine directly so Header and save bar do not
+ * derive connection or loading states independently. Field count is always present; blocking
+ * states take priority, then editing state adds dirty and validation counts.
+ */
+export function buildHeaderMeta(input: HeaderMetaInput): HeaderMetaSegment[] {
+  const segments: HeaderMetaSegment[] = [
+    {
+      key: 'fields',
+      labelKey: 'config_management.meta_fields',
+      count: input.fieldCount,
+      tone: 'muted',
+    },
+  ];
+  const { status } = input;
+
+  if (
+    status.key === 'disconnected' ||
+    status.key === 'loading' ||
+    status.key === 'load_failed' ||
+    status.key === 'saving'
+  ) {
+    segments.push({
+      key: status.key,
+      labelKey: status.labelKey,
+      tone: status.tone === 'busy' ? 'muted' : status.tone,
+    });
+    return segments;
+  }
+  if (status.key === 'yaml_error') {
+    segments.push({
+      key: status.key,
+      labelKey: status.shortLabelKey,
+      tone: 'error',
+    });
+  }
+  if (input.sourceDirty) {
+    segments.push({
+      key: 'dirty_source',
+      labelKey: 'config_management.meta_dirty_source',
+      tone: 'warning',
+    });
+  } else if (input.dirtyCount > 0) {
+    segments.push({
+      key: 'dirty',
+      labelKey: 'config_management.meta_dirty',
+      count: input.dirtyCount,
+      tone: 'warning',
+    });
+  }
+  if (input.errorCount > 0) {
+    segments.push({
+      key: 'errors',
+      labelKey: 'config_management.meta_errors',
+      count: input.errorCount,
+      tone: 'error',
+    });
+  }
+  if (status.key === 'synced') {
+    segments.push({ key: status.key, labelKey: 'config_management.meta_synced', tone: 'ok' });
+  }
+  return segments;
+}
+
+/** Read localStorage with fallback for invalid or stale values. */
+export function readSavedMode(raw: string | null): ConfigEditorMode {
+  return raw === 'source' ? 'source' : 'visual';
+}
+
+export function readSavedSection(raw: string | null): ConfigTabId {
+  return raw !== null && (CONFIG_TAB_IDS as readonly string[]).includes(raw)
+    ? (raw as ConfigTabId)
+    : 'common';
+}

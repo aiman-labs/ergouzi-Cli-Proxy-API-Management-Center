@@ -676,6 +676,96 @@ Result:
 - Conflict-marker scan returned no matches.
 - No release or production deployment has been performed for this sync.
 
+## 2026-08-07 Upstream `v1.22.2` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `5919a8df` |
+| Sync branch | `sync/upstream-v1.22.0` |
+| Upstream previous baseline | `v1.19.3` / `21af5762` |
+| Upstream target release | `v1.22.2` / `f60c8ca` |
+| Upstream commits adopted | `77` |
+| Upstream changed paths | `260` |
+| Final changed paths | `274` |
+| CatPaw work | `CHORE-094` |
+| Sync status | `prepared for PR; not yet released or deployed` |
+
+Upstream release themes:
+
+- Reorganized the application into feature-owned pages and introduced the new
+  auth vault, unified quota grid/timeline, and sectioned configuration editor.
+- Expanded provider management, excluded-model controls, plugin resources,
+  dashboard telemetry, and single-file build behavior.
+- Added provider and quota model support required by CPA releases through
+  `v7.2.121`.
+- Added the official Codex quota-timeline lane selection correction and the
+  complete Infistar provider configuration, branding, persistence, locale, and
+  regression-test surface from `v1.22.1..v1.22.2`.
+
+Ergouzi integration:
+
+- Preserved auth import options, advanced error/success/plan filters, quota
+  details, manual-refresh settling, and page-scoped selected operations.
+- Restored backend Codex whole-inventory refresh jobs, disabled-credential
+  governance, page size `100`, progressive bounded direct refresh, and auth
+  inventory synchronization.
+- Integrated all quota-governor, capacity-alert, and Codex plan-priority fields
+  into the new config registry and editor.
+- Preserved Home runtime logs, source-aware plugin polling, sponsor protocols,
+  duplicate provider index handling, and unknown config fields.
+- Verified that all 260 upstream changed paths are represented in the final
+  tree; the additional paths are Ergouzi compatibility code, tests, docs, and
+  release workflow assets.
+- Closed the PR review regressions without changing the established operation
+  scopes: auth-file selected actions remain current-page only, so the misleading
+  filtered-result selection entry was removed; the unified Codex quota tab now
+  restores safe account search, normal/problem and plan filters, per-card status
+  toggles, and filtered-result batch enable/disable with concurrency limited to
+  four workers.
+- Auth-file detail PATCHes now invalidate the edited credential's model cache
+  and the shared quota cache before reloading inventory, preventing stale
+  derived data after proxy, header, or excluded-model changes.
+- Dashboard manual refresh bypasses the short-lived model cache, while its
+  auth-file inventory loader rejects superseded or previous-connection
+  responses before they can overwrite current health and traffic data.
+- Dashboard credential grouping now reuses the centralized auth-provider
+  resolver, preserving provider-field precedence and xAI aliases. Provider
+  totals, success rates, and sorting are calculated from the same rolling
+  buckets as the visible traffic window instead of lifetime counters.
+- Dashboard API-key usage deduplication is scoped by provider and, when the
+  auth-file response exposes it, base URL. Reusing one key string across
+  providers or endpoints no longer hides unrelated credential traffic.
+  OpenAI-compatible auth-file provider IDs are also aligned with the usage
+  endpoint's compatibility names, preventing duplicate provider rows.
+- Auth-file filtered deletion freezes the exact persistent result names at
+  confirmation and intersects them with current inventory at execution, so
+  hidden, runtime-only, or newly imported credentials cannot be deleted.
+- Disabled credentials remain refreshable for operator rechecks, while the
+  quota reset control now reflects the existing prohibition on reset writes.
+- Page and whole-pool quota refreshes are disabled and guarded while a reset
+  write is active, including delayed refresh-all confirmation callbacks.
+- Source comments introduced by the new feature-owned modules are normalized
+  to English; localized runtime strings, provider names, and locale assertions
+  remain unchanged.
+
+Verification:
+
+```bash
+bun run verify
+git diff --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' .
+```
+
+Result:
+
+- `527/527` tests passed, including a 1600-Codex inventory target regression
+  and a four-worker concurrency bound.
+- ESLint, TypeScript, and the production single-file Vite build passed.
+- The build produced `dist/index.html` as the sole release artifact.
+- All four locale files contain the same 1880 leaf keys.
+- Conflict-marker and rejected-hunk scans returned no matches.
+- Release and production deployment remain pending PR acceptance.
+
 ## 2026-06-20 Upstream `v1.17.1` Sync
 
 | Item | Value |

@@ -28,6 +28,7 @@ export const AUTH_FILES_CODEX_PLAN_FILTERS = [
   'free',
   'unknown',
 ] as const;
+export const AUTH_FILES_STATUS_FILTER_MODES = ['all', 'enabled', 'disabled', 'problem'] as const;
 
 export type AuthFilesSortMode = (typeof AUTH_FILES_SORT_MODES)[number];
 export type AuthFilesHealthFilter = (typeof AUTH_FILES_HEALTH_FILTERS)[number];
@@ -35,11 +36,13 @@ export type AuthFilesEnabledFilter = (typeof AUTH_FILES_ENABLED_FILTERS)[number]
 export type AuthFilesErrorTypeFilter = (typeof AUTH_FILES_ERROR_TYPE_FILTERS)[number];
 export type AuthFilesSuccessCountFilter = (typeof AUTH_FILES_SUCCESS_COUNT_FILTERS)[number];
 export type AuthFilesCodexPlanFilter = (typeof AUTH_FILES_CODEX_PLAN_FILTERS)[number];
+export type AuthFilesStatusFilterMode = (typeof AUTH_FILES_STATUS_FILTER_MODES)[number];
 
 export type AuthFilesUiState = {
   filter?: string;
   problemOnly?: boolean;
   disabledOnly?: boolean;
+  statusFilterMode?: AuthFilesStatusFilterMode;
   healthFilter?: AuthFilesHealthFilter;
   enabledFilter?: AuthFilesEnabledFilter;
   errorTypeFilter?: AuthFilesErrorTypeFilter;
@@ -68,6 +71,9 @@ const AUTH_FILES_SUCCESS_COUNT_FILTER_SET = new Set<AuthFilesSuccessCountFilter>
 );
 const AUTH_FILES_CODEX_PLAN_FILTER_SET = new Set<AuthFilesCodexPlanFilter>(
   AUTH_FILES_CODEX_PLAN_FILTERS
+);
+const AUTH_FILES_STATUS_FILTER_MODE_SET = new Set<AuthFilesStatusFilterMode>(
+  AUTH_FILES_STATUS_FILTER_MODES
 );
 
 export const isAuthFilesSortMode = (value: unknown): value is AuthFilesSortMode =>
@@ -98,6 +104,12 @@ export const isAuthFilesSuccessCountFilter = (
 export const isAuthFilesCodexPlanFilter = (value: unknown): value is AuthFilesCodexPlanFilter =>
   typeof value === 'string' &&
   AUTH_FILES_CODEX_PLAN_FILTER_SET.has(value as AuthFilesCodexPlanFilter);
+
+export const isAuthFilesStatusFilterMode = (
+  value: unknown
+): value is AuthFilesStatusFilterMode =>
+  typeof value === 'string' &&
+  AUTH_FILES_STATUS_FILTER_MODE_SET.has(value as AuthFilesStatusFilterMode);
 
 const readAuthFilesUiStateFromStorage = (
   storage: Pick<Storage, 'getItem'> | null | undefined

@@ -1,0 +1,255 @@
+import { describe, expect, test } from 'bun:test';
+import { formatCompactNumber, formatPercent } from '../src/utils/format';
+import {
+  buildDashboardTraffic,
+  getProviderKeyCounts,
+  providerIdOfAuthFile,
+} from '../src/features/dashboard/hooks/useDashboardOverview';
+import {
+  axisMax,
+  niceCeil,
+  providerLabel,
+  splitWindowMinutes,
+  toneForSuccessRate,
+} from '../src/features/dashboard/utils';
+
+describe('formatCompactNumber', () => {
+  test('leaves values below one thousand alone', () => {
+    expect(formatCompactNumber(0)).toBe('0');
+    expect(formatCompactNumber(999)).toBe('999');
+  });
+
+  test('compacts with a single decimal and no redundant .0', () => {
+    expect(formatCompactNumber(1000)).toBe('1K');
+    expect(formatCompactNumber(1284)).toBe('1.3K');
+    expect(formatCompactNumber(12_900)).toBe('12.9K');
+    expect(formatCompactNumber(1_500_000)).toBe('1.5M');
+  });
+
+  test('carries into the next tier instead of rendering 1000K', () => {
+    expect(formatCompactNumber(999_999)).toBe('1M');
+    expect(formatCompactNumber(999_999_999)).toBe('1B');
+  });
+
+  test('keeps the sign and survives non-finite input', () => {
+    expect(formatCompactNumber(-1500)).toBe('-1.5K');
+    expect(formatCompactNumber(Number.NaN)).toBe('0');
+  });
+});
+
+describe('formatPercent', () => {
+  test('trims trailing zeros but keeps meaningful decimals', () => {
+    expect(formatPercent(100)).toBe('100%');
+    expect(formatPercent(99.5)).toBe('99.5%');
+    expect(formatPercent(0)).toBe('0%');
+  });
+
+  test('renders an em dash for non-finite rates', () => {
+    expect(formatPercent(Number.NaN)).toBe('—');
+  });
+});
+
+describe('niceCeil', () => {
+  test('rounds up onto the step ladder', () => {
+    expect(niceCeil(1)).toBe(1);
+    expect(niceCeil(7)).toBe(8);
+    expect(niceCeil(12)).toBe(15);
+    expect(niceCeil(48)).toBe(50);
+    expect(niceCeil(320)).toBe(400);
+  });
+
+  test('never returns zero, so bar heights cannot divide by zero', () => {
+    expect(niceCeil(0)).toBe(1);
+    expect(niceCeil(-5)).toBe(1);
+  });
+});
+
+describe('axisMax', () => {
+  test('lands every gridline on a whole number', () => {
+    // A peak of 112 yields 120, not a 200 ceiling that wastes half the chart.
+    expect(axisMax(112, 4)).toBe(120);
+    expect(axisMax(7, 4)).toBe(8);
+    expect(axisMax(1533, 4)).toBe(1600);
+  });
+
+  test('keeps the axis just above the peak', () => {
+    for (const peak of [1, 3, 9, 17, 64, 112, 250, 999, 4321]) {
+      const max = axisMax(peak, 4);
+      expect(max).toBeGreaterThanOrEqual(peak);
+      // Keep the ceiling below twice the peak so bars remain legible.
+      // Tiny peaks are bounded by one unit per interval, so the floor is the interval count.
+      expect(max).toBeLessThanOrEqual(Math.max(4, peak * 2));
+      // Every interval must be an integer.
+      expect(Number.isInteger(max / 4)).toBe(true);
+    }
+  });
+
+  test('degrades safely with no traffic', () => {
+    expect(axisMax(0, 4)).toBe(4);
+    expect(axisMax(-3, 4)).toBe(4);
+  });
+});
+
+describe('toneForSuccessRate', () => {
+  test('maps a rate onto a severity band', () => {
+    expect(toneForSuccessRate(null)).toBe('idle');
+    expect(toneForSuccessRate(100)).toBe('good');
+    expect(toneForSuccessRate(95)).toBe('good');
+    expect(toneForSuccessRate(94.9)).toBe('warning');
+    expect(toneForSuccessRate(80)).toBe('warning');
+    expect(toneForSuccessRate(79.9)).toBe('critical');
+  });
+});
+
+describe('splitWindowMinutes', () => {
+  test('splits the rolling window into hours and minutes', () => {
+    expect(splitWindowMinutes(200)).toEqual({ hours: 3, minutes: 20 });
+    expect(splitWindowMinutes(60)).toEqual({ hours: 1, minutes: 0 });
+    expect(splitWindowMinutes(40)).toEqual({ hours: 0, minutes: 40 });
+  });
+});
+
+describe('provider key counts', () => {
+  test('includes native Interactions API keys in the dashboard total inputs', () => {
+    const counts = getProviderKeyCounts({
+      geminiApiKeys: [{ apiKey: 'gemini-key' }],
+      interactionsApiKeys: [{ apiKey: 'interactions-1' }, { apiKey: 'interactions-2' }],
+      codexApiKeys: [{ apiKey: 'codex-key' }],
+    });
+
+    expect(counts.interactions).toBe(2);
+    expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(4);
+  });
+});
+
+describe('dashboard provider traffic', () => {
+  test('uses the shared auth provider resolver for field precedence and aliases', () => {
+    expect(providerIdOfAuthFile({ name: 'xai.json', type: 'claude', provider: 'x-ai' })).toBe(
+      'xai'
+    );
+    expect(providerIdOfAuthFile({ name: 'grok.json', type: 'grok' })).toBe('xai');
+  });
+
+  test('computes provider totals from the rolling buckets instead of lifetime counters', () => {
+    const usage = new Map([
+      [
+        'codex',
+        new Map([
+          [
+            'https://example.com|key',
+            {
+              success: 999,
+              failed: 999,
+              recentRequests: [{ success: 3, failed: 1 }],
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    const { providers } = buildDashboardTraffic(usage, []);
+
+    expect(providers[0]).toMatchObject({
+      id: 'codex',
+      credentials: 1,
+      success: 3,
+      failure: 1,
+      total: 4,
+      successRate: 75,
+    });
+  });
+
+  test('scopes inline API-key deduplication by provider and endpoint', () => {
+    const usage = new Map([
+      [
+        'codex',
+        new Map([
+          [
+            'https://codex.example.com|shared-key',
+            {
+              success: 1,
+              failed: 0,
+              recentRequests: [{ success: 1, failed: 0 }],
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    const { providers } = buildDashboardTraffic(usage, [
+      {
+        name: 'codex-duplicate.json',
+        provider: 'codex',
+        account_type: 'api_key',
+        account: 'shared-key',
+        base_url: 'https://codex.example.com',
+      },
+      {
+        name: 'codex-other-endpoint.json',
+        provider: 'codex',
+        account_type: 'api_key',
+        account: 'shared-key',
+        base_url: 'https://other.example.com',
+      },
+      {
+        name: 'codex-duplicate-without-base.json',
+        provider: 'codex',
+        account_type: 'api_key',
+        account: 'shared-key',
+      },
+      {
+        name: 'claude-shared-key.json',
+        provider: 'claude',
+        account_type: 'api_key',
+        account: 'shared-key',
+      },
+    ]);
+
+    expect(providers.find((provider) => provider.id === 'codex')?.credentials).toBe(2);
+    expect(providers.find((provider) => provider.id === 'claude')?.credentials).toBe(1);
+  });
+
+  test('aligns OpenAI-compatible auth providers with usage compat names', () => {
+    const usage = new Map([
+      [
+        'vast',
+        new Map([
+          [
+            'https://vast.example.com|shared-key',
+            {
+              success: 1,
+              failed: 0,
+              recentRequests: [{ success: 1, failed: 0 }],
+            },
+          ],
+        ]),
+      ],
+    ]);
+
+    const { providers } = buildDashboardTraffic(usage, [
+      {
+        name: 'vast.json',
+        provider: 'openai-compatible-vast',
+        account_type: 'api_key',
+        account: 'shared-key',
+      },
+    ]);
+
+    expect(providers).toHaveLength(1);
+    expect(providers[0]).toMatchObject({ id: 'vast', credentials: 1 });
+  });
+});
+
+describe('providerLabel', () => {
+  test('uses the brand spelling for known providers', () => {
+    expect(providerLabel('xai', 'Unattributed')).toBe('xAI');
+    expect(providerLabel('aistudio', 'Unattributed')).toBe('AI Studio');
+    expect(providerLabel('gemini-interactions', 'Unattributed')).toBe('Interactions API');
+  });
+
+  test('falls back to a capitalised id, and localises unknown', () => {
+    expect(providerLabel('somenewbrand', 'Unattributed')).toBe('Somenewbrand');
+    expect(providerLabel('unknown', 'Unattributed')).toBe('Unattributed');
+    expect(providerLabel('', 'Unattributed')).toBe('Unattributed');
+  });
+});
