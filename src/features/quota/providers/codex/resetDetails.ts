@@ -9,6 +9,9 @@ const getCredentialFingerprint = (entry: QuotaFileEntry): string =>
     normalizeAuthIndex(entry.file.authIndex ?? entry.file['auth_index']) ?? '',
   ]);
 
+export const shouldLoadCodexResetDetails = (enabled: boolean, entries: QuotaFileEntry[]): boolean =>
+  enabled && entries.some((entry) => entry.type === 'codex');
+
 export const collectCodexResetDetailTargets = (
   entries: QuotaFileEntry[],
   quota: Record<string, CodexQuotaState>,

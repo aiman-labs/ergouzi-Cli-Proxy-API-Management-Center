@@ -3,10 +3,20 @@ import {
   CodexResetDetailScheduler,
   collectCodexResetDetailTargets,
   mergeCodexResetCreditDetails,
+  shouldLoadCodexResetDetails,
 } from '@/features/quota/providers/codex/resetDetails';
 import type { CodexQuotaState } from '@/types';
 
 describe('Codex reset-credit detail loading', () => {
+  test('loads details only when enabled and the visible page contains Codex', () => {
+    const codexEntry = { type: 'codex' as const, file: { name: 'codex.json' } };
+    const claudeEntry = { type: 'claude' as const, file: { name: 'claude.json' } };
+
+    expect(shouldLoadCodexResetDetails(false, [codexEntry])).toBe(false);
+    expect(shouldLoadCodexResetDetails(true, [claudeEntry])).toBe(false);
+    expect(shouldLoadCodexResetDetails(true, [claudeEntry, codexEntry])).toBe(true);
+  });
+
   test('loads only visible successful Codex entries whose details are not loaded or in flight', () => {
     const quota: Record<string, CodexQuotaState> = {
       'ready.json': { status: 'success', windows: [], rateLimitResetCreditsLoaded: false },

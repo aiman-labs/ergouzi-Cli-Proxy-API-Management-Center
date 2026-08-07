@@ -72,6 +72,7 @@ import { fetchCodexResetCreditDetails } from './providers/codex/data';
 import {
   CodexResetDetailScheduler,
   mergeCodexResetCreditDetails,
+  shouldLoadCodexResetDetails,
 } from './providers/codex/resetDetails';
 import styles from './QuotaPage.module.scss';
 
@@ -340,7 +341,7 @@ export function QuotaPage() {
 
   useEffect(() => {
     resetCreditDetailsScheduler.sync({
-      enabled: showCodexResetCreditExpiries && tab === 'codex',
+      enabled: shouldLoadCodexResetDetails(showCodexResetCreditExpiries, pageItems),
       entries: pageItems,
       quota: codexQuota,
       cacheGeneration: captureQuotaCacheGeneration(),
