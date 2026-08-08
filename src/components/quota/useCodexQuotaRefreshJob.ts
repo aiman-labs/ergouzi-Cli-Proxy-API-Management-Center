@@ -69,9 +69,14 @@ export function useCodexQuotaRefreshJob() {
   const progress = useCodexQuotaJobStore((state) => state.progress);
   const starting = useCodexQuotaJobStore((state) => state.starting);
   const active = useCodexQuotaJobStore((state) => state.active);
+  const inventorySyncContext = useCodexQuotaJobStore((state) => state.inventorySyncContext);
   const setProgress = useCodexQuotaJobStore((state) => state.setProgress);
   const setStarting = useCodexQuotaJobStore((state) => state.setStarting);
   const setActive = useCodexQuotaJobStore((state) => state.setActive);
+  const setInventorySyncContext = useCodexQuotaJobStore((state) => state.setInventorySyncContext);
+  const clearInventorySyncContext = useCodexQuotaJobStore(
+    (state) => state.clearInventorySyncContext
+  );
   const resetProgress = useCodexQuotaJobStore((state) => state.reset);
 
   const finishWithError = useCallback(
@@ -202,13 +207,17 @@ export function useCodexQuotaRefreshJob() {
         connection,
       };
       activeRun = run;
+      setInventorySyncContext({
+        jobId: summary.jobId,
+        targetNames: [...filesByName.keys()],
+      });
       setActive(true);
       const progressSummary = addCodexQuotaJobLocalFailures(summary, localFailures);
       setProgress(createCodexQuotaJobProgress(progressSummary));
       void poll(run);
       return progressSummary;
     },
-    [poll, setActive, setCodexQuota, setProgress, setStarting, t]
+    [poll, setActive, setCodexQuota, setInventorySyncContext, setProgress, setStarting, t]
   );
 
   const cancel = useCallback(async () => {
@@ -243,6 +252,8 @@ export function useCodexQuotaRefreshJob() {
   return {
     progress,
     isActive: starting || active,
+    inventorySyncContext,
+    clearInventorySyncContext,
     start,
     cancel,
   };

@@ -264,7 +264,10 @@ Quota refreshes now reconcile authentication metadata in the background and
 merge only the credentials targeted by that refresh. Unchanged snapshots keep
 their existing object and list references, so 401 governance and automatic
 disablement remain visible without entering whole-inventory loading or
-redrawing unrelated cards.
+redrawing unrelated cards. Whole-pool jobs retain a job-bound reconciliation
+context in the global job store until the matching terminal job has synced, so
+leaving and returning to the quota route cannot lose the final metadata update;
+duplicate route effects share the same in-flight snapshot request.
 
 The auth-file page preserves import options, import-time and priority sorting,
 error/success-count/Codex-plan filters, quota details, bounded manual-refresh

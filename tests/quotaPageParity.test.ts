@@ -32,9 +32,13 @@ describe('quota page Ergouzi parity', () => {
     expect(source).toContain('useCodexQuotaRefreshJob()');
     expect(source).not.toContain('onComplete: loadFiles');
     expect(source).not.toContain('if (directTargets.length > 0) await loadFiles();');
-    expect(source).toContain('pendingCodexInventorySyncRef');
-    expect(source).toContain('if (!pending || !codexJobProgress.jobId || codexJobActive) return;');
-    expect(source).toContain('syncAuthFileSnapshots(pending.targetNames)');
+    expect(source).not.toContain('pendingCodexInventorySyncRef');
+    expect(source).toContain('inventorySyncContext');
+    expect(source).toContain('clearInventorySyncContext');
+    expect(source).toContain('targetedAuthFileSyncs');
+    expect(source).toContain('syncAuthFileSnapshotsForJob(');
+    expect(source).toContain('if (!inventorySyncContext || !codexJobProgress.jobId || codexJobActive) return;');
+    expect(source).toContain('inventorySyncContext.targetNames');
     expect(source).toContain(
       'syncAuthFileSnapshots(directTargets.map((entry) => entry.file.name))'
     );
@@ -47,6 +51,8 @@ describe('quota page Ergouzi parity', () => {
     );
     expect(source).not.toContain('onComplete');
     expect(source).not.toContain('completionHandler');
+    expect(source).toContain('setInventorySyncContext({');
+    expect(source).toContain('targetNames: [...filesByName.keys()]');
   });
 
   test('keeps the Codex reset-detail toggle in the current quota toolbar', () => {

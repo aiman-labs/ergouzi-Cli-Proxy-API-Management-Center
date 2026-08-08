@@ -77,6 +77,8 @@ import {
 } from './providers/codex/resetDetails';
 import styles from './QuotaPage.module.scss';
 
+const targetedAuthFileSyncs = new Map<string, Promise<boolean>>();
+
 const TAB_IDS: string[] = ['all', ...QUOTA_TAB_ORDER];
 const SKELETON_CARD_COUNT = 6;
 const QUOTA_PAGE_SIZE_STORAGE_KEY = 'quota-management:page-size';
@@ -130,10 +132,6 @@ export function QuotaPage() {
   const [showCodexResetCreditExpiries, setShowCodexResetCreditExpiries] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
-  const pendingCodexInventorySyncRef = useRef<{
-    jobId: string | null;
-    targetNames: string[];
-  } | null>(null);
   // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -155,9 +153,9 @@ export function QuotaPage() {
     }
   }, [t]);
 
-  const syncAuthFileSnapshots = useCallback(async (names: string[]) => {
+  const syncAuthFileSnapshots = useCallback(async (names: string[]): Promise<boolean> => {
     const targetNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
-    if (targetNames.length === 0) return;
+    if (targetNames.length === 0) return true;
     const cacheGeneration = captureQuotaCacheGeneration();
 
     try {
@@ -167,10 +165,26 @@ export function QuotaPage() {
           mergeTargetedAuthFileSnapshots(current, data?.files || [], targetNames)
         );
       });
+      return true;
     } catch {
       // Quota results remain valid; the next explicit inventory load retries metadata sync.
+      return false;
     }
   }, []);
+
+  const syncAuthFileSnapshotsForJob = useCallback(
+    (jobId: string, names: string[]): Promise<boolean> => {
+      const existing = targetedAuthFileSyncs.get(jobId);
+      if (existing) return existing;
+
+      const pending = syncAuthFileSnapshots(names).finally(() => {
+        if (targetedAuthFileSyncs.get(jobId) === pending) targetedAuthFileSyncs.delete(jobId);
+      });
+      targetedAuthFileSyncs.set(jobId, pending);
+      return pending;
+    },
+    [syncAuthFileSnapshots]
+  );
 
   useHeaderRefresh(loadFiles);
 
@@ -356,15 +370,16 @@ export function QuotaPage() {
   const {
     progress: codexJobProgress,
     isActive: codexJobActive,
+    inventorySyncContext,
+    clearInventorySyncContext,
     start: startCodexJob,
     cancel: cancelCodexJob,
   } = useCodexQuotaRefreshJob();
   const [resetCreditDetailsScheduler] = useState(() => new CodexResetDetailScheduler(4));
 
   useEffect(() => {
-    const pending = pendingCodexInventorySyncRef.current;
-    if (!pending || !codexJobProgress.jobId || codexJobActive) return;
-    if (pending.jobId && pending.jobId !== codexJobProgress.jobId) return;
+    if (!inventorySyncContext || !codexJobProgress.jobId || codexJobActive) return;
+    if (inventorySyncContext.jobId !== codexJobProgress.jobId) return;
     if (
       codexJobProgress.status !== 'completed' &&
       codexJobProgress.status !== 'cancelled' &&
@@ -373,9 +388,20 @@ export function QuotaPage() {
       return;
     }
 
-    pendingCodexInventorySyncRef.current = null;
-    void syncAuthFileSnapshots(pending.targetNames);
-  }, [codexJobActive, codexJobProgress.jobId, codexJobProgress.status, syncAuthFileSnapshots]);
+    void syncAuthFileSnapshotsForJob(
+      inventorySyncContext.jobId,
+      inventorySyncContext.targetNames
+    ).then((synced) => {
+      if (synced) clearInventorySyncContext(inventorySyncContext.jobId);
+    });
+  }, [
+    clearInventorySyncContext,
+    codexJobActive,
+    codexJobProgress.jobId,
+    codexJobProgress.status,
+    inventorySyncContext,
+    syncAuthFileSnapshotsForJob,
+  ]);
 
   useEffect(() => {
     resetCreditDetailsScheduler.sync({
@@ -601,23 +627,7 @@ export function QuotaPage() {
 
     try {
       await Promise.all([
-        (async () => {
-          if (codexTargets.length === 0) return;
-          const pending: { jobId: string | null; targetNames: string[] } = {
-            jobId: null,
-            targetNames: codexTargets.map((file) => file.name),
-          };
-          pendingCodexInventorySyncRef.current = pending;
-          try {
-            const summary = await startCodexJob(codexTargets);
-            if (pendingCodexInventorySyncRef.current === pending) pending.jobId = summary.jobId;
-          } catch (error) {
-            if (pendingCodexInventorySyncRef.current === pending) {
-              pendingCodexInventorySyncRef.current = null;
-            }
-            throw error;
-          }
-        })(),
+        codexTargets.length > 0 ? startCodexJob(codexTargets) : Promise.resolve(),
         (async () => {
           if (directTargets.length === 0) return;
           await loadQuota(directTargets);

@@ -23,10 +23,16 @@ export const IDLE_CODEX_QUOTA_JOB_PROGRESS: CodexQuotaJobProgress = {
   error: '',
 };
 
+export interface CodexQuotaInventorySyncContext {
+  jobId: string;
+  targetNames: string[];
+}
+
 interface CodexQuotaJobStoreState {
   progress: CodexQuotaJobProgress;
   starting: boolean;
   active: boolean;
+  inventorySyncContext: CodexQuotaInventorySyncContext | null;
   setProgress: (
     updater:
       | CodexQuotaJobProgress
@@ -34,6 +40,8 @@ interface CodexQuotaJobStoreState {
   ) => void;
   setStarting: (starting: boolean) => void;
   setActive: (active: boolean) => void;
+  setInventorySyncContext: (context: CodexQuotaInventorySyncContext) => void;
+  clearInventorySyncContext: (jobId: string) => void;
   reset: () => void;
 }
 
@@ -41,11 +49,23 @@ export const useCodexQuotaJobStore = create<CodexQuotaJobStoreState>((set) => ({
   progress: IDLE_CODEX_QUOTA_JOB_PROGRESS,
   starting: false,
   active: false,
+  inventorySyncContext: null,
   setProgress: (updater) =>
     set((state) => ({
       progress: typeof updater === 'function' ? updater(state.progress) : updater,
     })),
   setStarting: (starting) => set({ starting }),
   setActive: (active) => set({ active }),
-  reset: () => set({ progress: IDLE_CODEX_QUOTA_JOB_PROGRESS, starting: false, active: false }),
+  setInventorySyncContext: (inventorySyncContext) => set({ inventorySyncContext }),
+  clearInventorySyncContext: (jobId) =>
+    set((state) =>
+      state.inventorySyncContext?.jobId === jobId ? { inventorySyncContext: null } : {}
+    ),
+  reset: () =>
+    set({
+      progress: IDLE_CODEX_QUOTA_JOB_PROGRESS,
+      starting: false,
+      active: false,
+      inventorySyncContext: null,
+    }),
 }));
