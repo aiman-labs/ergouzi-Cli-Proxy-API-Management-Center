@@ -270,7 +270,11 @@ leaving and returning to the quota route cannot lose the final metadata update;
 duplicate route effects share the same in-flight snapshot request. Target-level
 request ordering and mutation versions prevent an older snapshot from
 overwriting a newer refresh or enable/disable result; affected targets retry
-against a fresh backend snapshot instead.
+against a fresh backend snapshot instead. Whole-inventory requests participate
+in the same start-order guard, so a late stale list response cannot replace a
+newer targeted commit. Transient targeted-list failures retry within one
+three-attempt budget, while concurrent whole-list loads keep loading and error
+ownership with the newest request.
 
 The auth-file page preserves import options, import-time and priority sorting,
 error/success-count/Codex-plan filters, quota details, bounded manual-refresh

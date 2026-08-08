@@ -31,7 +31,10 @@ import {
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { mergeTargetedAuthFileSnapshots } from '@/utils/authFiles';
-import { AuthFileSnapshotGuard } from '@/utils/authFileSnapshotGuard';
+import {
+  AuthFileSnapshotGuard,
+  syncTargetedAuthFileSnapshots,
+} from '@/utils/authFileSnapshotGuard';
 import type { CodexPlanFilterValue } from '@/utils/quota';
 import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
@@ -134,6 +137,7 @@ export function QuotaPage() {
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [authSnapshotGuard] = useState(() => new AuthFileSnapshotGuard());
+  const activeInventoryLoadsRef = useRef(0);
   // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -142,17 +146,21 @@ export function QuotaPage() {
   /* ---------- Credential inventory ---------- */
 
   const loadFiles = useCallback(async () => {
+    const request = authSnapshotGuard.beginAll();
+    activeInventoryLoadsRef.current += 1;
     setLoading(true);
     setError('');
     try {
       const data = await authFilesApi.list();
-      authSnapshotGuard.markAllMutated();
-      setFiles(data?.files || []);
+      if (authSnapshotGuard.settleAll(request)) setFiles(data?.files || []);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('notification.refresh_failed');
-      setError(message);
+      if (authSnapshotGuard.isLatestAll(request)) {
+        const message = err instanceof Error ? err.message : t('notification.refresh_failed');
+        setError(message);
+      }
     } finally {
-      setLoading(false);
+      activeInventoryLoadsRef.current = Math.max(0, activeInventoryLoadsRef.current - 1);
+      if (activeInventoryLoadsRef.current === 0) setLoading(false);
     }
   }, [authSnapshotGuard, t]);
 
@@ -160,28 +168,17 @@ export function QuotaPage() {
     const targetNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
     if (targetNames.length === 0) return true;
     const cacheGeneration = captureQuotaCacheGeneration();
-    let pendingNames = targetNames;
-
-    for (let attempt = 0; attempt < 3 && pendingNames.length > 0; attempt += 1) {
-      const request = authSnapshotGuard.begin(pendingNames);
-      try {
-        const data = await authFilesApi.list();
-        const decision = authSnapshotGuard.settle(request);
-        const committed = commitIfQuotaCacheCurrent(cacheGeneration, () => {
-          if (decision.applyNames.length === 0) return;
+    return syncTargetedAuthFileSnapshots({
+      targetNames,
+      guard: authSnapshotGuard,
+      load: authFilesApi.list,
+      apply: (data, applyNames) =>
+        commitIfQuotaCacheCurrent(cacheGeneration, () => {
           setFiles((current) =>
-            mergeTargetedAuthFileSnapshots(current, data?.files || [], decision.applyNames)
+            mergeTargetedAuthFileSnapshots(current, data?.files || [], applyNames)
           );
-        });
-        if (!committed) return true;
-        pendingNames = decision.retryNames;
-      } catch {
-        authSnapshotGuard.settle(request);
-        return false;
-      }
-    }
-
-    return pendingNames.length === 0;
+        }),
+    });
   }, [authSnapshotGuard]);
 
   const syncAuthFileSnapshotsForJob = useCallback(
