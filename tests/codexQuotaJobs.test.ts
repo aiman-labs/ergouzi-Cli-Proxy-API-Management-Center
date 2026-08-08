@@ -9,6 +9,8 @@ import {
   buildCodexQuotaDataFromUsageBody,
   CODEX_CONFIG,
 } from '../src/features/quota/providers/codex/data';
+import { apiCallApi } from '../src/services/api';
+import { CODEX_USAGE_URL } from '../src/utils/quota';
 
 const t = ((key: string) => key) as never;
 
@@ -176,6 +178,37 @@ describe('Codex quota refresh job API normalization', () => {
 });
 
 describe('Codex usage-only quota conversion', () => {
+  test('single-card refresh leaves reset-credit details for the explicit display toggle', async () => {
+    const originalRequest = apiCallApi.request;
+    const requestedUrls: string[] = [];
+    apiCallApi.request = async (request) => {
+      requestedUrls.push(request.url);
+      return {
+        statusCode: 200,
+        header: {},
+        bodyText: '',
+        body: {
+          plan_type: 'pro',
+          rate_limit_reset_credits: { available_count: 2 },
+          rate_limit: {
+            primary_window: { used_percent: 20, reset_after_seconds: 3600 },
+          },
+        },
+      };
+    };
+
+    try {
+      const data = await CODEX_CONFIG.fetchQuota(
+        { name: 'codex.json', type: 'codex', auth_index: 'auth-1' },
+        t
+      );
+      expect(requestedUrls).toEqual([CODEX_USAGE_URL]);
+      expect(data.rateLimitResetCreditsLoaded).toBe(false);
+    } finally {
+      apiCallApi.request = originalRequest;
+    }
+  });
+
   test('shows reset only for a known positive credit count', () => {
     const canResetQuota = CODEX_CONFIG.canResetQuota;
     const quota = {

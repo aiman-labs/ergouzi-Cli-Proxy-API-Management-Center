@@ -105,11 +105,28 @@ export const isAuthFilesCodexPlanFilter = (value: unknown): value is AuthFilesCo
   typeof value === 'string' &&
   AUTH_FILES_CODEX_PLAN_FILTER_SET.has(value as AuthFilesCodexPlanFilter);
 
-export const isAuthFilesStatusFilterMode = (
-  value: unknown
-): value is AuthFilesStatusFilterMode =>
+export const isAuthFilesStatusFilterMode = (value: unknown): value is AuthFilesStatusFilterMode =>
   typeof value === 'string' &&
   AUTH_FILES_STATUS_FILTER_MODE_SET.has(value as AuthFilesStatusFilterMode);
+
+export const resolveAuthFilesFilterState = (
+  state: AuthFilesUiState
+): { healthFilter: AuthFilesHealthFilter; enabledFilter: AuthFilesEnabledFilter } => {
+  const legacyMode = state.statusFilterMode as unknown;
+  const healthFilter = isAuthFilesHealthFilter(state.healthFilter)
+    ? state.healthFilter
+    : legacyMode === 'problem' || legacyMode === 'disabledProblem' || state.problemOnly === true
+      ? 'problem'
+      : 'all';
+  const enabledFilter = isAuthFilesEnabledFilter(state.enabledFilter)
+    ? state.enabledFilter
+    : legacyMode === 'enabled'
+      ? 'enabled'
+      : legacyMode === 'disabled' || state.disabledOnly === true
+        ? 'disabled'
+        : 'all';
+  return { healthFilter, enabledFilter };
+};
 
 const readAuthFilesUiStateFromStorage = (
   storage: Pick<Storage, 'getItem'> | null | undefined

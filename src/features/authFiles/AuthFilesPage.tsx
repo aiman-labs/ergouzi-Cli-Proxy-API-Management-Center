@@ -31,8 +31,10 @@ import { VaultPulse } from '@/features/authFiles/components/VaultPulse';
 import { invalidateAuthFileDerivedCaches } from '@/features/authFiles/cacheInvalidation';
 import {
   buildWildcardSearch,
+  filterAuthFilesByHealthAndEnabled,
   matchesAuthFileSearch,
   resolveAuthFileDeleteTargets,
+  resolveAuthFileStatusTargets,
   sortAuthFiles,
 } from '@/features/authFiles/logic';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
@@ -41,7 +43,6 @@ import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth'
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import {
-  isAuthFilesStatusFilterMode,
   isAuthFilesSortMode,
   isAuthFilesErrorTypeFilter,
   isAuthFilesSuccessCountFilter,
@@ -49,9 +50,11 @@ import {
   normalizeAuthFilesSortMode,
   readAuthFilesUiState,
   readPersistedAuthFilesCompactMode,
+  resolveAuthFilesFilterState,
   writeAuthFilesUiState,
   writePersistedAuthFilesCompactMode,
-  type AuthFilesStatusFilterMode,
+  type AuthFilesEnabledFilter,
+  type AuthFilesHealthFilter,
   type AuthFilesSortMode,
   type AuthFilesErrorTypeFilter,
   type AuthFilesSuccessCountFilter,
@@ -62,7 +65,6 @@ import type { AuthFileItem } from '@/types';
 import { classifyAuthFileErrorType, resolveAuthFileProblemMessage } from './errorType';
 import { filterAuthFilesBySuccessCount } from './successFilter';
 import { isCodexFile, matchesCodexPlanFilterValue } from '@/utils/quota';
-import { getManualRefreshSafeStatusTargetNames } from './manualRefresh';
 import styles from './AuthFilesPage.module.scss';
 
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
@@ -70,20 +72,6 @@ const DEFAULT_COMPACT_PAGE_SIZE = 12;
 const SKELETON_CARD_COUNT = 6;
 /** Total first-paint card entrance budget, aligned with useRevealGroup. */
 const CARD_ENTRANCE_BUDGET_MS = 360;
-
-const resolveStatusFilterMode = (
-  problemOnly: boolean,
-  disabledOnly: boolean
-): AuthFilesStatusFilterMode => {
-  if (problemOnly) return 'problem';
-  if (disabledOnly) return 'disabled';
-  return 'all';
-};
-
-const normalizePersistedStatusFilterMode = (value: unknown): AuthFilesStatusFilterMode | null => {
-  if (value === 'disabledProblem') return 'problem';
-  return isAuthFilesStatusFilterMode(value) ? value : null;
-};
 
 export function AuthFilesPage() {
   const { t } = useTranslation();
@@ -101,7 +89,8 @@ export function AuthFilesPage() {
   const navigate = useNavigate();
 
   const [filter, setFilter] = useState<'all' | string>('all');
-  const [statusFilterMode, setStatusFilterMode] = useState<AuthFilesStatusFilterMode>('all');
+  const [healthFilter, setHealthFilter] = useState<AuthFilesHealthFilter>('all');
+  const [enabledFilter, setEnabledFilter] = useState<AuthFilesEnabledFilter>('all');
   const [errorTypeFilter, setErrorTypeFilter] = useState<AuthFilesErrorTypeFilter>('all');
   const [successCountFilter, setSuccessCountFilter] = useState<AuthFilesSuccessCountFilter>('all');
   const [codexPlanFilter, setCodexPlanFilter] = useState<AuthFilesCodexPlanFilter>('all');
@@ -204,9 +193,9 @@ export function AuthFilesPage() {
   const disableControls = connectionStatus !== 'connected';
   const normalizedFilter = normalizeProviderKey(String(filter));
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
-  const problemOnly = statusFilterMode === 'problem';
-  const disabledOnly = statusFilterMode === 'disabled';
-  const enabledOnly = statusFilterMode === 'enabled';
+  const problemOnly = healthFilter === 'problem';
+  const disabledOnly = enabledFilter === 'disabled';
+  const enabledOnly = enabledFilter === 'enabled';
 
   /* ---------- uiState hydration and persistence (legacy localStorage key/shape) ---------- */
 
@@ -221,19 +210,9 @@ export function AuthFilesPage() {
       if (typeof persisted.filter === 'string' && persisted.filter.trim()) {
         setFilter(normalizeProviderKey(persisted.filter));
       }
-      const persistedStatusFilterMode = normalizePersistedStatusFilterMode(
-        persisted.statusFilterMode
-      );
-      if (persistedStatusFilterMode) {
-        setStatusFilterMode(persistedStatusFilterMode);
-      } else if (
-        typeof persisted.problemOnly === 'boolean' ||
-        typeof persisted.disabledOnly === 'boolean'
-      ) {
-        setStatusFilterMode(
-          resolveStatusFilterMode(persisted.problemOnly === true, persisted.disabledOnly === true)
-        );
-      }
+      const persistedFilters = resolveAuthFilesFilterState(persisted);
+      setHealthFilter(persistedFilters.healthFilter);
+      setEnabledFilter(persistedFilters.enabledFilter);
       if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
@@ -285,7 +264,8 @@ export function AuthFilesPage() {
 
     writeAuthFilesUiState({
       filter,
-      statusFilterMode,
+      healthFilter,
+      enabledFilter,
       problemOnly,
       disabledOnly,
       compactMode,
@@ -305,8 +285,10 @@ export function AuthFilesPage() {
     compactMode,
     codexPlanFilter,
     disabledOnly,
+    enabledFilter,
     errorTypeFilter,
     filter,
+    healthFilter,
     page,
     pageSize,
     pageSizeByMode,
@@ -314,7 +296,6 @@ export function AuthFilesPage() {
     search,
     showQuotaDetails,
     sortMode,
-    statusFilterMode,
     successCountFilter,
     uiStateHydrated,
   ]);
@@ -384,8 +365,13 @@ export function AuthFilesPage() {
     [sortMode]
   );
 
-  const handleStatusFilterModeChange = useCallback((nextMode: AuthFilesStatusFilterMode) => {
-    setStatusFilterMode(nextMode);
+  const handleHealthFilterChange = useCallback((value: AuthFilesHealthFilter) => {
+    setHealthFilter(value);
+    setPage(1);
+  }, []);
+
+  const handleEnabledFilterChange = useCallback((value: AuthFilesEnabledFilter) => {
+    setEnabledFilter(value);
     setPage(1);
   }, []);
 
@@ -440,47 +426,55 @@ export function AuthFilesPage() {
     return Array.from(types);
   }, [files]);
 
-  const filesMatchingStatusFilters = useMemo(
-    () =>
-      files.filter((file) => {
-        if (enabledOnly && file.disabled === true) return false;
-        if (disabledOnly && file.disabled !== true) return false;
-        if (problemOnly && !getProblemMessage(file)) return false;
-        if (
-          errorTypeFilter !== 'all' &&
-          classifyAuthFileErrorType(getProblemMessage(file)) !== errorTypeFilter
-        ) {
-          return false;
-        }
-        if (
-          codexPlanFilter !== 'all' &&
-          (!isCodexFile(file) ||
-            !matchesCodexPlanFilterValue(file, codexPlanFilter, codexQuota[file.name]?.planType))
-        ) {
-          return false;
-        }
-        return true;
-      }),
-    [
-      codexPlanFilter,
-      codexQuota,
-      disabledOnly,
-      enabledOnly,
-      errorTypeFilter,
+  const filesMatchingStatusFilters = useMemo(() => {
+    const statusMatched = filterAuthFilesByHealthAndEnabled(
       files,
-      getProblemMessage,
-      problemOnly,
-    ]
-  );
+      healthFilter,
+      enabledFilter,
+      getProblemMessage
+    );
+    return statusMatched.filter((file) => {
+      if (
+        errorTypeFilter !== 'all' &&
+        classifyAuthFileErrorType(getProblemMessage(file)) !== errorTypeFilter
+      ) {
+        return false;
+      }
+      if (
+        codexPlanFilter !== 'all' &&
+        (!isCodexFile(file) ||
+          !matchesCodexPlanFilterValue(file, codexPlanFilter, codexQuota[file.name]?.planType))
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [
+    codexPlanFilter,
+    codexQuota,
+    enabledFilter,
+    errorTypeFilter,
+    files,
+    getProblemMessage,
+    healthFilter,
+  ]);
 
-  const statusFilterOptions = useMemo(
+  const healthFilterOptions = useMemo(
     () =>
       [
-        { value: 'all', label: t('auth_files.problem_filter_all') },
-        { value: 'enabled', label: t('auth_files.problem_filter_enabled') },
-        { value: 'disabled', label: t('auth_files.problem_filter_disabled') },
-        { value: 'problem', label: t('auth_files.problem_filter_problem') },
-      ] satisfies Array<{ value: AuthFilesStatusFilterMode; label: string }>,
+        { value: 'all', label: t('auth_files.health_filter_all') },
+        { value: 'normal', label: t('auth_files.health_filter_normal') },
+        { value: 'problem', label: t('auth_files.health_filter_problem') },
+      ] satisfies Array<{ value: AuthFilesHealthFilter; label: string }>,
+    [t]
+  );
+  const enabledFilterOptions = useMemo(
+    () =>
+      [
+        { value: 'all', label: t('auth_files.enabled_filter_all') },
+        { value: 'enabled', label: t('auth_files.enabled_filter_enabled') },
+        { value: 'disabled', label: t('auth_files.enabled_filter_disabled') },
+      ] satisfies Array<{ value: AuthFilesEnabledFilter; label: string }>,
     [t]
   );
 
@@ -558,7 +552,8 @@ export function AuthFilesPage() {
 
   const hasActiveDeleteFilters =
     normalizedFilter !== 'all' ||
-    statusFilterMode !== 'all' ||
+    healthFilter !== 'all' ||
+    enabledFilter !== 'all' ||
     errorTypeFilter !== 'all' ||
     successCountFilter !== 'all' ||
     codexPlanFilter !== 'all' ||
@@ -570,6 +565,14 @@ export function AuthFilesPage() {
         filtered.map((file) => file.name)
       ),
     [filtered]
+  );
+  const filteredEnableTargetNames = useMemo(
+    () => resolveAuthFileStatusTargets(filtered, manualRefreshing, true),
+    [filtered, manualRefreshing]
+  );
+  const filteredDisableTargetNames = useMemo(
+    () => resolveAuthFileStatusTargets(filtered, manualRefreshing, false),
+    [filtered, manualRefreshing]
   );
 
   const sorted = useMemo(() => sortAuthFiles(filtered, sortMode), [filtered, sortMode]);
@@ -601,21 +604,24 @@ export function AuthFilesPage() {
     () => selectedPageNames.some((name) => statusUpdating[name] === true),
     [selectedPageNames, statusUpdating]
   );
+  const filteredHasStatusUpdating = useMemo(
+    () =>
+      [...filteredEnableTargetNames, ...filteredDisableTargetNames].some(
+        (name) => statusUpdating[name] === true
+      ),
+    [filteredDisableTargetNames, filteredEnableTargetNames, statusUpdating]
+  );
   const batchStatusButtonsDisabled =
     disableControls ||
     selectedPageNames.length === 0 ||
     batchStatusUpdating ||
     selectedHasStatusUpdating;
+  const filteredStatusButtonsDisabled =
+    disableControls || batchStatusUpdating || filteredHasStatusUpdating;
 
   const confirmBatchStatus = useCallback(
-    (enabled: boolean) => {
-      const targetNames = getManualRefreshSafeStatusTargetNames(
-        pageItems.filter((file) => selectedFiles.has(file.name)),
-        manualRefreshing,
-        !enabled
-      );
+    (targetNames: string[], enabled: boolean, scope: string) => {
       if (targetNames.length === 0) return;
-      const scope = t('auth_files.scope_selected_page_items');
       showConfirmation({
         title: t(
           enabled
@@ -637,7 +643,7 @@ export function AuthFilesPage() {
         onConfirm: () => batchSetStatus(targetNames, enabled),
       });
     },
-    [batchSetStatus, manualRefreshing, pageItems, selectedFiles, showConfirmation, t]
+    [batchSetStatus, showConfirmation, t]
   );
 
   /* ---------- Header telemetry ---------- */
@@ -710,7 +716,8 @@ export function AuthFilesPage() {
 
   const clearFilters = useCallback(() => {
     setFilter('all');
-    setStatusFilterMode('all');
+    setHealthFilter('all');
+    setEnabledFilter('all');
     setErrorTypeFilter('all');
     setSuccessCountFilter('all');
     setCodexPlanFilter('all');
@@ -723,12 +730,17 @@ export function AuthFilesPage() {
       normalizedSearch.length > 0 ||
       errorTypeFilter !== 'all' ||
       successCountFilter !== 'all' ||
-      codexPlanFilter !== 'all'
+      codexPlanFilter !== 'all' ||
+      healthFilter === 'normal'
     ) {
-      return t('auth_files.delete_filtered_result_button');
+      return t('auth_files.delete_filtered_result_button', {
+        count: filteredDeleteTargetNames.length,
+      });
     }
     if (enabledOnly || disabledOnly) {
-      return t('auth_files.delete_filtered_result_button');
+      return t('auth_files.delete_filtered_result_button', {
+        count: filteredDeleteTargetNames.length,
+      });
     }
     if (problemOnly) {
       return normalizedFilter === 'all'
@@ -797,9 +809,12 @@ export function AuthFilesPage() {
             setSearch(value);
             setPage(1);
           }}
-          statusFilterMode={statusFilterMode}
-          statusFilterOptions={statusFilterOptions}
-          onStatusFilterChange={handleStatusFilterModeChange}
+          healthFilter={healthFilter}
+          healthFilterOptions={healthFilterOptions}
+          onHealthFilterChange={handleHealthFilterChange}
+          enabledFilter={enabledFilter}
+          enabledFilterOptions={enabledFilterOptions}
+          onEnabledFilterChange={handleEnabledFilterChange}
           sortMode={sortMode}
           sortOptions={sortOptions}
           onSortModeChange={handleSortModeChange}
@@ -826,9 +841,9 @@ export function AuthFilesPage() {
               enabledOnly,
               targetNames: hasActiveDeleteFilters ? filteredDeleteTargetNames : undefined,
               onResetFilterToAll: () => setFilter('all'),
-              onResetProblemOnly: () => setStatusFilterMode('all'),
-              onResetDisabledOnly: () => setStatusFilterMode('all'),
-              onResetEnabledOnly: () => setStatusFilterMode('all'),
+              onResetProblemOnly: () => setHealthFilter('all'),
+              onResetDisabledOnly: () => setEnabledFilter('all'),
+              onResetEnabledOnly: () => setEnabledFilter('all'),
             })
           }
         />
@@ -864,6 +879,47 @@ export function AuthFilesPage() {
             ariaLabel={t('auth_files.codex_plan_filter_label')}
             size="sm"
           />
+        </div>
+
+        <div className={styles.filteredStatusActions}>
+          <span>
+            {t('auth_files.bulk_filtered_desc', { count: filteredDeleteTargetNames.length })}
+          </span>
+          <div className={styles.filteredStatusButtons}>
+            <Button
+              size="sm"
+              onClick={() =>
+                confirmBatchStatus(
+                  filteredEnableTargetNames,
+                  true,
+                  t('auth_files.scope_filtered_result')
+                )
+              }
+              disabled={filteredStatusButtonsDisabled || filteredEnableTargetNames.length === 0}
+              loading={batchStatusUpdating && filteredEnableTargetNames.length > 0}
+            >
+              {t('auth_files.batch_enable_filtered_button', {
+                count: filteredEnableTargetNames.length,
+              })}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                confirmBatchStatus(
+                  filteredDisableTargetNames,
+                  false,
+                  t('auth_files.scope_filtered_result')
+                )
+              }
+              disabled={filteredStatusButtonsDisabled || filteredDisableTargetNames.length === 0}
+              loading={batchStatusUpdating && filteredDisableTargetNames.length > 0}
+            >
+              {t('auth_files.batch_disable_filtered_button', {
+                count: filteredDisableTargetNames.length,
+              })}
+            </Button>
+          </div>
         </div>
 
         {error && (
@@ -1034,8 +1090,28 @@ export function AuthFilesPage() {
         onInvertPage={() => invertVisibleSelection(pageItems)}
         onDeselectAll={deselectAll}
         onDownload={() => void batchDownload(selectedPageNames)}
-        onEnable={() => confirmBatchStatus(true)}
-        onDisable={() => confirmBatchStatus(false)}
+        onEnable={() =>
+          confirmBatchStatus(
+            resolveAuthFileStatusTargets(
+              pageItems.filter((file) => selectedFiles.has(file.name)),
+              manualRefreshing,
+              true
+            ),
+            true,
+            t('auth_files.scope_selected_page_items')
+          )
+        }
+        onDisable={() =>
+          confirmBatchStatus(
+            resolveAuthFileStatusTargets(
+              pageItems.filter((file) => selectedFiles.has(file.name)),
+              manualRefreshing,
+              false
+            ),
+            false,
+            t('auth_files.scope_selected_page_items')
+          )
+        }
         onDelete={() =>
           batchDelete(selectedPageNames, {
             title: t('auth_files.batch_delete_filtered_title'),

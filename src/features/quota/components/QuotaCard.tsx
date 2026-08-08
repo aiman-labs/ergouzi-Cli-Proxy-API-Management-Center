@@ -36,6 +36,7 @@ export type QuotaCardProps = {
   resetting: boolean;
   canSetStatus?: boolean;
   statusUpdating?: boolean;
+  showCodexResetCreditExpiries?: boolean;
   /** Initial stagger delay; null disables entry motion for cards mounted after tabs, pages, or refreshes change. */
   entranceDelayMs?: number | null;
   onRefresh: () => void;
@@ -52,6 +53,7 @@ export function QuotaCard(props: QuotaCardProps) {
     resetting,
     canSetStatus = false,
     statusUpdating = false,
+    showCodexResetCreditExpiries = false,
     entranceDelayMs,
     onRefresh,
     onReset,
@@ -145,7 +147,11 @@ export function QuotaCard(props: QuotaCardProps) {
             {t(`${adapter.i18nPrefix}.load_failed`, { message: errorMessage })}
           </div>
         ) : quota ? (
-          <adapter.Body quota={quota} classes={quotaClasses} />
+          <adapter.Body
+            quota={quota}
+            classes={quotaClasses}
+            showCodexResetCreditExpiries={showCodexResetCreditExpiries}
+          />
         ) : (
           <div className={styles.idleHint}>{t(`${adapter.i18nPrefix}.idle`)}</div>
         )}

@@ -46,6 +46,31 @@
   }
 }
 
+.filteredStatusActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-block: 1px solid var(--border-color);
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.filteredStatusButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@include mobile {
+  .filteredStatusActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 /* ---------- Card grid ---------- */
 
 .grid {

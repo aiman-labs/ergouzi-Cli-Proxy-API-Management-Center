@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { runLimitedBatch } from '../src/utils/runLimitedBatch';
+import { runLimitedBatch, runLimitedSettledBatch } from '../src/utils/runLimitedBatch';
 
 describe('runLimitedBatch', () => {
   test('limits concurrent workers and preserves result order', async () => {
@@ -49,5 +49,29 @@ describe('runLimitedBatch', () => {
     expect(maxActive).toBe(4);
     expect(completed).toBe(1600);
     expect(results).toEqual(items);
+  });
+
+  test('settles a 1600-item status batch without exceeding four concurrent requests', async () => {
+    let active = 0;
+    let maxActive = 0;
+    const items = Array.from({ length: 1600 }, (_, index) => index);
+
+    const results = await runLimitedSettledBatch({
+      items,
+      concurrency: 4,
+      worker: async (item) => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await Promise.resolve();
+        active -= 1;
+        if (item === 99) throw new Error('expected failure');
+        return item;
+      },
+    });
+
+    expect(maxActive).toBe(4);
+    expect(results).toHaveLength(1600);
+    expect(results[99].status).toBe('rejected');
+    expect(results[100]).toEqual({ status: 'fulfilled', value: 100 });
   });
 });

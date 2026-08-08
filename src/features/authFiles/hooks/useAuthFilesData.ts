@@ -36,6 +36,9 @@ import {
 } from '@/features/authFiles/manualRefresh';
 import { resolveAuthProvider } from '@/utils/quota';
 import { resolveAuthFileDeleteTargets } from '@/features/authFiles/logic';
+import { runLimitedSettledBatch } from '@/utils/runLimitedBatch';
+
+const BATCH_STATUS_CONCURRENCY = 4;
 
 type DeleteAllOptions = {
   filter: string;
@@ -691,9 +694,11 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
       );
 
       try {
-        const results = await Promise.allSettled(
-          targetNameList.map((name) => authFilesApi.setStatus(name, nextDisabled))
-        );
+        const results = await runLimitedSettledBatch({
+          items: targetNameList,
+          concurrency: BATCH_STATUS_CONCURRENCY,
+          worker: (name) => authFilesApi.setStatus(name, nextDisabled),
+        });
         invalidateInFlightLoads();
 
         let successCount = 0;

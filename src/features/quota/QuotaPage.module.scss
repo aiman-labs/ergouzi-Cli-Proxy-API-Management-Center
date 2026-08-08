@@ -89,6 +89,7 @@
   .controls {
     width: 100%;
     align-items: stretch;
+    flex: 0 0 auto;
 
     > * {
       flex: 1 1 100%;
@@ -137,6 +138,29 @@
  * CSS owns column sizing instead of JS measurement. Quota cards contain meters,
  * so they share the 340px minimum used by auth-file quota mode (.gridQuota). */
 
+.gridViewport {
+  max-height: min(72vh, 900px);
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  padding-bottom: 2px;
+  scrollbar-gutter: stable;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--border-color) 72%, var(--text-tertiary));
+  }
+}
+
 .grid {
   display: grid;
   gap: 16px;
@@ -166,5 +190,9 @@
 @include mobile {
   .page {
     gap: 16px;
+  }
+
+  .gridViewport {
+    max-height: 68vh;
   }
 }

@@ -59,6 +59,8 @@ export interface QuotaTimelineProps {
   initialMode?: TimelineMode;
   /** Injectable initial date offset for tests/screenshots; defaults to the current period. */
   initialOffset?: number;
+  /** Whether Codex manual-reset expiry ticks are visible in timeline lanes. */
+  showCodexResetCreditExpiries?: boolean;
 }
 
 export function QuotaTimeline({
@@ -69,6 +71,7 @@ export function QuotaTimeline({
   now: nowProp,
   initialMode = 'weekly',
   initialOffset = 0,
+  showCodexResetCreditExpiries = true,
 }: QuotaTimelineProps) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<TimelineMode>(initialMode);
@@ -90,13 +93,19 @@ export function QuotaTimeline({
 
   const laneInputs = useMemo(
     () =>
-      entries.map((entry) => ({
-        name: entry.file.name,
-        displayName: displayNameFor(entry.file.name),
-        provider: entry.type,
-        quota: quotaFor(entry),
-      })),
-    [entries, quotaFor, displayNameFor]
+      entries.map((entry) => {
+        const quota = quotaFor(entry);
+        return {
+          name: entry.file.name,
+          displayName: displayNameFor(entry.file.name),
+          provider: entry.type,
+          quota:
+            entry.type === 'codex' && !showCodexResetCreditExpiries && quota?.status === 'success'
+              ? { ...quota, rateLimitResetCredits: [] }
+              : quota,
+        };
+      }),
+    [entries, quotaFor, displayNameFor, showCodexResetCreditExpiries]
   );
 
   // Keep the timeline hidden until at least one loaded credential exposes a
@@ -122,6 +131,8 @@ export function QuotaTimeline({
         .filter((lane) => laneHasWindow(lane) && (mode !== 'session' || lane.periodHours === 5)),
     [laneInputs, mode, span.days]
   );
+  const showResetCreditLegend =
+    showCodexResetCreditExpiries && lanes.some((lane) => lane.provider === 'codex');
 
   /** Weekly: one cell per day. Session: one per 6 hours. */
   const cells = useMemo(() => {
@@ -281,12 +292,14 @@ export function QuotaTimeline({
             <span className={`${styles.swatch} ${styles.swatchPast}`} />
             {t('quota_management.windows_legend_elapsed', { defaultValue: 'elapsed' })}
           </span>
-          <span className={styles.legendItem}>
-            <span className={styles.swatchCredit} />
-            {t('quota_management.windows_legend_reset_credit', {
-              defaultValue: 'manual reset expiry',
-            })}
-          </span>
+          {showResetCreditLegend && (
+            <span className={styles.legendItem}>
+              <span className={styles.swatchCredit} />
+              {t('quota_management.windows_legend_reset_credit', {
+                defaultValue: 'manual reset expiry',
+              })}
+            </span>
+          )}
           <span className={styles.legendNote}>
             {mode === 'weekly'
               ? t('quota_management.windows_note_weekly', {

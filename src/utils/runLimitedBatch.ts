@@ -5,6 +5,13 @@ interface RunLimitedBatchOptions<TItem, TResult> {
   onResult?: (result: TResult, index: number, item: TItem) => void;
 }
 
+type RunLimitedSettledBatchOptions<TItem, TResult> = Omit<
+  RunLimitedBatchOptions<TItem, PromiseSettledResult<TResult>>,
+  'worker'
+> & {
+  worker: (item: TItem, index: number) => Promise<TResult>;
+};
+
 export async function runLimitedBatch<TItem, TResult>({
   items,
   concurrency,
@@ -31,3 +38,18 @@ export async function runLimitedBatch<TItem, TResult>({
   await Promise.all(Array.from({ length: limit }, runWorker));
   return results;
 }
+
+export const runLimitedSettledBatch = <TItem, TResult>({
+  worker,
+  ...options
+}: RunLimitedSettledBatchOptions<TItem, TResult>): Promise<PromiseSettledResult<TResult>[]> =>
+  runLimitedBatch({
+    ...options,
+    worker: async (item, index) => {
+      try {
+        return { status: 'fulfilled', value: await worker(item, index) } as const;
+      } catch (reason: unknown) {
+        return { status: 'rejected', reason } as const;
+      }
+    },
+  });

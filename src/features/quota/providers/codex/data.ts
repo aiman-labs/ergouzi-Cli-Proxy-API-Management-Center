@@ -40,7 +40,7 @@ import type { QuotaProviderData } from '../types';
 
 const CODEX_RESET_CREDITS_REQUEST_TIMEOUT_MS = 8000;
 
-type CodexResetCreditsData = {
+export type CodexResetCreditsData = {
   availableCount: number | null;
   applicableAvailableCount: number | null;
   credits: CodexRateLimitResetCredit[];
@@ -377,6 +377,15 @@ const fetchCodexResetCredits = async (
   }
 };
 
+export const fetchCodexResetCreditDetails = async (
+  file: AuthFileItem,
+  t: TFunction
+): Promise<CodexResetCreditsData> => {
+  const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+  if (!authIndex) throw new Error(t('codex_quota.missing_auth_index'));
+  return fetchCodexResetCredits(authIndex, buildCodexRequestHeader(file), t);
+};
+
 const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
@@ -384,8 +393,6 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     throw new Error(t('codex_quota.missing_auth_index'));
   }
 
-  const planTypeFromFile = resolveCodexPlanType(file);
-  const subscriptionActiveUntil = resolveCodexSubscriptionActiveUntil(file);
   const requestHeader = buildCodexRequestHeader(file);
 
   const result = await apiCallApi.request({
@@ -399,37 +406,7 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
   }
 
-  const payload = parseCodexUsagePayload(result.body ?? result.bodyText);
-  if (!payload) {
-    throw new Error(t('codex_quota.empty_windows'));
-  }
-
-  const planTypeFromUsage = normalizePlanType(payload.plan_type ?? payload.planType);
-  const resetCredits = payload.rate_limit_reset_credits ?? payload.rateLimitResetCredits ?? null;
-  const usageResetCreditsData = normalizeCodexResetCreditsPayload(resetCredits);
-  const resetCreditsData = await fetchCodexResetCredits(authIndex, requestHeader, t);
-  const resetCreditsCountFromDetails =
-    resetCreditsData.credits.length > 0 ? resetCreditsData.credits.length : null;
-  const rateLimitResetCreditsAvailableCount =
-    resetCreditsData.availableCount ??
-    resetCreditsCountFromDetails ??
-    usageResetCreditsData.availableCount;
-  const rateLimitResetCreditsApplicableAvailableCount =
-    usageResetCreditsData.applicableAvailableCount ??
-    resetCreditsData.applicableAvailableCount ??
-    rateLimitResetCreditsAvailableCount;
-  const planType = planTypeFromUsage ?? planTypeFromFile;
-  const windows = buildCodexQuotaWindows(payload, t);
-  return {
-    planType,
-    subscriptionActiveUntil,
-    rateLimitResetCreditsAvailableCount,
-    rateLimitResetCreditsApplicableAvailableCount,
-    rateLimitResetCredits: resetCreditsData.credits,
-    rateLimitResetCreditsLoaded: true,
-    rateLimitResetCreditsError: resetCreditsData.error,
-    windows,
-  };
+  return buildCodexQuotaDataFromUsageBody(file, result.body ?? result.bodyText, t);
 };
 
 const createCodexRedeemRequestId = (): string => {
