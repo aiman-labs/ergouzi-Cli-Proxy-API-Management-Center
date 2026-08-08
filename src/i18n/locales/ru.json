@@ -1527,6 +1527,7 @@
     "refresh_all_confirm_title": "Обновить все учётные данные?",
     "refresh_all_confirm_message": "Квоты для всех учётных данных в этом разделе будут обновлены через ограниченную очередь: {{count}}.",
     "refresh_all_confirm_button": "Обновить все",
+    "auth_snapshot_sync_failed": "Не удалось синхронизировать учётные данные. Используйте общее обновление страницы.",
     "refresh_job_already_running": "Полное обновление Codex уже выполняется",
     "refresh_job_connection_changed": "Подключение изменилось, отслеживание предыдущего обновления остановлено",
     "refresh_job_status_queued": "Обновление в очереди",

@@ -18,6 +18,27 @@ export const canUseQuotaCardActions = (
   codexRefreshActive: boolean
 ): boolean => !sectionDisabled && !codexRefreshActive && quotaStatus !== 'loading';
 
+interface ShouldSyncCodexQuotaInventoryArgs {
+  active: boolean;
+  inventoryJobId: string | null;
+  progressJobId: string | null;
+  progressStatus: CodexQuotaJobProgress['status'];
+  remoteTerminalJobId: string | null;
+}
+
+export const shouldSyncCodexQuotaInventory = ({
+  active,
+  inventoryJobId,
+  progressJobId,
+  progressStatus,
+  remoteTerminalJobId,
+}: ShouldSyncCodexQuotaInventoryArgs): boolean =>
+  !active &&
+  inventoryJobId !== null &&
+  inventoryJobId === progressJobId &&
+  inventoryJobId === remoteTerminalJobId &&
+  (progressStatus === 'completed' || progressStatus === 'cancelled');
+
 export const partitionCodexQuotaJobTargets = (files: AuthFileItem[]) => {
   const targetNamesByAuthIndex = new Map<string, string>();
   const filesByName = new Map<string, AuthFileItem>();

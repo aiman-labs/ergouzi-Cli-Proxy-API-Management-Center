@@ -31,6 +31,7 @@ const MAX_TRANSIENT_POLL_FAILURES = 3;
 interface ActiveCodexQuotaJobRun {
   jobId: string;
   controller: AbortController;
+  cancelling: boolean;
   cacheGeneration: number;
   appliedSeq: number;
   targetNamesByAuthIndex: Map<string, string>;
@@ -41,7 +42,6 @@ interface ActiveCodexQuotaJobRun {
 
 let activeRun: ActiveCodexQuotaJobRun | null = null;
 let startInFlight = false;
-let completionHandler: (() => Promise<void> | void) | undefined;
 
 const waitForNextPoll = (signal: AbortSignal): Promise<void> =>
   new Promise((resolve) => {
@@ -63,44 +63,37 @@ const waitForNextPoll = (signal: AbortSignal): Promise<void> =>
 const isAbortError = (error: unknown): boolean =>
   error instanceof Error && (error.name === 'AbortError' || error.name === 'CanceledError');
 
-export interface UseCodexQuotaRefreshJobOptions {
-  enabled?: boolean;
-  onComplete?: () => Promise<void> | void;
-}
-
-export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions = {}) {
+export function useCodexQuotaRefreshJob() {
   const { t } = useTranslation();
   const cacheGeneration = useQuotaStore((state) => state.cacheGeneration);
   const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
   const progress = useCodexQuotaJobStore((state) => state.progress);
   const starting = useCodexQuotaJobStore((state) => state.starting);
   const active = useCodexQuotaJobStore((state) => state.active);
+  const inventorySyncContext = useCodexQuotaJobStore((state) => state.inventorySyncContext);
+  const remoteTerminalJobId = useCodexQuotaJobStore((state) => state.remoteTerminalJobId);
   const setProgress = useCodexQuotaJobStore((state) => state.setProgress);
   const setStarting = useCodexQuotaJobStore((state) => state.setStarting);
   const setActive = useCodexQuotaJobStore((state) => state.setActive);
+  const setInventorySyncContext = useCodexQuotaJobStore((state) => state.setInventorySyncContext);
+  const confirmRemoteTerminal = useCodexQuotaJobStore(
+    (state) => state.confirmRemoteTerminal
+  );
+  const clearInventorySyncContext = useCodexQuotaJobStore(
+    (state) => state.clearInventorySyncContext
+  );
   const resetProgress = useCodexQuotaJobStore((state) => state.reset);
-
-  useEffect(() => {
-    if (!options.enabled) return;
-    const handler = options.onComplete;
-    completionHandler = handler;
-    return () => {
-      if (completionHandler === handler) completionHandler = undefined;
-    };
-  }, [options.enabled, options.onComplete]);
 
   const finishWithError = useCallback(
     (run: ActiveCodexQuotaJobRun, error: unknown) => {
       if (activeRun !== run) return;
-      activeRun = null;
-      setActive(false);
       setProgress((current) => ({
         ...current,
         status: 'error',
         error: error instanceof Error ? error.message : t('common.unknown_error'),
       }));
     },
-    [setActive, setProgress, t]
+    [setProgress, t]
   );
 
   const poll = useCallback(
@@ -149,8 +142,8 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
           const terminal = response.status === 'completed' || response.status === 'cancelled';
           if (terminal && response.results.length === 0) {
             activeRun = null;
+            confirmRemoteTerminal(run.jobId);
             setActive(false);
-            if (response.status === 'completed') await completionHandler?.();
             return;
           }
           if (!terminal) await waitForNextPoll(run.controller.signal);
@@ -167,7 +160,15 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
         }
       }
     },
-    [finishWithError, resetProgress, setActive, setCodexQuota, setProgress, t]
+    [
+      confirmRemoteTerminal,
+      finishWithError,
+      resetProgress,
+      setActive,
+      setCodexQuota,
+      setProgress,
+      t,
+    ]
   );
 
   const start = useCallback(
@@ -210,6 +211,7 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
       const run: ActiveCodexQuotaJobRun = {
         jobId: summary.jobId,
         controller: new AbortController(),
+        cancelling: false,
         cacheGeneration: startGeneration,
         appliedSeq: 0,
         targetNamesByAuthIndex,
@@ -218,34 +220,52 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
         connection,
       };
       activeRun = run;
+      setInventorySyncContext({
+        jobId: summary.jobId,
+        targetNames: [...filesByName.keys()],
+      });
       setActive(true);
       const progressSummary = addCodexQuotaJobLocalFailures(summary, localFailures);
       setProgress(createCodexQuotaJobProgress(progressSummary));
       void poll(run);
       return progressSummary;
     },
-    [poll, setActive, setCodexQuota, setProgress, setStarting, t]
+    [poll, setActive, setCodexQuota, setInventorySyncContext, setProgress, setStarting, t]
   );
 
   const cancel = useCallback(async () => {
     const run = activeRun;
-    if (!run) return;
+    if (!run || run.cancelling) return;
+    run.cancelling = true;
     run.controller.abort();
-    activeRun = null;
-    setActive(false);
+    let terminal = false;
     try {
       const summary = await cancelCodexQuotaJobAtConnection(run.jobId, run.connection);
+      if (activeRun !== run) return;
       setProgress(
         createCodexQuotaJobProgress(addCodexQuotaJobLocalFailures(summary, run.localFailures))
       );
+      terminal = summary.status === 'completed' || summary.status === 'cancelled';
+      if (terminal) {
+        confirmRemoteTerminal(summary.jobId);
+      } else {
+        run.cancelling = false;
+      }
     } catch (error: unknown) {
+      if (activeRun !== run) return;
+      run.cancelling = false;
       setProgress((current) => ({
         ...current,
         status: 'error',
         error: error instanceof Error ? error.message : t('common.unknown_error'),
       }));
+    } finally {
+      if (activeRun === run && terminal) {
+        activeRun = null;
+        setActive(false);
+      }
     }
-  }, [setActive, setProgress, t]);
+  }, [confirmRemoteTerminal, setActive, setProgress, t]);
 
   useEffect(() => {
     const run = activeRun;
@@ -259,6 +279,9 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
   return {
     progress,
     isActive: starting || active,
+    inventorySyncContext,
+    remoteTerminalJobId,
+    clearInventorySyncContext,
     start,
     cancel,
   };

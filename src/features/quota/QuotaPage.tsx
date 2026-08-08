@@ -30,6 +30,11 @@ import {
 } from '@/stores';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
+import { mergeTargetedAuthFileSnapshots } from '@/utils/authFiles';
+import {
+  AuthFileSnapshotGuard,
+  syncTargetedAuthFileSnapshots,
+} from '@/utils/authFileSnapshotGuard';
 import type { CodexPlanFilterValue } from '@/utils/quota';
 import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
@@ -67,6 +72,7 @@ import type { QuotaProviderType } from './providers/types';
 import { useQuotaActions } from './hooks/useQuotaActions';
 import { useQuotaBatchLoader } from './hooks/useQuotaBatchLoader';
 import { useCodexQuotaRefreshJob } from '@/components/quota/useCodexQuotaRefreshJob';
+import { shouldSyncCodexQuotaInventory } from '@/components/quota/codexQuotaJobState';
 import { readQuotaUiState, writeQuotaUiState } from './uiState';
 import { fetchCodexResetCreditDetails } from './providers/codex/data';
 import {
@@ -75,6 +81,8 @@ import {
   shouldLoadCodexResetDetails,
 } from './providers/codex/resetDetails';
 import styles from './QuotaPage.module.scss';
+
+const targetedAuthFileSyncs = new Map<string, Promise<boolean>>();
 
 const TAB_IDS: string[] = ['all', ...QUOTA_TAB_ORDER];
 const SKELETON_CARD_COUNT = 6;
@@ -129,6 +137,8 @@ export function QuotaPage() {
   const [showCodexResetCreditExpiries, setShowCodexResetCreditExpiries] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
+  const [authSnapshotGuard] = useState(() => new AuthFileSnapshotGuard());
+  const inventoryInitializedRef = useRef(false);
   // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -139,16 +149,79 @@ export function QuotaPage() {
   const loadFiles = useCallback(async () => {
     setLoading(true);
     setError('');
+    let latestRequest = authSnapshotGuard.beginAll();
+
     try {
-      const data = await authFilesApi.list();
-      setFiles(data?.files || []);
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const data = await authFilesApi.list();
+        if (authSnapshotGuard.settleAll(latestRequest)) {
+          inventoryInitializedRef.current = true;
+          setFiles(data?.files || []);
+          return;
+        }
+        if (!authSnapshotGuard.isLatestAll(latestRequest)) return;
+        if (attempt < 2) latestRequest = authSnapshotGuard.beginAll();
+      }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t('notification.refresh_failed');
-      setError(message);
+      if (authSnapshotGuard.isLatestAll(latestRequest)) {
+        const message = err instanceof Error ? err.message : t('notification.refresh_failed');
+        setError(message);
+      }
     } finally {
-      setLoading(false);
+      if (authSnapshotGuard.isLatestAll(latestRequest)) setLoading(false);
     }
-  }, [t]);
+  }, [authSnapshotGuard, t]);
+
+  const syncAuthFileSnapshots = useCallback(async (names: string[]): Promise<boolean> => {
+    const targetNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
+    if (targetNames.length === 0) return true;
+    const cacheGeneration = captureQuotaCacheGeneration();
+    return syncTargetedAuthFileSnapshots({
+      targetNames,
+      guard: authSnapshotGuard,
+      load: authFilesApi.list,
+      apply: (data, applyNames) => {
+        const inventoryInitialized = inventoryInitializedRef.current;
+        return commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          if (!inventoryInitialized) {
+            inventoryInitializedRef.current = true;
+            authSnapshotGuard.markAllMutated();
+          }
+          setFiles((current) =>
+            mergeTargetedAuthFileSnapshots(current, data?.files || [], applyNames, {
+              inventoryInitialized,
+            })
+          );
+        });
+      },
+    });
+  }, [authSnapshotGuard]);
+
+  const syncAuthFileSnapshotsWithFeedback = useCallback(
+    async (names: string[]): Promise<boolean> => {
+      const synced = await syncAuthFileSnapshots(names);
+      if (!synced) {
+        const message = t('quota_management.auth_snapshot_sync_failed');
+        showNotification(message, 'warning');
+      }
+      return synced;
+    },
+    [showNotification, syncAuthFileSnapshots, t]
+  );
+
+  const syncAuthFileSnapshotsForJob = useCallback(
+    (jobId: string, names: string[]): Promise<boolean> => {
+      const existing = targetedAuthFileSyncs.get(jobId);
+      if (existing) return existing;
+
+      const pending = syncAuthFileSnapshotsWithFeedback(names).finally(() => {
+        if (targetedAuthFileSyncs.get(jobId) === pending) targetedAuthFileSyncs.delete(jobId);
+      });
+      targetedAuthFileSyncs.set(jobId, pending);
+      return pending;
+    },
+    [syncAuthFileSnapshotsWithFeedback]
+  );
 
   useHeaderRefresh(loadFiles);
 
@@ -334,10 +407,39 @@ export function QuotaPage() {
   const {
     progress: codexJobProgress,
     isActive: codexJobActive,
+    inventorySyncContext,
+    remoteTerminalJobId,
+    clearInventorySyncContext,
     start: startCodexJob,
     cancel: cancelCodexJob,
-  } = useCodexQuotaRefreshJob({ enabled: true, onComplete: loadFiles });
+  } = useCodexQuotaRefreshJob();
   const [resetCreditDetailsScheduler] = useState(() => new CodexResetDetailScheduler(4));
+
+  useEffect(() => {
+    if (!inventorySyncContext) return;
+    if (!shouldSyncCodexQuotaInventory({
+      active: codexJobActive,
+      inventoryJobId: inventorySyncContext.jobId,
+      progressJobId: codexJobProgress.jobId,
+      progressStatus: codexJobProgress.status,
+      remoteTerminalJobId,
+    })) return;
+
+    void syncAuthFileSnapshotsForJob(
+      inventorySyncContext.jobId,
+      inventorySyncContext.targetNames
+    ).then((synced) => {
+      if (synced) clearInventorySyncContext(inventorySyncContext.jobId);
+    });
+  }, [
+    clearInventorySyncContext,
+    codexJobActive,
+    codexJobProgress.jobId,
+    codexJobProgress.status,
+    inventorySyncContext,
+    remoteTerminalJobId,
+    syncAuthFileSnapshotsForJob,
+  ]);
 
   useEffect(() => {
     resetCreditDetailsScheduler.sync({
@@ -387,7 +489,7 @@ export function QuotaPage() {
   );
   const statusActionBusy = batchStatusUpdating || pendingStatusNames.size > 0;
   const refreshControlsDisabled = isQuotaBulkRefreshDisabled(
-    disableControls,
+    disableControls || loading,
     codexJobActive,
     statusActionBusy,
     resettingQuotaName
@@ -424,6 +526,7 @@ export function QuotaPage() {
       setStatusUpdating((prev) => ({ ...prev, [name]: true }));
       try {
         const result = await authFilesApi.setStatus(name, !enabled);
+        authSnapshotGuard.markTargetsMutated([name]);
         setFiles((current) =>
           current.map((file) =>
             file.name === name ? { ...file, disabled: result.disabled } : file
@@ -446,7 +549,7 @@ export function QuotaPage() {
         });
       }
     },
-    [showNotification, statusControlsDisabled, statusUpdating, t]
+    [authSnapshotGuard, showNotification, statusControlsDisabled, statusUpdating, t]
   );
 
   const executeBatchStatus = useCallback(
@@ -480,6 +583,7 @@ export function QuotaPage() {
         const confirmed = new Map(
           results.filter((result) => result.ok).map((result) => [result.name, result.disabled])
         );
+        authSnapshotGuard.markTargetsMutated(confirmed.keys());
         setFiles((current) =>
           current.map((file) =>
             confirmed.has(file.name) ? { ...file, disabled: confirmed.get(file.name) } : file
@@ -505,6 +609,7 @@ export function QuotaPage() {
     [
       filteredDisableTargetNames,
       filteredEnableTargetNames,
+      authSnapshotGuard,
       showNotification,
       statusControlsDisabled,
       t,
@@ -543,8 +648,16 @@ export function QuotaPage() {
   const handleRefreshPage = useCallback(async () => {
     if (refreshControlsDisabledRef.current) return;
     await loadQuota(pageItems);
-    await loadFiles();
-  }, [loadFiles, loadQuota, pageItems]);
+    await syncAuthFileSnapshotsWithFeedback(pageItems.map((entry) => entry.file.name));
+  }, [loadQuota, pageItems, syncAuthFileSnapshotsWithFeedback]);
+
+  const handleQuotaRefresh = useCallback(
+    async (entry: QuotaFileEntry) => {
+      await refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]);
+      await syncAuthFileSnapshotsWithFeedback([entry.file.name]);
+    },
+    [refreshQuota, syncAuthFileSnapshotsWithFeedback]
+  );
 
   const executeRefreshAll = useCallback(async () => {
     if (refreshControlsDisabledRef.current) return;
@@ -556,16 +669,19 @@ export function QuotaPage() {
     try {
       await Promise.all([
         codexTargets.length > 0 ? startCodexJob(codexTargets) : Promise.resolve(),
-        directTargets.length > 0 ? loadQuota(directTargets) : Promise.resolve(),
+        (async () => {
+          if (directTargets.length === 0) return;
+          await loadQuota(directTargets);
+          await syncAuthFileSnapshotsWithFeedback(directTargets.map((entry) => entry.file.name));
+        })(),
       ]);
-      if (directTargets.length > 0) await loadFiles();
     } catch (err: unknown) {
       showNotification(
         err instanceof Error ? err.message : t('notification.refresh_failed'),
         'error'
       );
     }
-  }, [entries, loadFiles, loadQuota, showNotification, startCodexJob, t]);
+  }, [entries, loadQuota, showNotification, startCodexJob, syncAuthFileSnapshotsWithFeedback, t]);
 
   const handleRefreshAll = useCallback(() => {
     if (refreshControlsDisabledRef.current || entries.length === 0) return;
@@ -785,9 +901,7 @@ export function QuotaPage() {
                     entry.type === 'codex' && showCodexResetCreditExpiries
                   }
                   entranceDelayMs={cardEntranceDelay(index)}
-                  onRefresh={() =>
-                    void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]).then(loadFiles)
-                  }
+                  onRefresh={() => void handleQuotaRefresh(entry)}
                   onReset={() => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
                   onStatusChange={
                     isCodexStatusMutable(entry)

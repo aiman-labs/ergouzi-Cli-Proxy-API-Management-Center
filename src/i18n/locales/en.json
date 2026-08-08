@@ -1527,6 +1527,7 @@
     "refresh_all_confirm_title": "Refresh all credentials?",
     "refresh_all_confirm_message": "This will refresh quota for all {{count}} credentials in this section through a limited queue.",
     "refresh_all_confirm_button": "Refresh all",
+    "auth_snapshot_sync_failed": "Credential status sync failed. Use the page-wide refresh to retry.",
     "refresh_job_already_running": "A full Codex refresh is already running",
     "refresh_job_connection_changed": "The connection changed, so tracking of the previous refresh stopped",
     "refresh_job_status_queued": "Refresh queued",

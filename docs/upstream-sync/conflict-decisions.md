@@ -256,9 +256,32 @@ new ownership boundaries instead of retaining the deleted legacy page modules.
 The quota page includes disabled credentials, supports page sizes through
 `100`, refreshes the current page directly with global concurrency `4`, and
 uses the CPA backend job for every Codex credential in a whole-inventory
-refresh. Results are published progressively, terminal jobs reload the auth
-inventory, and quota errors remain available to auth-file error filtering in
-the current UI session.
+refresh. Results are published progressively, drained terminal jobs reconcile
+the targeted auth snapshots only after the backend terminal state is confirmed;
+local polling failures retain the reconciliation context without treating a
+possibly running remote task as finished. Quota errors remain available to auth-file
+error filtering in the current UI session.
+
+Quota refreshes now reconcile authentication metadata in the background and
+merge only the credentials targeted by that refresh. Unchanged snapshots keep
+their existing object and list references, so 401 governance and automatic
+disablement remain visible without entering whole-inventory loading or
+redrawing unrelated cards. Whole-pool jobs retain a job-bound reconciliation
+context in the global job store until the matching terminal job has synced, so
+leaving and returning to the quota route cannot lose the final metadata update;
+duplicate route effects share the same in-flight snapshot request. Target-level
+request ordering and mutation versions prevent an older snapshot from
+overwriting a newer refresh or enable/disable result; affected targets retry
+against a fresh backend snapshot instead. Whole-inventory requests participate
+in the same start-order guard, so a late stale list response cannot replace a
+newer targeted commit. Transient targeted-list failures retry within one
+three-attempt budget, while concurrent whole-list loads keep loading and error
+ownership with the newest request. Whole-list requests also capture the target
+status-mutation epoch and retry within three attempts when an enable/disable
+commit crosses the request. If terminal-job reconciliation wins the race
+against the page's first inventory load, that full `/auth-files` response is
+allowed to establish the base inventory once; later targeted syncs retain the
+strict no-unrelated-additions merge rule.
 
 The auth-file page preserves import options, import-time and priority sorting,
 error/success-count/Codex-plan filters, quota details, bounded manual-refresh
