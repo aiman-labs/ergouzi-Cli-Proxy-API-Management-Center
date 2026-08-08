@@ -26,8 +26,11 @@ export function mergeAuthFileSnapshots(
 export function mergeTargetedAuthFileSnapshots(
   currentFiles: AuthFileItem[],
   refreshedFiles: AuthFileItem[],
-  targetNames: Iterable<string>
+  targetNames: Iterable<string>,
+  options: { inventoryInitialized?: boolean } = {}
 ): AuthFileItem[] {
+  if (options.inventoryInitialized === false) return refreshedFiles;
+
   const targets = new Set(targetNames);
   if (targets.size === 0) return currentFiles;
 

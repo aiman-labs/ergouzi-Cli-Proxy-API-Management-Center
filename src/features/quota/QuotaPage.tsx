@@ -138,6 +138,7 @@ export function QuotaPage() {
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [authSnapshotGuard] = useState(() => new AuthFileSnapshotGuard());
   const activeInventoryLoadsRef = useRef(0);
+  const inventoryInitializedRef = useRef(false);
   // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -152,7 +153,10 @@ export function QuotaPage() {
     setError('');
     try {
       const data = await authFilesApi.list();
-      if (authSnapshotGuard.settleAll(request)) setFiles(data?.files || []);
+      if (authSnapshotGuard.settleAll(request)) {
+        inventoryInitializedRef.current = true;
+        setFiles(data?.files || []);
+      }
     } catch (err: unknown) {
       if (authSnapshotGuard.isLatestAll(request)) {
         const message = err instanceof Error ? err.message : t('notification.refresh_failed');
@@ -172,12 +176,20 @@ export function QuotaPage() {
       targetNames,
       guard: authSnapshotGuard,
       load: authFilesApi.list,
-      apply: (data, applyNames) =>
-        commitIfQuotaCacheCurrent(cacheGeneration, () => {
+      apply: (data, applyNames) => {
+        const inventoryInitialized = inventoryInitializedRef.current;
+        return commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          if (!inventoryInitialized) {
+            inventoryInitializedRef.current = true;
+            authSnapshotGuard.markAllMutated();
+          }
           setFiles((current) =>
-            mergeTargetedAuthFileSnapshots(current, data?.files || [], applyNames)
+            mergeTargetedAuthFileSnapshots(current, data?.files || [], applyNames, {
+              inventoryInitialized,
+            })
           );
-        }),
+        });
+      },
     });
   }, [authSnapshotGuard]);
 

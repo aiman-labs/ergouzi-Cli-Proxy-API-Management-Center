@@ -36,6 +36,24 @@ describe('mergeAuthFileSnapshots', () => {
 });
 
 describe('mergeTargetedAuthFileSnapshots', () => {
+  test('uses the full snapshot only when no base inventory has been established', () => {
+    const refreshedFiles: AuthFileItem[] = [
+      { name: 'target.json', type: 'codex', disabled: true, status: 'disabled' },
+      { name: 'other.json', type: 'codex', disabled: false, status: 'ok' },
+    ];
+
+    expect(
+      mergeTargetedAuthFileSnapshots([], refreshedFiles, ['target.json'], {
+        inventoryInitialized: false,
+      })
+    ).toBe(refreshedFiles);
+    expect(
+      mergeTargetedAuthFileSnapshots([], refreshedFiles, ['target.json'], {
+        inventoryInitialized: true,
+      })
+    ).toEqual([]);
+  });
+
   test('updates only targeted credentials and preserves unrelated references', () => {
     const target = { name: 'target.json', type: 'codex', disabled: false, status: 'ok' };
     const unrelated = { name: 'other.json', type: 'codex', disabled: false, status: 'ok' };

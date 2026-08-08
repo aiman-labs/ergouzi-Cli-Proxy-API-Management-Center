@@ -274,7 +274,10 @@ against a fresh backend snapshot instead. Whole-inventory requests participate
 in the same start-order guard, so a late stale list response cannot replace a
 newer targeted commit. Transient targeted-list failures retry within one
 three-attempt budget, while concurrent whole-list loads keep loading and error
-ownership with the newest request.
+ownership with the newest request. If terminal-job reconciliation wins the race
+against the page's first inventory load, that full `/auth-files` response is
+allowed to establish the base inventory once; later targeted syncs retain the
+strict no-unrelated-additions merge rule.
 
 The auth-file page preserves import options, import-time and priority sorting,
 error/success-count/Codex-plan filters, quota details, bounded manual-refresh
