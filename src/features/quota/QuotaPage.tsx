@@ -31,6 +31,7 @@ import {
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { mergeTargetedAuthFileSnapshots } from '@/utils/authFiles';
+import { AuthFileSnapshotGuard } from '@/utils/authFileSnapshotGuard';
 import type { CodexPlanFilterValue } from '@/utils/quota';
 import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
@@ -132,6 +133,7 @@ export function QuotaPage() {
   const [showCodexResetCreditExpiries, setShowCodexResetCreditExpiries] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
+  const [authSnapshotGuard] = useState(() => new AuthFileSnapshotGuard());
   // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -144,6 +146,7 @@ export function QuotaPage() {
     setError('');
     try {
       const data = await authFilesApi.list();
+      authSnapshotGuard.markAllMutated();
       setFiles(data?.files || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('notification.refresh_failed');
@@ -151,26 +154,35 @@ export function QuotaPage() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [authSnapshotGuard, t]);
 
   const syncAuthFileSnapshots = useCallback(async (names: string[]): Promise<boolean> => {
     const targetNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
     if (targetNames.length === 0) return true;
     const cacheGeneration = captureQuotaCacheGeneration();
+    let pendingNames = targetNames;
 
-    try {
-      const data = await authFilesApi.list();
-      commitIfQuotaCacheCurrent(cacheGeneration, () => {
-        setFiles((current) =>
-          mergeTargetedAuthFileSnapshots(current, data?.files || [], targetNames)
-        );
-      });
-      return true;
-    } catch {
-      // Quota results remain valid; the next explicit inventory load retries metadata sync.
-      return false;
+    for (let attempt = 0; attempt < 3 && pendingNames.length > 0; attempt += 1) {
+      const request = authSnapshotGuard.begin(pendingNames);
+      try {
+        const data = await authFilesApi.list();
+        const decision = authSnapshotGuard.settle(request);
+        const committed = commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          if (decision.applyNames.length === 0) return;
+          setFiles((current) =>
+            mergeTargetedAuthFileSnapshots(current, data?.files || [], decision.applyNames)
+          );
+        });
+        if (!committed) return true;
+        pendingNames = decision.retryNames;
+      } catch {
+        authSnapshotGuard.settle(request);
+        return false;
+      }
     }
-  }, []);
+
+    return pendingNames.length === 0;
+  }, [authSnapshotGuard]);
 
   const syncAuthFileSnapshotsForJob = useCallback(
     (jobId: string, names: string[]): Promise<boolean> => {
@@ -451,7 +463,7 @@ export function QuotaPage() {
   );
   const statusActionBusy = batchStatusUpdating || pendingStatusNames.size > 0;
   const refreshControlsDisabled = isQuotaBulkRefreshDisabled(
-    disableControls,
+    disableControls || loading,
     codexJobActive,
     statusActionBusy,
     resettingQuotaName
@@ -488,6 +500,7 @@ export function QuotaPage() {
       setStatusUpdating((prev) => ({ ...prev, [name]: true }));
       try {
         const result = await authFilesApi.setStatus(name, !enabled);
+        authSnapshotGuard.markTargetsMutated([name]);
         setFiles((current) =>
           current.map((file) =>
             file.name === name ? { ...file, disabled: result.disabled } : file
@@ -510,7 +523,7 @@ export function QuotaPage() {
         });
       }
     },
-    [showNotification, statusControlsDisabled, statusUpdating, t]
+    [authSnapshotGuard, showNotification, statusControlsDisabled, statusUpdating, t]
   );
 
   const executeBatchStatus = useCallback(
@@ -544,6 +557,7 @@ export function QuotaPage() {
         const confirmed = new Map(
           results.filter((result) => result.ok).map((result) => [result.name, result.disabled])
         );
+        authSnapshotGuard.markTargetsMutated(confirmed.keys());
         setFiles((current) =>
           current.map((file) =>
             confirmed.has(file.name) ? { ...file, disabled: confirmed.get(file.name) } : file
@@ -569,6 +583,7 @@ export function QuotaPage() {
     [
       filteredDisableTargetNames,
       filteredEnableTargetNames,
+      authSnapshotGuard,
       showNotification,
       statusControlsDisabled,
       t,
