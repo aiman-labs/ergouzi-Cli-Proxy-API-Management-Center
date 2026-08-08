@@ -137,7 +137,6 @@ export function QuotaPage() {
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [authSnapshotGuard] = useState(() => new AuthFileSnapshotGuard());
-  const activeInventoryLoadsRef = useRef(0);
   const inventoryInitializedRef = useRef(false);
   // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
   const revealRef = useRevealGroup<HTMLDivElement>();
@@ -147,24 +146,28 @@ export function QuotaPage() {
   /* ---------- Credential inventory ---------- */
 
   const loadFiles = useCallback(async () => {
-    const request = authSnapshotGuard.beginAll();
-    activeInventoryLoadsRef.current += 1;
     setLoading(true);
     setError('');
+    let latestRequest = authSnapshotGuard.beginAll();
+
     try {
-      const data = await authFilesApi.list();
-      if (authSnapshotGuard.settleAll(request)) {
-        inventoryInitializedRef.current = true;
-        setFiles(data?.files || []);
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const data = await authFilesApi.list();
+        if (authSnapshotGuard.settleAll(latestRequest)) {
+          inventoryInitializedRef.current = true;
+          setFiles(data?.files || []);
+          return;
+        }
+        if (!authSnapshotGuard.isLatestAll(latestRequest)) return;
+        if (attempt < 2) latestRequest = authSnapshotGuard.beginAll();
       }
     } catch (err: unknown) {
-      if (authSnapshotGuard.isLatestAll(request)) {
+      if (authSnapshotGuard.isLatestAll(latestRequest)) {
         const message = err instanceof Error ? err.message : t('notification.refresh_failed');
         setError(message);
       }
     } finally {
-      activeInventoryLoadsRef.current = Math.max(0, activeInventoryLoadsRef.current - 1);
-      if (activeInventoryLoadsRef.current === 0) setLoading(false);
+      if (authSnapshotGuard.isLatestAll(latestRequest)) setLoading(false);
     }
   }, [authSnapshotGuard, t]);
 

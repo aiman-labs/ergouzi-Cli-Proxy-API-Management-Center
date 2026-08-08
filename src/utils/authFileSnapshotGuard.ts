@@ -11,6 +11,7 @@ export interface AuthFileSnapshotDecision {
 
 export interface AuthFileInventoryRequest {
   id: number;
+  targetMutationVersion: number;
 }
 
 export class AuthFileSnapshotGuard {
@@ -21,6 +22,7 @@ export class AuthFileSnapshotGuard {
   private latestInventoryRequestId = 0;
   private latestCommittedRequestId = 0;
   private latestCommittedInventoryRequestId = 0;
+  private targetMutationVersion = 0;
 
   begin(targetNames: Iterable<string>): AuthFileSnapshotRequest {
     const id = ++this.nextRequestId;
@@ -39,15 +41,21 @@ export class AuthFileSnapshotGuard {
   }
 
   beginAll(): AuthFileInventoryRequest {
-    const request = { id: ++this.nextRequestId };
+    const request = {
+      id: ++this.nextRequestId,
+      targetMutationVersion: this.targetMutationVersion,
+    };
     this.latestInventoryRequestId = request.id;
     return request;
   }
 
   markTargetsMutated(targetNames: Iterable<string>): void {
+    let changed = false;
     for (const name of targetNames) {
+      changed = true;
       this.targetMutationVersions.set(name, (this.targetMutationVersions.get(name) ?? 0) + 1);
     }
+    if (changed) this.targetMutationVersion += 1;
   }
 
   markAllMutated(): void {
@@ -57,7 +65,8 @@ export class AuthFileSnapshotGuard {
   settleAll(request: AuthFileInventoryRequest): boolean {
     if (
       this.latestInventoryRequestId !== request.id ||
-      this.latestCommittedRequestId > request.id
+      this.latestCommittedRequestId > request.id ||
+      this.targetMutationVersion !== request.targetMutationVersion
     ) {
       return false;
     }

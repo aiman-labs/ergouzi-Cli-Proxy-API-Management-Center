@@ -72,6 +72,19 @@ describe('AuthFileSnapshotGuard', () => {
     expect(guard.settleAll(inventoryRequest)).toBe(true);
     expect(guard.settle(targetedRequest)).toEqual({ applyNames: [], retryNames: [] });
   });
+
+  test('rejects and then refreshes a whole-inventory request crossed by a status mutation', () => {
+    const guard = new AuthFileSnapshotGuard();
+    const stale = guard.beginAll();
+
+    guard.markTargetsMutated(['target.json']);
+
+    expect(guard.settleAll(stale)).toBe(false);
+    expect(guard.isLatestAll(stale)).toBe(true);
+
+    const refreshed = guard.beginAll();
+    expect(guard.settleAll(refreshed)).toBe(true);
+  });
 });
 
 describe('syncTargetedAuthFileSnapshots', () => {
