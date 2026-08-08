@@ -87,15 +87,13 @@ export function useCodexQuotaRefreshJob() {
   const finishWithError = useCallback(
     (run: ActiveCodexQuotaJobRun, error: unknown) => {
       if (activeRun !== run) return;
-      activeRun = null;
-      setActive(false);
       setProgress((current) => ({
         ...current,
         status: 'error',
         error: error instanceof Error ? error.message : t('common.unknown_error'),
       }));
     },
-    [setActive, setProgress, t]
+    [setProgress, t]
   );
 
   const poll = useCallback(
@@ -240,24 +238,29 @@ export function useCodexQuotaRefreshJob() {
     if (!run || run.cancelling) return;
     run.cancelling = true;
     run.controller.abort();
+    let terminal = false;
     try {
       const summary = await cancelCodexQuotaJobAtConnection(run.jobId, run.connection);
       if (activeRun !== run) return;
       setProgress(
         createCodexQuotaJobProgress(addCodexQuotaJobLocalFailures(summary, run.localFailures))
       );
-      if (summary.status === 'completed' || summary.status === 'cancelled') {
+      terminal = summary.status === 'completed' || summary.status === 'cancelled';
+      if (terminal) {
         confirmRemoteTerminal(summary.jobId);
+      } else {
+        run.cancelling = false;
       }
     } catch (error: unknown) {
       if (activeRun !== run) return;
+      run.cancelling = false;
       setProgress((current) => ({
         ...current,
         status: 'error',
         error: error instanceof Error ? error.message : t('common.unknown_error'),
       }));
     } finally {
-      if (activeRun === run) {
+      if (activeRun === run && terminal) {
         activeRun = null;
         setActive(false);
       }

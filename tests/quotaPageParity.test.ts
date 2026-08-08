@@ -82,11 +82,31 @@ describe('quota page Ergouzi parity', () => {
     expect(cancelSource).toContain('run.cancelling = true;');
     expect(cancelSource).toContain('if (activeRun !== run) return;');
     expect(cancelSource).toMatch(
-      /finally \{\s+if \(activeRun === run\) \{\s+activeRun = null;\s+setActive\(false\);/
+      /finally \{\s+if \(activeRun === run && terminal\) \{\s+activeRun = null;\s+setActive\(false\);/
     );
     expect(cancelSource?.slice(0, cancelSource.indexOf('try {'))).not.toContain(
       'activeRun = null'
     );
+  });
+
+  test('retains an unconfirmed Codex job until remote cancellation succeeds', () => {
+    const source = readFileSync(
+      new URL('../src/components/quota/useCodexQuotaRefreshJob.ts', import.meta.url),
+      'utf8'
+    );
+    const errorSource = source.match(
+      /const finishWithError = useCallback[\s\S]*?\n {2}const poll = useCallback/
+    )?.[0];
+    const cancelSource = source.match(
+      /const cancel = useCallback[\s\S]*?\n {2}useEffect\(\(\) => \{/
+    )?.[0];
+
+    expect(errorSource).toBeDefined();
+    expect(errorSource).not.toContain('activeRun = null');
+    expect(errorSource).not.toContain('setActive(false)');
+    expect(cancelSource).toBeDefined();
+    expect(cancelSource).toContain('run.cancelling = false;');
+    expect(cancelSource).toContain('if (activeRun === run && terminal)');
   });
 
   test('keeps the Codex reset-detail toggle in the current quota toolbar', () => {
