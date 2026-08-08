@@ -1527,6 +1527,7 @@
     "refresh_all_confirm_title": "確認重新整理全部憑證",
     "refresh_all_confirm_message": "將按限流佇列重新整理目前分組下全部 {{count}} 個憑證的配額。",
     "refresh_all_confirm_button": "確認重新整理全部",
+    "auth_snapshot_sync_failed": "憑證狀態同步失敗，請使用頁面全域重新整理重試。",
     "refresh_job_already_running": "Codex 全量重新整理工作正在執行",
     "refresh_job_connection_changed": "連線已切換，已停止追蹤舊的重新整理工作",
     "refresh_job_status_queued": "等待重新整理",

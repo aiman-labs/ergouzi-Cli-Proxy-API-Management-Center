@@ -197,18 +197,30 @@ export function QuotaPage() {
     });
   }, [authSnapshotGuard]);
 
+  const syncAuthFileSnapshotsWithFeedback = useCallback(
+    async (names: string[]): Promise<boolean> => {
+      const synced = await syncAuthFileSnapshots(names);
+      if (!synced) {
+        const message = t('quota_management.auth_snapshot_sync_failed');
+        showNotification(message, 'warning');
+      }
+      return synced;
+    },
+    [showNotification, syncAuthFileSnapshots, t]
+  );
+
   const syncAuthFileSnapshotsForJob = useCallback(
     (jobId: string, names: string[]): Promise<boolean> => {
       const existing = targetedAuthFileSyncs.get(jobId);
       if (existing) return existing;
 
-      const pending = syncAuthFileSnapshots(names).finally(() => {
+      const pending = syncAuthFileSnapshotsWithFeedback(names).finally(() => {
         if (targetedAuthFileSyncs.get(jobId) === pending) targetedAuthFileSyncs.delete(jobId);
       });
       targetedAuthFileSyncs.set(jobId, pending);
       return pending;
     },
-    [syncAuthFileSnapshots]
+    [syncAuthFileSnapshotsWithFeedback]
   );
 
   useHeaderRefresh(loadFiles);
@@ -636,15 +648,15 @@ export function QuotaPage() {
   const handleRefreshPage = useCallback(async () => {
     if (refreshControlsDisabledRef.current) return;
     await loadQuota(pageItems);
-    await syncAuthFileSnapshots(pageItems.map((entry) => entry.file.name));
-  }, [loadQuota, pageItems, syncAuthFileSnapshots]);
+    await syncAuthFileSnapshotsWithFeedback(pageItems.map((entry) => entry.file.name));
+  }, [loadQuota, pageItems, syncAuthFileSnapshotsWithFeedback]);
 
   const handleQuotaRefresh = useCallback(
     async (entry: QuotaFileEntry) => {
       await refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]);
-      await syncAuthFileSnapshots([entry.file.name]);
+      await syncAuthFileSnapshotsWithFeedback([entry.file.name]);
     },
-    [refreshQuota, syncAuthFileSnapshots]
+    [refreshQuota, syncAuthFileSnapshotsWithFeedback]
   );
 
   const executeRefreshAll = useCallback(async () => {
@@ -660,7 +672,7 @@ export function QuotaPage() {
         (async () => {
           if (directTargets.length === 0) return;
           await loadQuota(directTargets);
-          await syncAuthFileSnapshots(directTargets.map((entry) => entry.file.name));
+          await syncAuthFileSnapshotsWithFeedback(directTargets.map((entry) => entry.file.name));
         })(),
       ]);
     } catch (err: unknown) {
@@ -669,7 +681,7 @@ export function QuotaPage() {
         'error'
       );
     }
-  }, [entries, loadQuota, showNotification, startCodexJob, syncAuthFileSnapshots, t]);
+  }, [entries, loadQuota, showNotification, startCodexJob, syncAuthFileSnapshotsWithFeedback, t]);
 
   const handleRefreshAll = useCallback(() => {
     if (refreshControlsDisabledRef.current || entries.length === 0) return;

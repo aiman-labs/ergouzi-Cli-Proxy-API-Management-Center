@@ -11,7 +11,7 @@ describe('quota page Ergouzi parity', () => {
     expect(source).not.toContain(
       'refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]).then(loadFiles)'
     );
-    expect(source).toContain('syncAuthFileSnapshots([entry.file.name])');
+    expect(source).toContain('syncAuthFileSnapshotsWithFeedback([entry.file.name])');
   });
 
   test('keeps current-page quota refresh isolated from the credential inventory', () => {
@@ -21,7 +21,9 @@ describe('quota page Ergouzi parity', () => {
     );
     expect(source).toContain('await loadQuota(pageItems);');
     expect(source).not.toMatch(/await loadQuota\(pageItems\);\s+await loadFiles\(\);/);
-    expect(source).toContain('syncAuthFileSnapshots(pageItems.map((entry) => entry.file.name))');
+    expect(source).toContain(
+      'syncAuthFileSnapshotsWithFeedback(pageItems.map((entry) => entry.file.name))'
+    );
   });
 
   test('keeps refresh-all completion isolated from the credential inventory', () => {
@@ -41,8 +43,19 @@ describe('quota page Ergouzi parity', () => {
     expect(source).toContain('remoteTerminalJobId');
     expect(source).toContain('inventorySyncContext.targetNames');
     expect(source).toContain(
-      'syncAuthFileSnapshots(directTargets.map((entry) => entry.file.name))'
+      'syncAuthFileSnapshotsWithFeedback(directTargets.map((entry) => entry.file.name))'
     );
+  });
+
+  test('reports exhausted targeted auth snapshot synchronization without reloading the inventory', () => {
+    const source = readFileSync(
+      new URL('../src/features/quota/QuotaPage.tsx', import.meta.url),
+      'utf8'
+    );
+    expect(source).toContain('syncAuthFileSnapshotsWithFeedback');
+    expect(source).toContain("t('quota_management.auth_snapshot_sync_failed')");
+    expect(source).toContain("showNotification(message, 'warning')");
+    expect(source).not.toContain('syncAuthFileSnapshotsWithFeedback(names).then(loadFiles)');
   });
 
   test('keeps the Codex refresh-job hook free of completion side effects', () => {
