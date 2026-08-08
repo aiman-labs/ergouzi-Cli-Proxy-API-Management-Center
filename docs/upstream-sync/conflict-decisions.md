@@ -257,7 +257,9 @@ The quota page includes disabled credentials, supports page sizes through
 `100`, refreshes the current page directly with global concurrency `4`, and
 uses the CPA backend job for every Codex credential in a whole-inventory
 refresh. Results are published progressively, drained terminal jobs reconcile
-the targeted auth snapshots, and quota errors remain available to auth-file
+the targeted auth snapshots only after the backend terminal state is confirmed;
+local polling failures retain the reconciliation context without treating a
+possibly running remote task as finished. Quota errors remain available to auth-file
 error filtering in the current UI session.
 
 Quota refreshes now reconcile authentication metadata in the background and

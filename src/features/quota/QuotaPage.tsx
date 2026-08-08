@@ -72,6 +72,7 @@ import type { QuotaProviderType } from './providers/types';
 import { useQuotaActions } from './hooks/useQuotaActions';
 import { useQuotaBatchLoader } from './hooks/useQuotaBatchLoader';
 import { useCodexQuotaRefreshJob } from '@/components/quota/useCodexQuotaRefreshJob';
+import { shouldSyncCodexQuotaInventory } from '@/components/quota/codexQuotaJobState';
 import { readQuotaUiState, writeQuotaUiState } from './uiState';
 import { fetchCodexResetCreditDetails } from './providers/codex/data';
 import {
@@ -395,6 +396,7 @@ export function QuotaPage() {
     progress: codexJobProgress,
     isActive: codexJobActive,
     inventorySyncContext,
+    remoteTerminalJobId,
     clearInventorySyncContext,
     start: startCodexJob,
     cancel: cancelCodexJob,
@@ -402,15 +404,14 @@ export function QuotaPage() {
   const [resetCreditDetailsScheduler] = useState(() => new CodexResetDetailScheduler(4));
 
   useEffect(() => {
-    if (!inventorySyncContext || !codexJobProgress.jobId || codexJobActive) return;
-    if (inventorySyncContext.jobId !== codexJobProgress.jobId) return;
-    if (
-      codexJobProgress.status !== 'completed' &&
-      codexJobProgress.status !== 'cancelled' &&
-      codexJobProgress.status !== 'error'
-    ) {
-      return;
-    }
+    if (!inventorySyncContext) return;
+    if (!shouldSyncCodexQuotaInventory({
+      active: codexJobActive,
+      inventoryJobId: inventorySyncContext.jobId,
+      progressJobId: codexJobProgress.jobId,
+      progressStatus: codexJobProgress.status,
+      remoteTerminalJobId,
+    })) return;
 
     void syncAuthFileSnapshotsForJob(
       inventorySyncContext.jobId,
@@ -424,6 +425,7 @@ export function QuotaPage() {
     codexJobProgress.jobId,
     codexJobProgress.status,
     inventorySyncContext,
+    remoteTerminalJobId,
     syncAuthFileSnapshotsForJob,
   ]);
 

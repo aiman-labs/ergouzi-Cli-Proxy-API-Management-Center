@@ -15,12 +15,19 @@ describe('Codex quota job inventory synchronization context', () => {
       jobId: 'job-1',
       targetNames: ['alpha.json', 'beta.json'],
     });
+    expect(useCodexQuotaJobStore.getState().remoteTerminalJobId).toBeNull();
+
+    store.confirmRemoteTerminal('newer-job');
+    expect(useCodexQuotaJobStore.getState().remoteTerminalJobId).toBeNull();
+    store.confirmRemoteTerminal('job-1');
+    expect(useCodexQuotaJobStore.getState().remoteTerminalJobId).toBe('job-1');
 
     useCodexQuotaJobStore.getState().clearInventorySyncContext('newer-job');
     expect(useCodexQuotaJobStore.getState().inventorySyncContext?.jobId).toBe('job-1');
 
     useCodexQuotaJobStore.getState().clearInventorySyncContext('job-1');
     expect(useCodexQuotaJobStore.getState().inventorySyncContext).toBeNull();
+    expect(useCodexQuotaJobStore.getState().remoteTerminalJobId).toBeNull();
   });
 
   test('clears the sync context when the job store resets for a new connection', () => {
@@ -31,5 +38,6 @@ describe('Codex quota job inventory synchronization context', () => {
     useCodexQuotaJobStore.getState().reset();
 
     expect(useCodexQuotaJobStore.getState().inventorySyncContext).toBeNull();
+    expect(useCodexQuotaJobStore.getState().remoteTerminalJobId).toBeNull();
   });
 });

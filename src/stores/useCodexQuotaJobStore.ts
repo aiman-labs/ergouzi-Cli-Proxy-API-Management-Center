@@ -33,6 +33,7 @@ interface CodexQuotaJobStoreState {
   starting: boolean;
   active: boolean;
   inventorySyncContext: CodexQuotaInventorySyncContext | null;
+  remoteTerminalJobId: string | null;
   setProgress: (
     updater:
       | CodexQuotaJobProgress
@@ -41,6 +42,7 @@ interface CodexQuotaJobStoreState {
   setStarting: (starting: boolean) => void;
   setActive: (active: boolean) => void;
   setInventorySyncContext: (context: CodexQuotaInventorySyncContext) => void;
+  confirmRemoteTerminal: (jobId: string) => void;
   clearInventorySyncContext: (jobId: string) => void;
   reset: () => void;
 }
@@ -50,16 +52,24 @@ export const useCodexQuotaJobStore = create<CodexQuotaJobStoreState>((set) => ({
   starting: false,
   active: false,
   inventorySyncContext: null,
+  remoteTerminalJobId: null,
   setProgress: (updater) =>
     set((state) => ({
       progress: typeof updater === 'function' ? updater(state.progress) : updater,
     })),
   setStarting: (starting) => set({ starting }),
   setActive: (active) => set({ active }),
-  setInventorySyncContext: (inventorySyncContext) => set({ inventorySyncContext }),
+  setInventorySyncContext: (inventorySyncContext) =>
+    set({ inventorySyncContext, remoteTerminalJobId: null }),
+  confirmRemoteTerminal: (jobId) =>
+    set((state) =>
+      state.inventorySyncContext?.jobId === jobId ? { remoteTerminalJobId: jobId } : {}
+    ),
   clearInventorySyncContext: (jobId) =>
     set((state) =>
-      state.inventorySyncContext?.jobId === jobId ? { inventorySyncContext: null } : {}
+      state.inventorySyncContext?.jobId === jobId
+        ? { inventorySyncContext: null, remoteTerminalJobId: null }
+        : {}
     ),
   reset: () =>
     set({
@@ -67,5 +77,6 @@ export const useCodexQuotaJobStore = create<CodexQuotaJobStoreState>((set) => ({
       starting: false,
       active: false,
       inventorySyncContext: null,
+      remoteTerminalJobId: null,
     }),
 }));

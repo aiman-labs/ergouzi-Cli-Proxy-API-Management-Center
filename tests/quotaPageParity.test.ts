@@ -37,7 +37,8 @@ describe('quota page Ergouzi parity', () => {
     expect(source).toContain('clearInventorySyncContext');
     expect(source).toContain('targetedAuthFileSyncs');
     expect(source).toContain('syncAuthFileSnapshotsForJob(');
-    expect(source).toContain('if (!inventorySyncContext || !codexJobProgress.jobId || codexJobActive) return;');
+    expect(source).toContain('shouldSyncCodexQuotaInventory({');
+    expect(source).toContain('remoteTerminalJobId');
     expect(source).toContain('inventorySyncContext.targetNames');
     expect(source).toContain(
       'syncAuthFileSnapshots(directTargets.map((entry) => entry.file.name))'

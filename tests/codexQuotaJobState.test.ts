@@ -9,11 +9,43 @@ import {
   createCodexQuotaJobProgress,
   partitionCodexQuotaJobTargets,
   reduceCodexQuotaJobProgress,
+  shouldSyncCodexQuotaInventory,
 } from '../src/components/quota/codexQuotaJobState';
 
 const t = ((key: string) => key) as never;
 
 describe('Codex quota job batched state', () => {
+  test('syncs auth inventory only after the remote job terminal state is confirmed', () => {
+    const base = {
+      active: false,
+      inventoryJobId: 'job-1',
+      progressJobId: 'job-1',
+    };
+
+    expect(
+      shouldSyncCodexQuotaInventory({
+        ...base,
+        progressStatus: 'error',
+        remoteTerminalJobId: null,
+      })
+    ).toBe(false);
+    expect(
+      shouldSyncCodexQuotaInventory({
+        ...base,
+        progressStatus: 'completed',
+        remoteTerminalJobId: 'job-1',
+      })
+    ).toBe(true);
+    expect(
+      shouldSyncCodexQuotaInventory({
+        ...base,
+        active: true,
+        progressStatus: 'completed',
+        remoteTerminalJobId: 'job-1',
+      })
+    ).toBe(false);
+  });
+
   test('keeps actions locked while terminal result pages are still draining', () => {
     const store = useCodexQuotaJobStore.getState();
     store.reset();
