@@ -256,9 +256,15 @@ new ownership boundaries instead of retaining the deleted legacy page modules.
 The quota page includes disabled credentials, supports page sizes through
 `100`, refreshes the current page directly with global concurrency `4`, and
 uses the CPA backend job for every Codex credential in a whole-inventory
-refresh. Results are published progressively, terminal jobs reload the auth
-inventory, and quota errors remain available to auth-file error filtering in
-the current UI session.
+refresh. Results are published progressively, drained terminal jobs reconcile
+the targeted auth snapshots, and quota errors remain available to auth-file
+error filtering in the current UI session.
+
+Quota refreshes now reconcile authentication metadata in the background and
+merge only the credentials targeted by that refresh. Unchanged snapshots keep
+their existing object and list references, so 401 governance and automatic
+disablement remain visible without entering whole-inventory loading or
+redrawing unrelated cards.
 
 The auth-file page preserves import options, import-time and priority sorting,
 error/success-count/Codex-plan filters, quota details, bounded manual-refresh

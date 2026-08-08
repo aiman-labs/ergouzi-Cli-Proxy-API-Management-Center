@@ -30,6 +30,7 @@ import {
 } from '@/stores';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
+import { mergeTargetedAuthFileSnapshots } from '@/utils/authFiles';
 import type { CodexPlanFilterValue } from '@/utils/quota';
 import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
@@ -129,6 +130,10 @@ export function QuotaPage() {
   const [showCodexResetCreditExpiries, setShowCodexResetCreditExpiries] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
+  const pendingCodexInventorySyncRef = useRef<{
+    jobId: string | null;
+    targetNames: string[];
+  } | null>(null);
   // Stagger header and tab reveals by 70ms: title, metadata, actions, then tabs.
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -149,6 +154,23 @@ export function QuotaPage() {
       setLoading(false);
     }
   }, [t]);
+
+  const syncAuthFileSnapshots = useCallback(async (names: string[]) => {
+    const targetNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
+    if (targetNames.length === 0) return;
+    const cacheGeneration = captureQuotaCacheGeneration();
+
+    try {
+      const data = await authFilesApi.list();
+      commitIfQuotaCacheCurrent(cacheGeneration, () => {
+        setFiles((current) =>
+          mergeTargetedAuthFileSnapshots(current, data?.files || [], targetNames)
+        );
+      });
+    } catch {
+      // Quota results remain valid; the next explicit inventory load retries metadata sync.
+    }
+  }, []);
 
   useHeaderRefresh(loadFiles);
 
@@ -338,6 +360,22 @@ export function QuotaPage() {
     cancel: cancelCodexJob,
   } = useCodexQuotaRefreshJob();
   const [resetCreditDetailsScheduler] = useState(() => new CodexResetDetailScheduler(4));
+
+  useEffect(() => {
+    const pending = pendingCodexInventorySyncRef.current;
+    if (!pending || !codexJobProgress.jobId || codexJobActive) return;
+    if (pending.jobId && pending.jobId !== codexJobProgress.jobId) return;
+    if (
+      codexJobProgress.status !== 'completed' &&
+      codexJobProgress.status !== 'cancelled' &&
+      codexJobProgress.status !== 'error'
+    ) {
+      return;
+    }
+
+    pendingCodexInventorySyncRef.current = null;
+    void syncAuthFileSnapshots(pending.targetNames);
+  }, [codexJobActive, codexJobProgress.jobId, codexJobProgress.status, syncAuthFileSnapshots]);
 
   useEffect(() => {
     resetCreditDetailsScheduler.sync({
@@ -543,7 +581,16 @@ export function QuotaPage() {
   const handleRefreshPage = useCallback(async () => {
     if (refreshControlsDisabledRef.current) return;
     await loadQuota(pageItems);
-  }, [loadQuota, pageItems]);
+    await syncAuthFileSnapshots(pageItems.map((entry) => entry.file.name));
+  }, [loadQuota, pageItems, syncAuthFileSnapshots]);
+
+  const handleQuotaRefresh = useCallback(
+    async (entry: QuotaFileEntry) => {
+      await refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]);
+      await syncAuthFileSnapshots([entry.file.name]);
+    },
+    [refreshQuota, syncAuthFileSnapshots]
+  );
 
   const executeRefreshAll = useCallback(async () => {
     if (refreshControlsDisabledRef.current) return;
@@ -554,8 +601,28 @@ export function QuotaPage() {
 
     try {
       await Promise.all([
-        codexTargets.length > 0 ? startCodexJob(codexTargets) : Promise.resolve(),
-        directTargets.length > 0 ? loadQuota(directTargets) : Promise.resolve(),
+        (async () => {
+          if (codexTargets.length === 0) return;
+          const pending: { jobId: string | null; targetNames: string[] } = {
+            jobId: null,
+            targetNames: codexTargets.map((file) => file.name),
+          };
+          pendingCodexInventorySyncRef.current = pending;
+          try {
+            const summary = await startCodexJob(codexTargets);
+            if (pendingCodexInventorySyncRef.current === pending) pending.jobId = summary.jobId;
+          } catch (error) {
+            if (pendingCodexInventorySyncRef.current === pending) {
+              pendingCodexInventorySyncRef.current = null;
+            }
+            throw error;
+          }
+        })(),
+        (async () => {
+          if (directTargets.length === 0) return;
+          await loadQuota(directTargets);
+          await syncAuthFileSnapshots(directTargets.map((entry) => entry.file.name));
+        })(),
       ]);
     } catch (err: unknown) {
       showNotification(
@@ -563,7 +630,7 @@ export function QuotaPage() {
         'error'
       );
     }
-  }, [entries, loadQuota, showNotification, startCodexJob, t]);
+  }, [entries, loadQuota, showNotification, startCodexJob, syncAuthFileSnapshots, t]);
 
   const handleRefreshAll = useCallback(() => {
     if (refreshControlsDisabledRef.current || entries.length === 0) return;
@@ -783,7 +850,7 @@ export function QuotaPage() {
                     entry.type === 'codex' && showCodexResetCreditExpiries
                   }
                   entranceDelayMs={cardEntranceDelay(index)}
-                  onRefresh={() => void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
+                  onRefresh={() => void handleQuotaRefresh(entry)}
                   onReset={() => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
                   onStatusChange={
                     isCodexStatusMutable(entry)

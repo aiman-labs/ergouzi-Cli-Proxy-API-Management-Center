@@ -7,10 +7,11 @@ describe('quota page Ergouzi parity', () => {
       new URL('../src/features/quota/QuotaPage.tsx', import.meta.url),
       'utf8'
     );
-    expect(source).toContain('void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type])');
+    expect(source).toContain('onRefresh={() => void handleQuotaRefresh(entry)}');
     expect(source).not.toContain(
       'refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]).then(loadFiles)'
     );
+    expect(source).toContain('syncAuthFileSnapshots([entry.file.name])');
   });
 
   test('keeps current-page quota refresh isolated from the credential inventory', () => {
@@ -20,6 +21,7 @@ describe('quota page Ergouzi parity', () => {
     );
     expect(source).toContain('await loadQuota(pageItems);');
     expect(source).not.toMatch(/await loadQuota\(pageItems\);\s+await loadFiles\(\);/);
+    expect(source).toContain('syncAuthFileSnapshots(pageItems.map((entry) => entry.file.name))');
   });
 
   test('keeps refresh-all completion isolated from the credential inventory', () => {
@@ -30,6 +32,12 @@ describe('quota page Ergouzi parity', () => {
     expect(source).toContain('useCodexQuotaRefreshJob()');
     expect(source).not.toContain('onComplete: loadFiles');
     expect(source).not.toContain('if (directTargets.length > 0) await loadFiles();');
+    expect(source).toContain('pendingCodexInventorySyncRef');
+    expect(source).toContain('if (!pending || !codexJobProgress.jobId || codexJobActive) return;');
+    expect(source).toContain('syncAuthFileSnapshots(pending.targetNames)');
+    expect(source).toContain(
+      'syncAuthFileSnapshots(directTargets.map((entry) => entry.file.name))'
+    );
   });
 
   test('keeps the Codex refresh-job hook free of completion side effects', () => {
