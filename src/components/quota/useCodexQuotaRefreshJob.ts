@@ -31,6 +31,7 @@ const MAX_TRANSIENT_POLL_FAILURES = 3;
 interface ActiveCodexQuotaJobRun {
   jobId: string;
   controller: AbortController;
+  cancelling: boolean;
   cacheGeneration: number;
   appliedSeq: number;
   targetNamesByAuthIndex: Map<string, string>;
@@ -212,6 +213,7 @@ export function useCodexQuotaRefreshJob() {
       const run: ActiveCodexQuotaJobRun = {
         jobId: summary.jobId,
         controller: new AbortController(),
+        cancelling: false,
         cacheGeneration: startGeneration,
         appliedSeq: 0,
         targetNamesByAuthIndex,
@@ -235,12 +237,12 @@ export function useCodexQuotaRefreshJob() {
 
   const cancel = useCallback(async () => {
     const run = activeRun;
-    if (!run) return;
+    if (!run || run.cancelling) return;
+    run.cancelling = true;
     run.controller.abort();
-    activeRun = null;
-    setActive(false);
     try {
       const summary = await cancelCodexQuotaJobAtConnection(run.jobId, run.connection);
+      if (activeRun !== run) return;
       setProgress(
         createCodexQuotaJobProgress(addCodexQuotaJobLocalFailures(summary, run.localFailures))
       );
@@ -248,11 +250,17 @@ export function useCodexQuotaRefreshJob() {
         confirmRemoteTerminal(summary.jobId);
       }
     } catch (error: unknown) {
+      if (activeRun !== run) return;
       setProgress((current) => ({
         ...current,
         status: 'error',
         error: error instanceof Error ? error.message : t('common.unknown_error'),
       }));
+    } finally {
+      if (activeRun === run) {
+        activeRun = null;
+        setActive(false);
+      }
     }
   }, [confirmRemoteTerminal, setActive, setProgress, t]);
 

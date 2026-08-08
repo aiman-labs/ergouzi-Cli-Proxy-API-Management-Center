@@ -69,6 +69,26 @@ describe('quota page Ergouzi parity', () => {
     expect(source).toContain('targetNames: [...filesByName.keys()]');
   });
 
+  test('keeps a cancelling Codex job current until its remote result is published', () => {
+    const source = readFileSync(
+      new URL('../src/components/quota/useCodexQuotaRefreshJob.ts', import.meta.url),
+      'utf8'
+    );
+    const cancelSource = source.match(
+      /const cancel = useCallback[\s\S]*?\n {2}useEffect\(\(\) => \{/
+    )?.[0];
+    expect(cancelSource).toBeDefined();
+    expect(cancelSource).toContain('if (!run || run.cancelling) return;');
+    expect(cancelSource).toContain('run.cancelling = true;');
+    expect(cancelSource).toContain('if (activeRun !== run) return;');
+    expect(cancelSource).toMatch(
+      /finally \{\s+if \(activeRun === run\) \{\s+activeRun = null;\s+setActive\(false\);/
+    );
+    expect(cancelSource?.slice(0, cancelSource.indexOf('try {'))).not.toContain(
+      'activeRun = null'
+    );
+  });
+
   test('keeps the Codex reset-detail toggle in the current quota toolbar', () => {
     const source = readFileSync(
       new URL('../src/features/quota/QuotaPage.tsx', import.meta.url),
