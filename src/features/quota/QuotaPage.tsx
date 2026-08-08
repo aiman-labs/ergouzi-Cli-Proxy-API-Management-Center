@@ -336,7 +336,7 @@ export function QuotaPage() {
     isActive: codexJobActive,
     start: startCodexJob,
     cancel: cancelCodexJob,
-  } = useCodexQuotaRefreshJob({ enabled: true, onComplete: loadFiles });
+  } = useCodexQuotaRefreshJob();
   const [resetCreditDetailsScheduler] = useState(() => new CodexResetDetailScheduler(4));
 
   useEffect(() => {
@@ -543,8 +543,7 @@ export function QuotaPage() {
   const handleRefreshPage = useCallback(async () => {
     if (refreshControlsDisabledRef.current) return;
     await loadQuota(pageItems);
-    await loadFiles();
-  }, [loadFiles, loadQuota, pageItems]);
+  }, [loadQuota, pageItems]);
 
   const executeRefreshAll = useCallback(async () => {
     if (refreshControlsDisabledRef.current) return;
@@ -558,14 +557,13 @@ export function QuotaPage() {
         codexTargets.length > 0 ? startCodexJob(codexTargets) : Promise.resolve(),
         directTargets.length > 0 ? loadQuota(directTargets) : Promise.resolve(),
       ]);
-      if (directTargets.length > 0) await loadFiles();
     } catch (err: unknown) {
       showNotification(
         err instanceof Error ? err.message : t('notification.refresh_failed'),
         'error'
       );
     }
-  }, [entries, loadFiles, loadQuota, showNotification, startCodexJob, t]);
+  }, [entries, loadQuota, showNotification, startCodexJob, t]);
 
   const handleRefreshAll = useCallback(() => {
     if (refreshControlsDisabledRef.current || entries.length === 0) return;
@@ -785,9 +783,7 @@ export function QuotaPage() {
                     entry.type === 'codex' && showCodexResetCreditExpiries
                   }
                   entranceDelayMs={cardEntranceDelay(index)}
-                  onRefresh={() =>
-                    void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type]).then(loadFiles)
-                  }
+                  onRefresh={() => void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
                   onReset={() => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
                   onStatusChange={
                     isCodexStatusMutable(entry)

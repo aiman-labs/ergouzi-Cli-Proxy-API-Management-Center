@@ -41,7 +41,6 @@ interface ActiveCodexQuotaJobRun {
 
 let activeRun: ActiveCodexQuotaJobRun | null = null;
 let startInFlight = false;
-let completionHandler: (() => Promise<void> | void) | undefined;
 
 const waitForNextPoll = (signal: AbortSignal): Promise<void> =>
   new Promise((resolve) => {
@@ -63,12 +62,7 @@ const waitForNextPoll = (signal: AbortSignal): Promise<void> =>
 const isAbortError = (error: unknown): boolean =>
   error instanceof Error && (error.name === 'AbortError' || error.name === 'CanceledError');
 
-export interface UseCodexQuotaRefreshJobOptions {
-  enabled?: boolean;
-  onComplete?: () => Promise<void> | void;
-}
-
-export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions = {}) {
+export function useCodexQuotaRefreshJob() {
   const { t } = useTranslation();
   const cacheGeneration = useQuotaStore((state) => state.cacheGeneration);
   const setCodexQuota = useQuotaStore((state) => state.setCodexQuota);
@@ -79,15 +73,6 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
   const setStarting = useCodexQuotaJobStore((state) => state.setStarting);
   const setActive = useCodexQuotaJobStore((state) => state.setActive);
   const resetProgress = useCodexQuotaJobStore((state) => state.reset);
-
-  useEffect(() => {
-    if (!options.enabled) return;
-    const handler = options.onComplete;
-    completionHandler = handler;
-    return () => {
-      if (completionHandler === handler) completionHandler = undefined;
-    };
-  }, [options.enabled, options.onComplete]);
 
   const finishWithError = useCallback(
     (run: ActiveCodexQuotaJobRun, error: unknown) => {
@@ -150,7 +135,6 @@ export function useCodexQuotaRefreshJob(options: UseCodexQuotaRefreshJobOptions 
           if (terminal && response.results.length === 0) {
             activeRun = null;
             setActive(false);
-            if (response.status === 'completed') await completionHandler?.();
             return;
           }
           if (!terminal) await waitForNextPoll(run.controller.signal);
