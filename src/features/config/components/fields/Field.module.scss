@@ -157,6 +157,64 @@
   scroll-margin-top: calc(var(--header-height, 64px) + 16px);
 }
 
+/* Wide fields span two columns and return to one column on mobile. */
+.fieldAnchorWide {
+  grid-column: span 2;
+
+  @include mobile {
+    grid-column: auto;
+  }
+}
+
+/* Compact sponsor link row below a field label. */
+.fieldSponsorHint {
+  margin: -2px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Invisible spacer matching the sponsor row so neighboring inputs align.
+   Single-column mobile layouts do not need it. */
+.fieldSponsorSpacer {
+  margin: -2px 0 0;
+  min-height: 22px;
+  font-size: 12px;
+  line-height: 1.5;
+  visibility: hidden;
+
+  @include mobile {
+    display: none;
+  }
+}
+
+/* Inline sponsor link using the shared amber badge treatment. */
+.fieldSponsorLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border: 1px solid var(--amber-30);
+  border-radius: 5px;
+  background: var(--amber-10);
+  color: var(--amber-text);
+  font-weight: 600;
+  text-decoration: none;
+  vertical-align: baseline;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--amber-30);
+    text-decoration: none;
+  }
+}
+
+.fieldSponsorLogo {
+  display: block;
+  width: auto;
+  height: 13px;
+}
+
 .fieldHighlightActive {
   border-radius: 10px;
   animation: config-field-highlight 1.8s ease-out;

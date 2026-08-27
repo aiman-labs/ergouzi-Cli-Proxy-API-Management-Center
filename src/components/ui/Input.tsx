@@ -2,6 +2,10 @@ import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  /** Renders secondary content directly below the label. */
+  labelExtra?: ReactNode;
+  /** Renders spacing content above the label to align neighboring inputs. */
+  topExtra?: ReactNode;
   hint?: string;
   error?: string;
   rightElement?: ReactNode;
@@ -9,6 +13,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function Input({
   label,
+  labelExtra,
+  topExtra,
   hint,
   error,
   rightElement,
@@ -25,7 +31,9 @@ export function Input({
 
   return (
     <div className="form-group">
+      {topExtra}
       {label && <label htmlFor={inputId}>{label}</label>}
+      {labelExtra}
       <div style={{ position: 'relative' }}>
         <input
           id={inputId}

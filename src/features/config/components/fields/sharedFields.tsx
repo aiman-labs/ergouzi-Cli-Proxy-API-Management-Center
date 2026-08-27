@@ -3,18 +3,23 @@
 // FieldAnchor DOM IDs remain unique.
 
 import { useTranslation } from 'react-i18next';
+import type { ReactNode } from 'react';
 import { Input } from '@/components/ui/Input';
 import type { VisualConfigValues } from '@/types/visualConfig';
+import { SPONSORS } from '../../sponsors';
 import { ApiKeysCardEditor } from '../blocks/ApiKeysCardEditor';
 import { FieldAnchor, FieldGroup, ToggleRow } from './FieldPrimitives';
+import fieldStyles from './Field.module.scss';
 
 export type SharedFieldProps = {
   values: VisualConfigValues;
   disabled: boolean;
   onChange: (patch: Partial<VisualConfigValues>) => void;
+  /** Optional spacer used to align a neighboring field with the proxy URL sponsor row. */
+  topExtra?: ReactNode;
 };
 
-export function HostField({ values, disabled, onChange }: SharedFieldProps) {
+export function HostField({ values, disabled, onChange, topExtra }: SharedFieldProps) {
   const { t } = useTranslation();
   return (
     <FieldAnchor fieldId="host">
@@ -24,6 +29,7 @@ export function HostField({ values, disabled, onChange }: SharedFieldProps) {
         value={values.host}
         onChange={(e) => onChange({ host: e.target.value })}
         disabled={disabled}
+        topExtra={topExtra}
       />
     </FieldAnchor>
   );
@@ -34,6 +40,7 @@ export function PortField({
   disabled,
   onChange,
   error,
+  topExtra,
 }: SharedFieldProps & { error?: string }) {
   const { t } = useTranslation();
   return (
@@ -46,6 +53,7 @@ export function PortField({
         onChange={(e) => onChange({ port: e.target.value })}
         disabled={disabled}
         error={error}
+        topExtra={topExtra}
       />
     </FieldAnchor>
   );
@@ -53,16 +61,46 @@ export function PortField({
 
 export function ProxyUrlField({ values, disabled, onChange }: SharedFieldProps) {
   const { t } = useTranslation();
+  // Proxy URLs span two columns and show the optional sponsor link below the label.
+  const sponsor = SPONSORS[0];
   return (
-    <FieldAnchor fieldId="proxyUrl">
+    <FieldAnchor fieldId="proxyUrl" wide>
       <Input
         label={t('config_management.visual.sections.network.proxy_url')}
+        labelExtra={
+          sponsor ? (
+            <p className={fieldStyles.fieldSponsorHint}>
+              {t('config_management.visual.sections.network.proxy_url_sponsor_hint')}{' '}
+              <a
+                className={fieldStyles.fieldSponsorLink}
+                href={sponsor.url}
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+              >
+                {sponsor.logo ? (
+                  <img className={fieldStyles.fieldSponsorLogo} src={sponsor.logo} alt="" />
+                ) : null}
+                {sponsor.name}
+              </a>
+            </p>
+          ) : undefined
+        }
         placeholder="socks5://user:pass@127.0.0.1:1080/"
         value={values.proxyUrl}
         onChange={(e) => onChange({ proxyUrl: e.target.value })}
         disabled={disabled}
       />
     </FieldAnchor>
+  );
+}
+
+/** Keeps neighboring inputs aligned with the proxy URL sponsor row. */
+export function SponsorHintSpacer() {
+  if (SPONSORS.length === 0) return null;
+  return (
+    <p className={fieldStyles.fieldSponsorSpacer} aria-hidden="true">
+      &nbsp;
+    </p>
   );
 }
 

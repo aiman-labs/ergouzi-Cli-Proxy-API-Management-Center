@@ -15,6 +15,7 @@ import {
   APIKEY_FUN_PROVIDER_NAME,
   buildApiKeyFunRaw,
 } from '../src/features/providers/sponsor';
+import { shouldShowInGenericOpenAIGroup } from '../src/features/providers/useProviderWorkbench';
 import { normalizeConfigResponse } from '../src/services/api/transformers';
 
 const openAIConfig = (name: string, baseUrl: string) => ({
@@ -111,5 +112,15 @@ describe('sponsor custom endpoint isolation', () => {
       buildQiniuCloudRaw(openAIConfig('custom-name', QINIU_CLOUD_BASE_URL_OPTIONS[0].openaiBaseUrl))
         .openai.length
     ).toBe(1);
+  });
+
+  test('shows QiniuCloud OpenAI entries in the generic group only while hidden', () => {
+    const entry = openAIConfig(
+      QINIU_CLOUD_PROVIDER_NAME,
+      QINIU_CLOUD_BASE_URL_OPTIONS[0].openaiBaseUrl
+    ).openaiCompatibility[0];
+
+    expect(shouldShowInGenericOpenAIGroup(entry)).toBe(false);
+    expect(shouldShowInGenericOpenAIGroup(entry, new Set(['qiniuCloud'] as const))).toBe(true);
   });
 });

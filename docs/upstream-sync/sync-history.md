@@ -1,5 +1,84 @@
 # Sync History
 
+## 2026-08-27 Upstream `v1.22.9` Sync
+
+| Item | Value |
+|---|---|
+| Ergouzi branch before sync | `0f7b776a` |
+| Sync branch | `sync/upstream-v1.22.9` |
+| Upstream previous baseline | `v1.22.2` / `f60c8ca` |
+| Upstream target release | `v1.22.9` / `d249ff00` |
+| Upstream non-merge commits adopted | `9` |
+| Upstream changed paths | `30` |
+| Upstream release diff | `30 files changed, 438 insertions(+), 75 deletions(-)` |
+| Local changed paths before records | `32` |
+| Sync status | `local verification passed; commit and PR not yet authorized; not released; not deployed` |
+
+Upstream release themes:
+
+- Temporarily hide selected sponsor cards while keeping their configured
+  protocol endpoints reachable through generic provider groups.
+- Add the BestProxy configuration sponsor link and APIMart documentation
+  assets.
+- Normalize auth-file quota typography, correct the Claudeapi.com display
+  name, and update the Codex User-Agent value.
+- Add Claude and Claude API request fingerprint profiles, replacing the
+  deprecated experimental CCH-signing control.
+
+Ergouzi integration:
+
+- Applied the exact binary-safe `v1.22.2..v1.22.9` official release diff. All
+  `30` upstream changed paths are represented in the final tree.
+- Resolved the sole semantic overlap in the provider workbench by adopting the
+  upstream hidden-sponsor routing while preserving Ergouzi's generic OpenAI
+  classifier, FennoAI OpenAI support, backend `sourceIndex`, and duplicate-card
+  isolation. See `DEC-20260827-013`.
+- Added explicit visible/hidden regressions for FennoAI and QiniuCloud OpenAI
+  entries.
+- Preserved the CPAMC single-file release contract and all existing Ergouzi
+  auth-file, quota refresh, provider, configuration, and Home-log tests.
+- Adopted the Claude fingerprint-profile form, normalization, serialization,
+  table indicator, four-locale copy, deprecated-field cleanup, and focused
+  provider API regressions from `v1.22.9`.
+- Adapted the new Claude update regression to Ergouzi's index-plus-identity
+  provider mutation contract rather than weakening duplicate-record safety.
+- Corrected the upstream sponsor spacer from `18px` to the rendered `22px`
+  sponsor-row height after browser verification exposed a four-pixel desktop
+  field misalignment.
+- Normalized newly introduced source comments to English while retaining all
+  localized user-facing strings.
+
+Verification:
+
+```bash
+bun test tests/fennoProvider.test.ts tests/sponsorCustomEndpoint.test.ts
+bun run verify
+git diff --cached --check
+rg -n '^(<<<<<<<|=======|>>>>>>>)' . --glob '!bun.lock'
+```
+
+Result:
+
+- Focused provider tests passed `13/13`; the full suite passed `572/572`
+  with `1840` assertions.
+- ESLint, TypeScript, and the Vite single-file production build passed.
+- `dist/index.html` is the sole production build artifact.
+- Playwright verified the configuration and quota pages at `1440x900` and
+  `390x844`: the sponsor link is present, desktop fields align exactly, quota
+  typography is `11.5px`, document-level horizontal overflow is absent, and
+  the final mock session emitted no console errors or warnings.
+- A fresh `v1.22.9` Mock CPA session also verified the Claude provider table
+  `CLI` fingerprint badge and edit form at desktop and `390x844`. Both
+  `Default (caller-owned)` and `Claude Code CLI` options are exposed, the
+  configured CLI value is selected, the mobile drawer and selector fit the
+  viewport exactly, and the fresh browser session emitted zero errors and zero
+  warnings.
+- Final screenshots are stored under
+  `outputs/CHORE-101/output/playwright/`; generated QA output remains outside
+  the repository and is not committed.
+- No commit, push, pull request, release, or production deployment has been
+  performed for this sync.
+
 ## 2026-07-27 Upstream `v1.19.3` Sync
 
 | Item | Value |

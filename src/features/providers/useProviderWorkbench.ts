@@ -79,7 +79,12 @@ import {
   isInfistarOpenAIProvider,
 } from './infistar';
 import { buildKimiRaw, isKimiClaudeProvider, isKimiOpenAIProvider } from './kimi';
-import { getSponsorProviderDefinition, type SponsorProtocolUrls } from './sponsorDefinitions';
+import {
+  getSponsorProviderDefinition,
+  isTemporarilyHiddenSponsorBrand,
+  TEMPORARILY_HIDDEN_SPONSOR_BRANDS,
+  type SponsorProtocolUrls,
+} from './sponsorDefinitions';
 import { runSponsorMutationWithRecovery } from './sponsorMutationRecovery';
 import { mergeSponsorOpenAIAPIKeyEntries } from './sponsorPersistence';
 
@@ -91,6 +96,14 @@ export const isGenericOpenAIProvider = (item: OpenAIProviderConfig): boolean =>
   !isLmuAIOpenAIProvider(item) &&
   !isInfistarOpenAIProvider(item) &&
   !isKimiOpenAIProvider(item);
+
+export const shouldShowInGenericOpenAIGroup = (
+  item: OpenAIProviderConfig,
+  hiddenSponsorBrands: ReadonlySet<SponsorProviderBrand> = TEMPORARILY_HIDDEN_SPONSOR_BRANDS
+): boolean =>
+  isGenericOpenAIProvider(item) ||
+  (hiddenSponsorBrands.has('fennoAI') && isFennoAIOpenAIProvider(item)) ||
+  (hiddenSponsorBrands.has('qiniuCloud') && isQiniuCloudOpenAIProvider(item));
 
 export interface UseProviderWorkbenchResult {
   connected: boolean;
@@ -219,7 +232,7 @@ const buildProviderKeyConfig = (
     };
   }
   if (brand === 'claude') {
-    next.experimentalCchSigning = input.experimentalCchSigning === true;
+    next.fingerprintProfile = input.fingerprintProfile?.trim() || undefined;
   }
   return next;
 };
@@ -472,6 +485,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
 
   const snapshot = useMemo<ProviderSnapshot | null>(() => {
     if (!config) return null;
+    // Hidden sponsors keep their protocol configs visible in the generic groups.
+    const fennoAIHidden = TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('fennoAI');
+    const qiniuCloudHidden = TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('qiniuCloud');
     const groups: ProviderGroup[] = PROVIDER_BRAND_ORDER.map((brand) => {
       let resources: ProviderResource[] = [];
       switch (brand) {
@@ -480,7 +496,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             (out, item, index) => {
               if (
                 !isCode0GeminiProvider(item) &&
-                !isQiniuCloudGeminiProvider(item) &&
+                (qiniuCloudHidden || !isQiniuCloudGeminiProvider(item)) &&
                 !isLmuAIGeminiProvider(item) &&
                 !isInfistarGeminiProvider(item)
               ) {
@@ -501,8 +517,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             if (
               !isApiKeyFunCodexProvider(item) &&
               !isCode0CodexProvider(item) &&
-              !isFennoAICodexProvider(item) &&
-              !isQiniuCloudCodexProvider(item) &&
+              (fennoAIHidden || !isFennoAICodexProvider(item)) &&
+              (qiniuCloudHidden || !isQiniuCloudCodexProvider(item)) &&
               !isLmuAICodexProvider(item) &&
               !isInfistarCodexProvider(item)
             ) {
@@ -520,8 +536,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               if (
                 !isApiKeyFunClaudeProvider(item) &&
                 !isCode0ClaudeProvider(item) &&
-                !isFennoAIClaudeProvider(item) &&
-                !isQiniuCloudClaudeProvider(item) &&
+                (fennoAIHidden || !isFennoAIClaudeProvider(item)) &&
+                (qiniuCloudHidden || !isQiniuCloudClaudeProvider(item)) &&
                 !isLmuAIClaudeProvider(item) &&
                 !isInfistarClaudeProvider(item) &&
                 !isKimiClaudeProvider(item) &&
@@ -551,7 +567,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
         case 'openaiCompatibility':
           resources = (config.openaiCompatibility ?? []).reduce<ProviderResource[]>(
             (out, item, index) => {
-              if (isGenericOpenAIProvider(item)) {
+              if (shouldShowInGenericOpenAIGroup(item)) {
                 out.push(openaiToResource(item, index));
               }
               return out;
@@ -602,7 +618,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     });
     return {
       fetchedAt,
-      groups,
+      groups: groups.filter((group) => !isTemporarilyHiddenSponsorBrand(group.id)),
     };
   }, [config, fetchedAt]);
 
