@@ -203,6 +203,15 @@ export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is Spon
   brand === 'infistar' ||
   brand === 'kimi';
 
+/**
+ * Temporarily hidden sponsor brands are managed from their protocol groups instead.
+ * Remove a brand from this set when its dedicated provider entry should return.
+ */
+export const TEMPORARILY_HIDDEN_SPONSOR_BRANDS: ReadonlySet<SponsorProviderBrand> = new Set([]);
+
+export const isTemporarilyHiddenSponsorBrand = (brand: ProviderBrand): boolean =>
+  TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has(brand as SponsorProviderBrand);
+
 export type SponsorAggregationConflict = 'multiple-configs' | 'multiple-openai-keys';
 
 export const getSponsorAggregationConflict = (

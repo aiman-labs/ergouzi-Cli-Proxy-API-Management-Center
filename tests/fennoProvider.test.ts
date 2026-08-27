@@ -5,7 +5,10 @@ import {
   FENNO_AI_PROVIDER_NAME,
 } from '../src/features/providers/fennoAI';
 import { getSponsorProviderDefinition } from '../src/features/providers/sponsorDefinitions';
-import { isGenericOpenAIProvider } from '../src/features/providers/useProviderWorkbench';
+import {
+  isGenericOpenAIProvider,
+  shouldShowInGenericOpenAIGroup,
+} from '../src/features/providers/useProviderWorkbench';
 import { normalizeConfigResponse } from '../src/services/api/transformers';
 
 describe('FennoAI provider aggregation', () => {
@@ -55,5 +58,7 @@ describe('FennoAI provider aggregation', () => {
 
     expect(buildFennoAIRaw({ openaiCompatibility: [entry] }).openai).toHaveLength(1);
     expect(isGenericOpenAIProvider(entry)).toBe(false);
+    expect(shouldShowInGenericOpenAIGroup(entry)).toBe(false);
+    expect(shouldShowInGenericOpenAIGroup(entry, new Set(['fennoAI'] as const))).toBe(true);
   });
 });

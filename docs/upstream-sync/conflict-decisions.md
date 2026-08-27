@@ -306,3 +306,42 @@ Review notes: keep the 1600-credential inventory/concurrency regressions, four
 locale key parity, config-field registry parity, provider duplicate-index
 tests, Home log compatibility tests, and the release asset contract as gates
 for later upstream redesigns.
+
+## DEC-20260827-013: Adopt v1.22.9 provider updates without duplicating sponsor entries
+
+| Field | Value |
+|---|---|
+| Status | `decided` |
+| Area | providers / config / quota presentation |
+| Upstream base | `v1.22.9` / `d249ff00` |
+| Ergouzi source | `sync/upstream-v1.22.9` |
+
+Final decision: adopt the complete official `v1.22.2..v1.22.9` release diff,
+including the temporary sponsor visibility mechanism, BestProxy configuration
+link, APIMart documentation assets, quota typography normalization, Claudeapi
+display-name correction, Codex User-Agent update, and Claude fingerprint-profile
+configuration.
+
+When a sponsor brand is temporarily hidden, its protocol configurations remain
+available through the generic Gemini, Codex, Claude, and OpenAI-compatible
+groups. Preserve Ergouzi's centralized generic OpenAI classifier and backend
+`sourceIndex` semantics: FennoAI and QiniuCloud entries are excluded from the
+generic group while their dedicated sponsor cards are visible, and included
+only while the matching sponsor brand is hidden. This prevents duplicate cards
+without making already configured endpoints unreachable.
+
+The configuration sponsor hint keeps upstream's link contract and uses a
+`22px` desktop spacer so neighboring inputs remain aligned. The spacer is
+removed in the single-column mobile layout. Newly introduced source comments
+remain English; localized product copy and provider names are unchanged.
+
+Claude and Claude API key forms use the backend `fingerprint-profile` contract.
+The empty/default value preserves caller-owned prompts and headers; the explicit
+`claude-code-cli` value opts into that request fingerprint. Saving the default
+also removes the deprecated `experimental-cch-signing` field while preserving
+unknown provider fields.
+
+Review notes: future sponsor-visibility changes must test both visible and
+hidden states for each protocol. Do not replace the shared generic-provider
+classifier with name-only filtering or discard backend indexes during
+normalization.
