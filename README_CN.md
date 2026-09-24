@@ -20,8 +20,7 @@ latest release 已正确但页面仍旧，应刷新该缓存并用 release asset
 核对生产返回内容。
 
 **主项目**: https://github.com/router-for-me/CLIProxyAPI  
-**示例地址**: https://remote.router-for.me/  
-**最低版本要求**: ≥ 7.1.0（推荐最新）
+**最低版本要求**: ≥ 7.2.147（推荐最新）
 
 从6.0.19版本开始，Web UI 随主程序一起提供；服务运行后，通过 API 端口上的"/management.html"访问它。
 

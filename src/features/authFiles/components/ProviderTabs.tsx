@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconFilterAll } from '@/components/ui/icons';
 import {
@@ -7,6 +8,7 @@ import {
   isThemeSurfaceIconProvider,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
+import { scrollProviderTabs } from './providerTabsWheel';
 import styles from './ProviderTabs.module.scss';
 
 export type ProviderTabsProps = {
@@ -21,11 +23,27 @@ export type ProviderTabsProps = {
  * Provider filter tabs: horizontal layout with mobile overflow scrolling.
  * Brand color is limited to icons; active state uses text plus a 2px ink underline.
  */
-export function ProviderTabs({ types, counts, active, resolvedTheme, onChange }: ProviderTabsProps) {
+export function ProviderTabs({
+  types,
+  counts,
+  active,
+  resolvedTheme,
+  onChange,
+}: ProviderTabsProps) {
   const { t } = useTranslation();
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const strip = tabsRef.current;
+    if (!strip) return;
+    const onWheel = (event: WheelEvent) => scrollProviderTabs(strip, event);
+    // React delegates wheel events passively; use a local listener to prevent page scrolling.
+    strip.addEventListener('wheel', onWheel, { passive: false });
+    return () => strip.removeEventListener('wheel', onWheel);
+  }, []);
 
   return (
-    <div className={styles.tabs} role="group" aria-label={t('auth_files.filter_all')}>
+    <div ref={tabsRef} className={styles.tabs} role="group" aria-label={t('auth_files.filter_all')}>
       {types.map((type) => {
         const isActive = active === type;
         const label = type === 'all' ? t('auth_files.filter_all') : getTypeLabel(t, type);

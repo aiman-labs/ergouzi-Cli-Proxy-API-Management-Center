@@ -6,6 +6,7 @@ import {
 } from '@/features/quota/constants';
 import {
   buildTabCounts,
+  canRefreshQuotaAfterList,
   classifyQuotaFiles,
   filterQuotaEntries,
   filterEntriesByTab,
@@ -13,6 +14,7 @@ import {
   hasQuotaProblem,
   isCodexStatusMutable,
   isQuotaBulkRefreshDisabled,
+  filterEntriesBySearch,
   isQuotaRefreshDisabled,
   isQuotaResetDisabled,
   paginate,
@@ -34,6 +36,17 @@ const FILES: AuthFileItem[] = [
   file('gemini-a.json', 'gemini'),
   file('claude-off.json', 'claude', { disabled: true }),
 ];
+
+describe('refresh-all list handoff', () => {
+  test('requires a successful list from the same session as the user action', () => {
+    expect(canRefreshQuotaAfterList(1, 1, 1, false, false)).toBe(true);
+    expect(canRefreshQuotaAfterList(1, 1, 1, true, false)).toBe(false);
+    expect(canRefreshQuotaAfterList(1, 2, 2, false, false)).toBe(false);
+    expect(canRefreshQuotaAfterList(2, 2, 1, false, false)).toBe(false);
+    expect(canRefreshQuotaAfterList(1, 1, null, false, false)).toBe(false);
+    expect(canRefreshQuotaAfterList(1, 1, 1, false, true)).toBe(false);
+  });
+});
 
 describe('resolveQuotaProviderType', () => {
   test('maps provider aliases, includes disabled files, and rejects unsupported files', () => {
@@ -83,6 +96,8 @@ describe('buildTabCounts', () => {
       codex: 2,
       xai: 1,
       kimi: 1,
+      devin: 0,
+      meta: 0,
     });
   });
 });
@@ -202,6 +217,57 @@ describe('getCodexStatusTargetNames', () => {
     expect(getCodexStatusTargetNames(entries, false, new Set(['enabled.json']))).toEqual([]);
     expect(isCodexStatusMutable(entries.find((entry) => entry.file.name === 'runtime.json')!)).toBe(
       false
+    );
+  });
+});
+
+describe('filterEntriesBySearch', () => {
+  const entries = classifyQuotaFiles([
+    ...FILES,
+    file('personal.json', 'codex', { email: 'Alice@Example.com' }),
+    file('work.json', 'claude', { email: 'Alice@Example.com' }),
+    file('private.json', 'codex', { account: 'secret-api-key' }),
+  ]);
+
+  test('ignores case and surrounding whitespace when matching filenames or emails', () => {
+    expect(filterEntriesBySearch(entries, ' CODEX-A ').map(({ file }) => file.name)).toEqual([
+      'codex-a.json',
+    ]);
+    expect(filterEntriesBySearch(entries, ' ALICE@example ').map(({ file }) => file.name)).toEqual([
+      'personal.json',
+      'work.json',
+    ]);
+  });
+
+  test('keeps all entries for empty searches and returns none for missing accounts', () => {
+    expect(filterEntriesBySearch(entries, '')).toBe(entries);
+    expect(filterEntriesBySearch(entries, '   ')).toBe(entries);
+    expect(filterEntriesBySearch(entries, 'missing')).toEqual([]);
+    expect(filterEntriesBySearch(entries, 'secret-api-key')).toEqual([]);
+  });
+
+  test('combines with provider tabs without changing the original entries', () => {
+    const before = [...entries];
+    const matches = filterEntriesBySearch(filterEntriesByTab(entries, 'codex'), 'alice');
+    expect(matches.map(({ file }) => file.name)).toEqual(['personal.json']);
+    expect(entries).toEqual(before);
+  });
+
+  test('filters before pagination so refresh targets include matches beyond the first page', () => {
+    const all = classifyQuotaFiles(
+      Array.from({ length: QUOTA_PAGE_SIZE + 2 }, (_, index) =>
+        file(`codex-${index}.json`, 'codex', {
+          email: index >= QUOTA_PAGE_SIZE ? 'target@example.com' : 'other@example.com',
+        })
+      )
+    );
+    const filtered = filterEntriesBySearch(filterEntriesByTab(all, 'codex'), 'target@');
+    const sorted = sortQuotaEntries(filtered, 'default', () => null);
+    const { pageItems, totalPages } = paginate(sorted, 1, QUOTA_PAGE_SIZE);
+    expect(pageItems.map(({ file }) => file.name)).toEqual([`codex-${QUOTA_PAGE_SIZE}.json`, `codex-${QUOTA_PAGE_SIZE + 1}.json`]);
+    expect(totalPages).toBe(1);
+    expect(paginate(filterEntriesBySearch(all, 'missing'), 1, QUOTA_PAGE_SIZE).pageItems).toEqual(
+      []
     );
   });
 });

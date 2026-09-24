@@ -67,15 +67,11 @@ const buildTrafficWindow = (bucketGroups: RecentRequestBucket[][]): TrafficWindo
   let totalFailure = 0;
   let peakTotal = 0;
   let peakIndex = -1;
-  let activeBuckets = 0;
 
   buckets.forEach((bucket, index) => {
     const bucketTotal = bucket.success + bucket.failed;
     totalSuccess += bucket.success;
     totalFailure += bucket.failed;
-    if (bucketTotal > 0) {
-      activeBuckets += 1;
-    }
     if (bucketTotal > peakTotal) {
       peakTotal = bucketTotal;
       peakIndex = index;
@@ -92,7 +88,7 @@ const buildTrafficWindow = (bucketGroups: RecentRequestBucket[][]): TrafficWindo
     successRate: total > 0 ? (totalSuccess / total) * 100 : null,
     peakTotal,
     peakIndex,
-    activeBuckets,
+    activeBuckets: buckets.filter((bucket) => bucket.success + bucket.failed > 0).length,
     windowMinutes: buckets.length * TRAFFIC_BUCKET_MINUTES,
   };
 };
@@ -116,6 +112,7 @@ export const getProviderKeyCounts = (config: Config) => ({
   gemini: config.geminiApiKeys?.length ?? 0,
   interactions: config.interactionsApiKeys?.length ?? 0,
   codex: config.codexApiKeys?.length ?? 0,
+  meta: config.metaApiKeys?.length ?? 0,
   xai: config.xaiApiKeys?.length ?? 0,
   claude: config.claudeApiKeys?.length ?? 0,
   vertex: config.vertexApiKeys?.length ?? 0,

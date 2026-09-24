@@ -32,7 +32,7 @@ interface ActiveCodexQuotaJobRun {
   jobId: string;
   controller: AbortController;
   cancelling: boolean;
-  cacheGeneration: number;
+  cacheGeneration: ReturnType<typeof captureQuotaCacheGeneration>;
   appliedSeq: number;
   targetNamesByAuthIndex: Map<string, string>;
   filesByName: Map<string, AuthFileItem>;
@@ -100,7 +100,7 @@ export function useCodexQuotaRefreshJob() {
     async (run: ActiveCodexQuotaJobRun) => {
       let transientFailures = 0;
       const cancelIfStale = (): boolean => {
-        if (captureQuotaCacheGeneration() === run.cacheGeneration) return false;
+        if (captureQuotaCacheGeneration().cacheGeneration === run.cacheGeneration.cacheGeneration) return false;
         run.controller.abort();
         activeRun = null;
         void cancelCodexQuotaJobAtConnection(run.jobId, run.connection).catch(() => undefined);
@@ -121,7 +121,6 @@ export function useCodexQuotaRefreshJob() {
           if (cancelIfStale()) return;
 
           let nextAppliedSeq = run.appliedSeq;
-          commitIfQuotaCacheCurrent(run.cacheGeneration, () => {
             setCodexQuota((previous) => {
               const applied = applyCodexQuotaJobResultBatch({
                 quota: previous,
@@ -129,12 +128,16 @@ export function useCodexQuotaRefreshJob() {
                 targetNamesByAuthIndex: run.targetNamesByAuthIndex,
                 filesByName: run.filesByName,
                 results: response.results,
+                canCommitFile: (name) => {
+                  const current = useQuotaStore.getState();
+                  return current.cacheGeneration === run.cacheGeneration.cacheGeneration &&
+                    (current.fileGenerations[name] ?? 0) === (run.cacheGeneration.fileGenerations[name] ?? 0);
+                },
                 t,
               });
               nextAppliedSeq = applied.appliedSeq;
               return applied.quota;
             });
-          });
           run.appliedSeq = nextAppliedSeq;
           const progressResponse = addCodexQuotaJobLocalFailures(response, run.localFailures);
           setProgress((current) => reduceCodexQuotaJobProgress(current, progressResponse));
@@ -203,7 +206,7 @@ export function useCodexQuotaRefreshJob() {
         startInFlight = false;
         setStarting(false);
       }
-      if (captureQuotaCacheGeneration() !== startGeneration) {
+      if (captureQuotaCacheGeneration().cacheGeneration !== startGeneration.cacheGeneration) {
         void cancelCodexQuotaJobAtConnection(summary.jobId, connection).catch(() => undefined);
         throw new Error(t('quota_management.refresh_job_connection_changed'));
       }
@@ -269,7 +272,7 @@ export function useCodexQuotaRefreshJob() {
 
   useEffect(() => {
     const run = activeRun;
-    if (!run || run.cacheGeneration === cacheGeneration) return;
+    if (!run || run.cacheGeneration.cacheGeneration === cacheGeneration) return;
     run.controller.abort();
     activeRun = null;
     void cancelCodexQuotaJobAtConnection(run.jobId, run.connection).catch(() => undefined);

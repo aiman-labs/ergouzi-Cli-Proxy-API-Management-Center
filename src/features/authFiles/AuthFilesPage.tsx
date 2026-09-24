@@ -10,11 +10,15 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { copyToClipboard } from '@/utils/clipboard';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
 import {
   clampCardPageSize,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
+  QUOTA_PROVIDER_TYPES,
+  type AuthFileQuotaFilter,
+  type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
@@ -192,6 +196,13 @@ export function AuthFilesPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const normalizedFilter = normalizeProviderKey(String(filter));
+  const quotaFilterType: QuotaProviderType | null = QUOTA_PROVIDER_TYPES.has(
+    normalizedFilter as QuotaProviderType
+  )
+    ? (normalizedFilter as QuotaProviderType)
+    : null;
+  const activeQuotaFilter: AuthFileQuotaFilter =
+    normalizedFilter === 'all' ? 'all' : quotaFilterType;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
   const problemOnly = healthFilter === 'problem';
   const disabledOnly = enabledFilter === 'disabled';
@@ -762,7 +773,7 @@ export function AuthFilesPage() {
   const gridClasses = [
     styles.grid,
     compactMode ? styles.gridCompact : '',
-    showQuotaDetails ? styles.gridQuota : '',
+    showQuotaDetails && activeQuotaFilter ? styles.gridQuota : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -967,7 +978,7 @@ export function AuthFilesPage() {
           <div className={gridClasses}>
             {displayPageItems.map((file, index) => (
               <AuthFileCard
-                key={file.name}
+                key={getQuotaCacheKey(file)}
                 file={file}
                 compact={compactMode}
                 selected={selectedFiles.has(file.name)}
@@ -977,6 +988,7 @@ export function AuthFilesPage() {
                 statusUpdating={statusUpdating}
                 manualRefreshing={manualRefreshing}
                 showQuotaDetails={showQuotaDetails}
+                quotaFilterType={activeQuotaFilter}
                 statusBarCache={statusBarCache}
                 entranceDelayMs={cardEntranceDelay(index)}
                 onShowModels={showModels}

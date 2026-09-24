@@ -108,6 +108,7 @@ interface ApplyCodexQuotaJobResultBatchArgs {
   targetNamesByAuthIndex: ReadonlyMap<string, string>;
   filesByName: ReadonlyMap<string, AuthFileItem>;
   results: CodexQuotaJobResult[];
+  canCommitFile?: (name: string) => boolean;
   t: TFunction;
 }
 
@@ -117,6 +118,7 @@ export const applyCodexQuotaJobResultBatch = ({
   targetNamesByAuthIndex,
   filesByName,
   results,
+  canCommitFile = () => true,
   t,
 }: ApplyCodexQuotaJobResultBatchArgs): {
   quota: Record<string, CodexQuotaState>;
@@ -129,7 +131,7 @@ export const applyCodexQuotaJobResultBatch = ({
     nextAppliedSeq = Math.max(nextAppliedSeq, result.seq);
     const name = targetNamesByAuthIndex.get(result.authIndex);
     const file = name ? filesByName.get(name) : undefined;
-    if (!name || !file) continue;
+    if (!name || !file || !canCommitFile(name)) continue;
     if (nextQuota === quota) nextQuota = { ...quota };
     if (result.status === 'error') {
       nextQuota[name] = CODEX_CONFIG.buildErrorState(

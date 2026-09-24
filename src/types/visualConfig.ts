@@ -43,6 +43,7 @@ export type VisualConfigFieldPath =
   | 'streaming.nonstreamKeepaliveInterval';
 
 export type VisualConfigValidationErrorCode =
+  | 'integer'
   | 'port_range'
   | 'non_negative_integer'
   | 'integer_range_1_3600'
@@ -178,6 +179,8 @@ export type VisualConfigValues = {
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
   wsAuth: boolean;
+  antigravitySensitiveWords: string[];
+  devinSensitiveWords: string[];
   antigravitySignatureCacheEnabled: boolean;
   antigravitySignatureBypassStrict: boolean;
   claudeHeaderUserAgent: string;
@@ -235,8 +238,8 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   disableImageGeneration: 'false',
   gptImage2BaseModel: '',
   authAutoRefreshWorkers: '',
-  quotaSwitchProject: true,
-  quotaSwitchPreviewModel: true,
+  quotaSwitchProject: false,
+  quotaSwitchPreviewModel: false,
   quotaAntigravityCredits: false,
   quotaAutoDisableEnabled: false,
   quotaAutoDisableAutoEnable: true,
@@ -269,7 +272,9 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   routingCodexTeamPlanPriority: '',
   routingSessionAffinity: false,
   routingSessionAffinityTTL: '',
-  wsAuth: false,
+  wsAuth: true,
+  antigravitySensitiveWords: [],
+  devinSensitiveWords: [],
   antigravitySignatureCacheEnabled: true,
   antigravitySignatureBypassStrict: false,
   claudeHeaderUserAgent: '',

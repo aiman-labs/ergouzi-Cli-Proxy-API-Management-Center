@@ -345,3 +345,29 @@ Review notes: future sponsor-visibility changes must test both visible and
 hidden states for each protocol. Do not replace the shared generic-provider
 classifier with name-only filtering or discard backend indexes during
 normalization.
+
+## DEC-20260924-014: Compose v1.24.2 with Ergouzi lifecycle contracts
+
+Status: decided. Upstream commit: `4530da271ba2e89810d4dccebc57f3091afa590a`.
+
+Retain backend index selectors and unknown provider fields across the new Meta
+provider API. A duplicate-identity regression verifies only the selected entry
+changes. Keep generic provider classification, hidden-sponsor fallback and
+source indexes; adopt upstream removal of obsolete sponsor modules.
+
+Compose upstream identity-based quota caches with Ergouzi physical-file
+invalidation. Compare job session generations by value, check each file before
+commit, and consume result sequence numbers even when an invalidated target is
+skipped. Preserve backend statistics and inventory reconciliation, bounded
+concurrency, disabled-account visibility, batch actions and 100-item pages.
+
+Use one config parser and the real baseline for AST-preserving serialization;
+retain dirty-only governance fields and unknown YAML content. Keep upstream
+search/clear controls and new quota providers. Preserve the bounded grid and
+fix mobile search flex-basis when the toolbar changes to a column.
+
+Local UI verification used 160 synthetic accounts: 100-item bounded scroll,
+search, quota refresh and governance controls; light/dark desktop and 390x844
+mobile rendering. No live account mutation was used. Full job lifecycle across
+a target plus unrelated account edit remains a useful follow-up integration
+test; pure result-batch tests cover partial/all invalidation and replay.

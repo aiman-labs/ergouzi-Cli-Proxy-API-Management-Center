@@ -1,3 +1,4 @@
+import { captureQuotaCacheGeneration } from '@/stores/useQuotaStore';
 import type { CodexQuotaState } from '@/types';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaFileEntry } from '../../logic';
@@ -46,14 +47,14 @@ type ResetDetailCommit = {
   name: string;
   expected: CodexQuotaState;
   details: CodexResetCreditsData;
-  cacheGeneration: number;
+  cacheGeneration: ReturnType<typeof captureQuotaCacheGeneration>;
 };
 
 type ResetDetailSchedulerContext = {
   enabled: boolean;
   entries: QuotaFileEntry[];
   quota: Record<string, CodexQuotaState>;
-  cacheGeneration?: number;
+  cacheGeneration?: ReturnType<typeof captureQuotaCacheGeneration>;
   fetchDetails: (entry: QuotaFileEntry) => Promise<CodexResetCreditsData>;
   commitDetails: (result: ResetDetailCommit) => void;
 };
@@ -115,7 +116,7 @@ export class CodexResetDetailScheduler {
 
       const name = target.entry.file.name;
       const fingerprint = getCredentialFingerprint(target.entry);
-      const cacheGeneration = context.cacheGeneration ?? 0;
+      const cacheGeneration = context.cacheGeneration ?? captureQuotaCacheGeneration();
       this.inFlight.add(fingerprint);
       this.active += 1;
 

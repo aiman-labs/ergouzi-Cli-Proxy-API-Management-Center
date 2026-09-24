@@ -9,10 +9,11 @@ import {
 } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { getStatusFromError } from '@/utils/quota';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { getQuotaMap, getQuotaSetter, type QuotaAdapter, type QuotaCardState } from '../providers';
 
-const getQuotaState = (adapter: QuotaAdapter, name: string): QuotaCardState | undefined =>
-  getQuotaMap(adapter)[name];
+const getQuotaState = (adapter: QuotaAdapter, file: AuthFileItem): QuotaCardState | undefined =>
+  getQuotaMap(adapter)[getQuotaCacheKey(file)];
 
 export function useQuotaActions(disableControls: boolean) {
   const { t } = useTranslation();
@@ -23,14 +24,15 @@ export function useQuotaActions(disableControls: boolean) {
   const refreshQuota = useCallback(
     async (file: AuthFileItem, adapter: QuotaAdapter) => {
       if (disableControls) return;
-      if (resettingQuotaName === file.name) return;
-      if (getQuotaState(adapter, file.name)?.status === 'loading') return;
-      const cacheGeneration = captureQuotaCacheGeneration();
+      const cacheKey = getQuotaCacheKey(file);
+      if (resettingQuotaName === cacheKey) return;
+      if (getQuotaState(adapter, file)?.status === 'loading') return;
+      const cacheGeneration = captureQuotaCacheGeneration(file.name);
       const setQuota = getQuotaSetter(adapter);
 
       setQuota((prev) => ({
         ...prev,
-        [file.name]: adapter.buildLoadingState(),
+        [cacheKey]: adapter.buildLoadingState(),
       }));
 
       try {
@@ -38,7 +40,7 @@ export function useQuotaActions(disableControls: boolean) {
         commitIfQuotaCacheCurrent(cacheGeneration, () => {
           setQuota((prev) => ({
             ...prev,
-            [file.name]: adapter.buildSuccessState(data),
+            [cacheKey]: adapter.buildSuccessState(data),
           }));
           showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
         });
@@ -48,7 +50,7 @@ export function useQuotaActions(disableControls: boolean) {
         commitIfQuotaCacheCurrent(cacheGeneration, () => {
           setQuota((prev) => ({
             ...prev,
-            [file.name]: adapter.buildErrorState(message, status),
+            [cacheKey]: adapter.buildErrorState(message, status),
           }));
           showNotification(
             t('auth_files.quota_refresh_failed', { name: file.name, message }),
@@ -65,8 +67,9 @@ export function useQuotaActions(disableControls: boolean) {
       const resetQuotaFn = adapter.resetQuota;
       if (!resetQuotaFn) return;
       if (disableControls || file.disabled) return;
-      if (getQuotaState(adapter, file.name)?.status === 'loading') return;
-      if (resettingQuotaName === file.name) return;
+      const cacheKey = getQuotaCacheKey(file);
+      if (getQuotaState(adapter, file)?.status === 'loading') return;
+      if (resettingQuotaName === cacheKey) return;
 
       showConfirmation({
         title: t('codex_quota.reset_confirm_title'),
@@ -74,15 +77,15 @@ export function useQuotaActions(disableControls: boolean) {
         confirmText: t('codex_quota.reset_confirm_button'),
         variant: 'primary',
         onConfirm: async () => {
-          const cacheGeneration = captureQuotaCacheGeneration();
+          const cacheGeneration = captureQuotaCacheGeneration(file.name);
           const setQuota = getQuotaSetter(adapter);
-          setResettingQuotaName(file.name);
+          setResettingQuotaName(cacheKey);
           try {
             const data = await resetQuotaFn(file, t);
             commitIfQuotaCacheCurrent(cacheGeneration, () => {
               setQuota((prev) => ({
                 ...prev,
-                [file.name]: adapter.buildSuccessState(data),
+                [cacheKey]: adapter.buildSuccessState(data),
               }));
               showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
             });
@@ -95,7 +98,7 @@ export function useQuotaActions(disableControls: boolean) {
               );
             });
           } finally {
-            setResettingQuotaName((current) => (current === file.name ? null : current));
+            setResettingQuotaName((current) => (current === cacheKey ? null : current));
           }
         },
       });

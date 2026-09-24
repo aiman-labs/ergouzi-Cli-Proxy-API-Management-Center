@@ -1,5 +1,29 @@
 # Sync History
 
+## 2026-09-24 Upstream `v1.24.2` Local Sync
+
+| Item | Value |
+|---|---|
+| Fork base | `db7e34d3695de464a108f4ce91cf8a7849687022` |
+| Previous upstream baseline | `v1.22.9` |
+| Target release commit | `4530da271ba2e89810d4dccebc57f3091afa590a` |
+| Candidate | `.worktrees/cpamc-v1.24.2-sync-20260924` (detached) |
+| State | Locally verified; not committed, pushed, released or deployed |
+
+Applied the official release delta in an isolated worktree and resolved conflicts
+by contract. See `DEC-20260924-014`. The release API was checked again at
+completion and still identifies `v1.24.2` as latest.
+
+`bun run verify` passed: 879 tests, lint, type-check and single-file build.
+Output: `dist/index.html` (the release asset remains `management.html`).
+Browser checks used synthetic local API fixtures; no production verification.
+Independent read-only contract review completed. Diff whitespace and conflict
+marker checks passed. The original main checkout remains unchanged.
+
+Evidence and full changed-file manifest are retained in workspace
+`outputs/cpa-cpamc-sync-20260924/`. This is local sync evidence, not a production
+acceptance claim. Recheck latest release before any future PR merge.
+
 ## 2026-08-27 Upstream `v1.22.9` Sync
 
 | Item | Value |

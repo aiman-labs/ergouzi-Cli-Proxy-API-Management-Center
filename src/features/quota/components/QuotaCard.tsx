@@ -13,6 +13,7 @@ import { IconRefreshCw } from '@/components/ui/icons';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import type { ResolvedTheme } from '@/types';
 import { isDisabledAuthFile, resolveQuotaErrorMessage } from '@/utils/quota';
+import { getQuotaDisplayName } from '@/utils/quota/identity';
 import {
   getAuthFileIcon,
   getThemeSurfaceIconBackground,
@@ -62,6 +63,7 @@ export function QuotaCard(props: QuotaCardProps) {
   const { t } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
+  const displayName = getQuotaDisplayName(file);
 
   // Capture the delay once on mount; later null props do not affect this card, avoiding render-time ref reads in React 19.
   const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);
@@ -106,8 +108,8 @@ export function QuotaCard(props: QuotaCardProps) {
             <span className={styles.iconFallback}>{typeLabel.slice(0, 1).toUpperCase()}</span>
           )}
         </span>
-        <span className={styles.fileName} title={file.name}>
-          {file.name}
+        <span className={styles.fileName} title={displayName}>
+          {displayName}
         </span>
         {onStatusChange && (
           <span className={styles.statusToggle}>

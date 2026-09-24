@@ -1,7 +1,7 @@
 @use '../../styles/mixins' as *;
 
 /* ============================================================
- * Quota page shell: layout only; visual details live in colocated component modules.
+ * 额度页壳层：纯布局，视觉细节都在各组件的 colocated 模块里。
  * ============================================================ */
 
 .page {
@@ -12,7 +12,7 @@
   min-width: 0;
 }
 
-/* ---------- Workspace (tabs + grid + pagination) ---------- */
+/* ---------- 工作区（tabs + 网格 + 分页） ---------- */
 
 .workbench {
   display: flex;
@@ -20,6 +20,8 @@
   gap: 14px;
   min-width: 0;
 }
+
+/* 提供商导航独占一行，保留原生横向滚动。 */
 
 .tabsRow {
   display: flex;
@@ -29,97 +31,144 @@
   min-width: 0;
 
   > :first-child {
+    flex: 1 1 auto;
     min-width: 0;
   }
 }
 
-.controls {
+.toolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
-  flex: 1 1 560px;
+  gap: 8px 16px;
+  min-width: 0;
 }
 
 .search {
-  flex: 1 1 220px;
-  min-width: 180px;
-  max-width: 320px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 340px;
+  min-width: 0;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
 
-  :global(.form-group) {
-    margin-bottom: 0;
-  }
-
-  :global(.input) {
-    height: 32px;
-    border-radius: 8px;
-    font-size: 12.5px;
+  &:focus-within {
+    border-color: var(--border-hover);
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 }
 
 .searchIcon {
-  color: var(--text-quaternary);
+  position: absolute;
+  left: 11px;
+  pointer-events: none;
 }
 
-.pageSizeControl {
-  display: flex;
+.searchInput {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 42px 0 35px;
+  border: 0;
+  border-radius: inherit;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  appearance: none;
+
+  &::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-decoration {
+    appearance: none;
+  }
+}
+
+.clearSearch {
+  position: absolute;
+  right: 2px;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-tertiary);
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
 
-  input {
-    width: 64px;
-    min-height: 32px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    color: var(--text-primary);
-    background: var(--bg-secondary);
-    padding: 0 8px;
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 }
 
-@include mobile {
-  .tabsRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.sort {
+  flex: 0 0 auto;
+  min-width: 148px;
+  max-width: 100%;
 
-  .controls {
-    width: 100%;
-    align-items: stretch;
-    flex: 0 0 auto;
+  button[aria-haspopup='listbox'] {
+    height: 36px;
+    border-color: transparent;
+    border-radius: 10px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-secondary);
 
-    > * {
-      flex: 1 1 100%;
-      max-width: none;
+    &:focus-visible,
+    &[aria-expanded='true'] {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
     }
   }
 }
 
-.statusActions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 9px 12px;
-  border-block: 1px solid var(--border-color);
-  color: var(--text-tertiary);
-  font-size: 12px;
+@media (hover: hover) and (pointer: fine) {
+  .clearSearch:hover,
+  .sort button[aria-haspopup='listbox']:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
 }
 
-.statusActionButtons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+@media (prefers-reduced-motion: reduce) {
+  .clearSearch:active {
+    transform: none;
+  }
 }
 
 @include mobile {
-  .statusActions {
-    align-items: stretch;
-    flex-direction: column;
+  .search {
+    flex: 1 1 220px;
+    height: 40px;
+  }
+
+  .clearSearch {
+    width: 36px;
+    height: 36px;
+  }
+
+  .sort button[aria-haspopup='listbox'] {
+    height: 40px;
   }
 }
 
@@ -134,9 +183,41 @@
   overflow-wrap: anywhere;
 }
 
-/* ---------- Card grid ----------
- * CSS owns column sizing instead of JS measurement. Quota cards contain meters,
- * so they share the 340px minimum used by auth-file quota mode (.gridQuota). */
+/* ---------- 卡片网格 ----------
+ * 列宽由 CSS 决定（不再用 JS 测量）：额度卡承载水位条，取 340px 下限，
+ * 与认证文件页配额模式（.gridQuota）同一档。 */
+
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  align-items: stretch;
+}
+
+/* ---------- 分页 ---------- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pageInfo {
+  font-family: $font-mono;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+@include mobile {
+  .page {
+    gap: 16px;
+  }
+}
 
 .gridViewport {
   max-height: min(72vh, 900px);
@@ -161,38 +242,45 @@
   }
 }
 
-.grid {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-  align-items: stretch;
-}
-
-/* ---------- Pagination ---------- */
-
-.pagination {
+.pageSizeControl {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+
+  input {
+    width: 64px;
+    min-height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    padding: 0 8px;
+  }
+}
+
+.statusActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-block: 1px solid var(--border-color);
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.statusActionButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.pageInfo {
-  font-family: $font-mono;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  color: var(--text-tertiary);
-  white-space: nowrap;
-}
+@include mobile { .statusActions { align-items: stretch; flex-direction: column; } }
 
 @include mobile {
-  .page {
-    gap: 16px;
-  }
-
-  .gridViewport {
-    max-height: 68vh;
-  }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .search { flex: 0 0 36px; width: 100%; }
 }

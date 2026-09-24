@@ -9,7 +9,13 @@ import { normalizePlanType } from './parsers';
  */
 export type CodexPlanTier = 'elite' | 'premium' | 'plain';
 
-export const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
+export const PREMIUM_CODEX_PLAN_TYPES = new Set([
+  'pro',
+  'prolite',
+  'pro-lite',
+  'pro_lite',
+  'self_serve_business_prolite',
+]);
 
 // Pro 20x with plan=pro sits above gold premium as a liquid platinum badge.
 // See .elitePlanValue in QuotaPage.module.scss.

@@ -111,9 +111,8 @@ export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualC
   };
 
 /**
- * Maps fieldId to useVisualConfig dirtyFields keys, using dotted leaves for streaming.
- * It matches the 58 search-index entries one-to-one; configFieldParity tests enforce
- * parity across the index, this table, and section JSX.
+ * Maps searchable field IDs to visual dirty-field keys.
+ * The configFieldParity regression enforces parity with the sections and search index.
  */
 export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   // ── connectivity ──────────────────────────────────────────────────────────
@@ -198,6 +197,8 @@ export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   pluginsEnabled: ['pluginsEnabled'],
   pluginStoreSources: ['pluginStoreSources'],
   pluginStoreAuth: ['pluginStoreAuth'],
+  antigravitySensitiveWords: ['antigravitySensitiveWords'],
+  devinSensitiveWords: ['devinSensitiveWords'],
   antigravitySignatureCacheEnabled: ['antigravitySignatureCacheEnabled'],
   antigravitySignatureBypassStrict: ['antigravitySignatureBypassStrict'],
   claudeHeaderUserAgent: ['claudeHeaderUserAgent'],

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { captureQuotaCacheGeneration, commitIfQuotaCacheCurrent } from '@/stores';
 import { getStatusFromError } from '@/utils/quota';
 import { runLimitedBatch } from '@/utils/runLimitedBatch';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
 import type { QuotaFileEntry } from '../logic';
 import { QUOTA_ADAPTERS, getQuotaSetter } from '../providers';
 import type { QuotaProviderType } from '../providers/types';
@@ -12,6 +13,7 @@ import type { QuotaProviderType } from '../providers/types';
 interface BatchFetchResult {
   name: string;
   type: QuotaProviderType;
+  cacheKey: string;
   status: 'success' | 'error';
   data?: unknown;
   error?: string;
@@ -47,7 +49,7 @@ export function useQuotaBatchLoader() {
             setQuota((prev) => {
               const nextState = { ...prev };
               entries.forEach(({ file }) => {
-                nextState[file.name] = adapter.buildLoadingState();
+                nextState[getQuotaCacheKey(file)] = adapter.buildLoadingState();
               });
               return nextState;
             });
@@ -58,14 +60,16 @@ export function useQuotaBatchLoader() {
           items: targets,
           concurrency: QUOTA_BATCH_CONCURRENCY,
           worker: async ({ file, type }): Promise<BatchFetchResult> => {
+            const cacheKey = getQuotaCacheKey(file);
             const adapter = QUOTA_ADAPTERS[type];
             try {
               const data = await adapter.fetchQuota(file, t);
-              return { name: file.name, type, status: 'success', data };
+              return { name: file.name, cacheKey, type, status: 'success', data };
             } catch (err: unknown) {
               const message = err instanceof Error ? err.message : t('common.unknown_error');
               return {
                 name: file.name,
+                cacheKey,
                 type,
                 status: 'error',
                 error: message,
@@ -80,7 +84,7 @@ export function useQuotaBatchLoader() {
             commitIfQuotaCacheCurrent(cacheGeneration, () => {
               setQuota((prev) => ({
                 ...prev,
-                [result.name]:
+                [result.cacheKey]:
                   result.status === 'success'
                     ? adapter.buildSuccessState(result.data)
                     : adapter.buildErrorState(
@@ -88,7 +92,7 @@ export function useQuotaBatchLoader() {
                         result.errorStatus
                       ),
               }));
-            });
+            }, result.name);
           },
         });
       } finally {

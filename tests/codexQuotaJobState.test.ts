@@ -217,3 +217,30 @@ describe('Codex quota job batched state', () => {
     ).toBe(progress);
   });
 });
+
+
+test('consumes job sequences while ignoring only invalidated credentials', () => {
+  const previous: Record<string, CodexQuotaState> = {
+    'a.json': { status: 'idle', windows: [] },
+    'b.json': { status: 'idle', windows: [] },
+  };
+  const input = {
+    quota: previous, appliedSeq: 0,
+    targetNamesByAuthIndex: new Map([['a', 'a.json'], ['b', 'b.json']]),
+    filesByName: new Map([['a.json', { name: 'a.json' }], ['b.json', { name: 'b.json' }]]),
+    results: ['a', 'b'].map((authIndex, index) => ({
+      seq: index + 1, authIndex, status: 'error' as const, statusCode: 429,
+      body: '', error: 'quota exhausted',
+    })), t,
+  };
+  const partial = applyCodexQuotaJobResultBatch({ ...input, canCommitFile: (name) => name !== 'a.json' });
+  expect(partial.quota['a.json']).toBe(previous['a.json']);
+  expect(partial.quota['b.json'].status).toBe('error');
+  expect(partial.appliedSeq).toBe(2);
+  const ignored = applyCodexQuotaJobResultBatch({ ...input, canCommitFile: () => false });
+  expect(ignored.quota).toBe(previous);
+  expect(ignored.appliedSeq).toBe(2);
+  const replay = applyCodexQuotaJobResultBatch({ ...input, quota: partial.quota, appliedSeq: 2 });
+  expect(replay.quota).toBe(partial.quota);
+  expect(replay.appliedSeq).toBe(2);
+});

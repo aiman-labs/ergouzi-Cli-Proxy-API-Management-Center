@@ -4,6 +4,7 @@ import {
   filterAuthFilesByHealthAndEnabled,
   matchesAuthFileSearch,
   resolveAuthFileDeleteTargets,
+  resolveAuthFileQuotaType,
   sortAuthFiles,
 } from '../src/features/authFiles/logic';
 import { resolveAuthFilesFilterState } from '../src/features/authFiles/uiState';
@@ -35,6 +36,19 @@ describe('buildWildcardSearch', () => {
 
   test('a lone wildcard matches everything', () => {
     expect(buildWildcardSearch('*')?.test('anything')).toBe(true);
+  });
+});
+
+describe('resolveAuthFileQuotaType', () => {
+  test('resolves each supported provider while the all tab is selected', () => {
+    expect(resolveAuthFileQuotaType(authFile({ type: 'codex' }), 'all')).toBe('codex');
+    expect(resolveAuthFileQuotaType(authFile({ type: 'kimi' }), 'all')).toBe('kimi');
+  });
+
+  test('does not expose quota for unsupported or mismatched providers', () => {
+    expect(resolveAuthFileQuotaType(authFile({ type: 'gemini' }), 'all')).toBeNull();
+    expect(resolveAuthFileQuotaType(authFile({ type: 'codex' }), 'claude')).toBeNull();
+    expect(resolveAuthFileQuotaType(authFile({ type: 'codex' }), null)).toBeNull();
   });
 });
 

@@ -127,6 +127,6 @@ describe('quota page Ergouzi parity', () => {
     expect(source).toMatch(/\.gridViewport\s*\{[^}]*max-height:/s);
     expect(source).toMatch(/\.gridViewport\s*\{[^}]*overflow-y:\s*auto/s);
     expect(source).not.toContain('clamp(760px');
-    expect(source).toMatch(/@include mobile[\s\S]*?\.controls\s*\{[^}]*flex:\s*0 0 auto/s);
+    expect(source).toMatch(/@include mobile[\s\S]*?\.toolbar\s*\{[^}]*flex-direction:\s*column/s);
   });
 });

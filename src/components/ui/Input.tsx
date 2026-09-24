@@ -6,7 +6,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   labelExtra?: ReactNode;
   /** Renders spacing content above the label to align neighboring inputs. */
   topExtra?: ReactNode;
-  hint?: string;
+  hint?: ReactNode;
   error?: string;
   rightElement?: ReactNode;
 }
