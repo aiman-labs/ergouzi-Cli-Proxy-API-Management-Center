@@ -12,10 +12,12 @@
 | State | Locally verified sync; PR integration authorized; not released or deployed |
 
 Applied the official release delta. See `DEC-20260930-015` for conflict decisions.
-`bun run verify` passed: 1308 tests, ESLint and TypeScript/single-file build.
+`bun run verify` passed: 1324 tests, ESLint and TypeScript/single-file build.
 Browser checks cover v8 login, quota inventory, governance config and log display.
 PR #29 review follow-up restored Home after polling, node routing and unsupported
 action guards; regression tests and synthetic Home browser checks passed.
+Row-level Base URL changes split multi-key groups without affecting sibling
+routes, inherited policies or flattened order; provider regressions passed.
 Independent code review, final P0 review and additional targeted tests passed. No P0
 blocker was found in the local candidate. Production and real
 Codex Invite plugin runtime compatibility remain unverified. Pair CPA v8.0.4

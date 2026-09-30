@@ -408,3 +408,14 @@ The complete verify suite passed 1308 tests plus lint and the single-file build.
 Synthetic Home browser checks verified disabled file logging, after polling,
 empty-page retention, preview/download node routing, and no clear/error-list
 requests. This is not a live Home or production acceptance claim.
+
+PR #29 provider follow-up: row-level Base URL edits must not rewrite a shared
+v8 group address. For a multi-key group, split around the selected credential
+into prefix, edited and suffix groups, retaining flattened credential order.
+Clone raw policies and null inheritance; keep unaffected sibling routes and
+keys exactly. Generate unique group names and remove only selected credential
+response metadata. A single-key group and OpenAI group-level edits retain
+their existing behavior. Seven provider families have change/clear regressions,
+plus duplicate keys, name collisions and first/middle/last position coverage.
+Full verification passed 1324 tests and a single-file build; focused final lint
+passed without warnings after removing an unused test binding.

@@ -352,17 +352,24 @@ const findKeySource = (
   if (matches.length !== 1 || !matches[0].source) throw conflict();
   return matches[0].source;
 };
+const uniqueGroupName = (family: ProviderFamily, groups: Record<string, unknown>[]) => {
+  const names = new Set(groups.map((g) => g.name));
+  let number = groups.length + 1;
+  while (names.has(`${family}-${number}`)) number++;
+  return `${family}-${number}`;
+};
 const createKey = async (family: ProviderFamily, config: KeyConfig) => {
   const groups = await getGroups(family);
   const payload = keySerializer(family)(config);
   const baseUrl = payload['base-url'];
   delete payload['base-url'];
-  const names = new Set(groups.map((g) => g.name));
-  let number = groups.length + 1;
-  while (names.has(`${family}-${number}`)) number++;
   await putGroups(family, [
     ...groups,
-    { name: `${family}-${number}`, ...(baseUrl ? { 'base-url': baseUrl } : {}), keys: [payload] },
+    {
+      name: uniqueGroupName(family, groups),
+      ...(baseUrl ? { 'base-url': baseUrl } : {}),
+      keys: [payload],
+    },
   ]);
 };
 const updateKey = async (
@@ -391,7 +398,8 @@ const updateKey = async (
   const before = serialize(original);
   const after = serialize(config);
   const nextGroup = { ...group };
-  if (!equal(before['base-url'], after['base-url'])) {
+  const baseUrlChanged = !equal(before['base-url'], after['base-url']);
+  if (baseUrlChanged) {
     if (after['base-url'] === undefined) delete nextGroup['base-url'];
     else nextGroup['base-url'] = after['base-url'];
   }
@@ -410,7 +418,27 @@ const updateKey = async (
   );
   // Response metadata belongs to credentials, not arbitrary nested maps such as headers.
   delete keys[keyIndex]['auth-index'];
-  groups[index] = { ...nextGroup, keys };
+  if (baseUrlChanged && keys.length > 1) {
+    // v8 base URLs belong to groups. Split around the edited credential so
+    // sibling routing, raw inheritance and fill-first credential order survive.
+    const replacements: Record<string, unknown>[] = [];
+    if (keyIndex > 0) replacements.push({ ...group, keys: keys.slice(0, keyIndex) });
+    replacements.push({
+      ...nextGroup,
+      name: uniqueGroupName(family, [...groups, ...replacements]),
+      keys: [keys[keyIndex]],
+    });
+    if (keyIndex + 1 < keys.length) {
+      replacements.push({
+        ...group,
+        name: keyIndex === 0 ? group.name : uniqueGroupName(family, [...groups, ...replacements]),
+        keys: keys.slice(keyIndex + 1),
+      });
+    }
+    groups.splice(index, 1, ...replacements);
+  } else {
+    groups[index] = { ...nextGroup, keys };
+  }
   await putGroups(family, groups);
 };
 const deleteKey = async (

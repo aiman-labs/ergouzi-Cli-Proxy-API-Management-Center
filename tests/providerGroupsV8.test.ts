@@ -28,6 +28,100 @@ function backend(family: ProviderFamily, groups: Record<string, unknown>[] = [])
 }
 const rows = (groups: unknown) => normalizeProviderGroups(groups) as ProviderKeyConfig[];
 
+describe('credential base URL isolation', () => {
+  const updates = [
+    ['gemini', providersApi.updateGeminiKey],
+    ['interactions', providersApi.updateInteractionsKey],
+    ['codex', providersApi.updateCodexConfig],
+    ['meta', providersApi.updateMetaConfig],
+    ['xai', providersApi.updateXAIConfig],
+    ['claude', providersApi.updateClaudeConfig],
+    ['vertex', providersApi.updateVertexConfig],
+  ] as const;
+  for (const [family, update] of updates) {
+    test.each(['https://changed.invalid', ''])(
+      `${family} changes only the selected route (%s)`,
+      async (baseUrl) => {
+        const keys = [
+          { 'api-key': 'duplicate', headers: null, future: { keep: 1 } },
+          {
+            'api-key': 'duplicate',
+            headers: null,
+            future: { keep: 2 },
+            'auth-index': 'response-only',
+          },
+          { 'api-key': 'last', models: null },
+        ];
+        const group = {
+          name: 'shared',
+          'base-url': 'https://original.invalid',
+          priority: 7,
+          headers: { 'auth-index': 'user-header' },
+          models: [{ name: 'inherited', 'display-name': 'Keep' }],
+          'request-scoped-errors': { status: [429] },
+          keys,
+        };
+        const unrelated = { name: `${family}-3`, keys: [{ 'api-key': 'unrelated' }] };
+        const b = backend(family, [group, unrelated]);
+        const selected = rows(b.groups())[1];
+        await update(selected.apiKey, selected.baseUrl, { ...selected, baseUrl, weight: 9 });
+        const written = b.groups();
+        const effective = rows(written);
+        expect(effective.map((r) => r.apiKey)).toEqual([
+          'duplicate',
+          'duplicate',
+          'last',
+          'unrelated',
+        ]);
+        expect(effective.slice(0, 3).map((r) => r.baseUrl)).toEqual([
+          'https://original.invalid',
+          baseUrl || undefined,
+          'https://original.invalid',
+        ]);
+        expect(written[0]).toEqual({ ...group, keys: [keys[0]] });
+        expect(written[2]).toEqual({ ...group, name: written[2].name, keys: [keys[2]] });
+        expect(written[3]).toEqual(unrelated);
+        const policy: Record<string, unknown> = { ...group };
+        delete policy['base-url'];
+        expect(written[1]).toEqual({
+          ...policy,
+          name: written[1].name,
+          ...(baseUrl ? { 'base-url': baseUrl } : {}),
+          keys: [{ 'api-key': 'duplicate', headers: null, future: { keep: 2 }, weight: 9 }],
+        });
+        expect(new Set(written.map((g) => g.name)).size).toBe(written.length);
+        expect(b.writes).toHaveLength(1);
+      }
+    );
+  }
+
+  test.each([0, 2])(
+    'split at index %s retains the original name for the sibling group and credential order',
+    async (index) => {
+      const group = {
+        name: 'shared',
+        'base-url': 'https://original.invalid',
+        keys: [{ 'api-key': 'a' }, { 'api-key': 'b' }, { 'api-key': 'c' }],
+      };
+      const b = backend('codex', [group]);
+      const selected = rows(b.groups())[index];
+      await providersApi.updateCodexConfig(selected.apiKey, selected.baseUrl, {
+        ...selected,
+        baseUrl: 'https://changed.invalid',
+      });
+      expect(rows(b.groups()).map((r) => r.apiKey)).toEqual(['a', 'b', 'c']);
+      expect(rows(b.groups()).map((r) => r.baseUrl)).toEqual(
+        ['a', 'b', 'c'].map((_, i) =>
+          i === index ? 'https://changed.invalid' : 'https://original.invalid'
+        )
+      );
+      expect(b.groups().find((g) => g.name === 'shared')?.['base-url']).toBe(
+        'https://original.invalid'
+      );
+    }
+  );
+});
+
 describe('v8 provider groups', () => {
   test('reads only the v8 tree and retains empty groups and exact source snapshots', () => {
     const group = {
