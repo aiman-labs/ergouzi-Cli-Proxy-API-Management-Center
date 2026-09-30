@@ -35,14 +35,14 @@ describe('FennoAI provider aggregation', () => {
 
   test('preserves the backend index after normalization drops a leading row', () => {
     const config = normalizeConfigResponse({
-      'openai-compatibility': [
+      'api-keys': { 'openai-compatibility': [
         { 'base-url': 'https://invalid.example.com/v1' },
         {
           name: FENNO_AI_PROVIDER_NAME,
           'base-url': FENNO_AI_CODEX_BASE_URL,
-          'api-key-entries': [{ 'api-key': 'openai-key' }],
+          keys: [{ 'api-key': 'openai-key' }],
         },
-      ],
+      ] },
     });
 
     expect(config.openaiCompatibility?.map((item) => item.sourceIndex)).toEqual([1]);

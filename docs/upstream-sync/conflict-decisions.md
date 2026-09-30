@@ -371,3 +371,27 @@ search, quota refresh and governance controls; light/dark desktop and 390x844
 mobile rendering. No live account mutation was used. Full job lifecycle across
 a target plus unrelated account edit remains a useful follow-up integration
 test; pure result-batch tests cover partial/all invalidation and replay.
+
+## DEC-20260930-015: Adopt v1.25.0 with Ergouzi governance contracts
+
+Status: decided.
+
+Adopt the v8 management/config API and upstream log workspace. Normalize saved
+v0/v8 full management URLs to the connection base, then use v8 only. Preserve
+backend-declared plugin extension paths without rewriting them to v8.
+
+Replace legacy provider-list index mutations with v8 group/credential source
+identity. Retain unknown fields, exact duplicate selection, stale-selection
+rejection, hidden-sponsor fallback and multi-key sponsor preservation. Replace
+obsolete helper-only concurrency tests with API-level v8 regressions.
+
+The hook and exported visual-config serializer share one implementation. Keep
+upstream draft recovery, rebased payload AST and stale-list guards, while
+retaining dirty-only governor fields and plan priorities at their existing
+paths. Correct capacity search-index paths to the real nested backend layout.
+Retain account batching, bounded grids, disabled visibility, quota job session
+isolation and captured-connection cancellation. Preserve Home log normalization
+and runtime-specific file-logging gating alongside the upstream cursor viewer.
+
+The release artifact remains a single HTML file. This candidate was verified
+against synthetic browser fixtures, not production or real credentials.

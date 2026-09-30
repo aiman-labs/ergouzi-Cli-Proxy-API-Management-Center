@@ -111,6 +111,7 @@ export type PluginStoreAuthRule = {
   allowInsecure: boolean;
 };
 
+/** UI draft keys; YAML persistence uses the v8 tree, not these flattened names. */
 export type VisualConfigValues = {
   host: string;
   port: string;
@@ -123,6 +124,7 @@ export type VisualConfigValues = {
   rmDisableAutoUpdatePanel: boolean;
   rmPanelRepo: string;
   authDir: string;
+  /** Client authentication keys at access.api-keys (never the upstream api-keys map). */
   apiKeysText: string;
   pluginsEnabled: boolean;
   pluginStoreSources: string[];
@@ -146,6 +148,7 @@ export type VisualConfigValues = {
   authAutoRefreshWorkers: string;
   quotaSwitchProject: boolean;
   quotaSwitchPreviewModel: boolean;
+  /** OAuth-only: oauth.providers.antigravity.antigravity-credits. */
   quotaAntigravityCredits: boolean;
   quotaAutoDisableEnabled: boolean;
   quotaAutoDisableAutoEnable: boolean;

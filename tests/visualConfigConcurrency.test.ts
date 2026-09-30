@@ -17,7 +17,7 @@ describe('visual config concurrency', () => {
 
       if (phase === 0) {
         visualConfig.loadVisualValuesFromYaml(
-          'debug: false\nproxy-url: http://old-proxy.example\n'
+          'requests:\n  proxy-url: http://old-proxy.example\nobservability:\n  logs:\n    debug: false\n'
         );
         setPhase(1);
       } else if (phase === 1) {
@@ -28,7 +28,7 @@ describe('visual config concurrency', () => {
           'pre',
           null,
           visualConfig.applyVisualChangesToYaml(
-            'debug: true\nproxy-url: http://old-proxy.example\n'
+            'requests:\n  proxy-url: http://old-proxy.example\nobservability:\n  logs:\n    debug: true\n'
           )
         );
       }
@@ -40,8 +40,8 @@ describe('visual config concurrency', () => {
     const merged = markup.slice('<pre>'.length, -'</pre>'.length);
 
     expect(parseYaml(merged)).toEqual({
-      debug: true,
-      'proxy-url': 'http://localhost:8080',
+      observability: { logs: { debug: true } },
+      requests: { 'proxy-url': 'http://localhost:8080' },
     });
   });
 
@@ -84,19 +84,21 @@ quota-auto-disable:
 
   test('preserves untouched payload subsections during a targeted save', () => {
     const currentYaml = `
-payload:
-  default:
-    - models:
-        - name: old-default
-      params:
-        temperature: 0.5
-  override:
-    - models:
-        - name: keep-override
-      params:
-        temperature: 0.8
-  future-subsection:
-    enabled: true
+config-version: 8
+requests:
+  payload:
+    default:
+      - models:
+          - name: old-default
+        params:
+          temperature: 0.5
+    override:
+      - models:
+          - name: keep-override
+        params:
+          temperature: 0.8
+    future-subsection:
+      enabled: true
 `;
     const values = parseVisualConfigValuesFromYaml(currentYaml);
     values.payloadDefaultRules = [];
@@ -108,13 +110,13 @@ payload:
     );
     const parsed = parseYaml(output) as Record<string, Record<string, unknown>>;
 
-    expect(parsed.payload.default).toBeUndefined();
-    expect(parsed.payload.override).toEqual([
+    expect(parsed.requests.payload.default).toBeUndefined();
+    expect(parsed.requests.payload.override).toEqual([
       {
         models: [{ name: 'keep-override' }],
         params: { temperature: 0.8 },
       },
     ]);
-    expect(parsed.payload['future-subsection']).toEqual({ enabled: true });
+    expect(parsed.requests.payload['future-subsection']).toEqual({ enabled: true });
   });
 });

@@ -1,5 +1,29 @@
 # Sync History
 
+## 2026-09-30 Upstream `v1.25.0` Local Candidate
+
+| Item | Value |
+|---|---|
+| Fork base | `17c3c84da51839ecdd2b7e2a601392077eadbcfc` |
+| Previous upstream baseline | `v1.24.2` |
+| Target release commit | `b87b9487f63e08ad97b1fb4e7c17b4adb811b922` |
+| Candidate | `.worktrees/cpamc-v1.25.0-sync-20260930` |
+| Integration branch | `sync/upstream-v1.25.0-20260930` |
+| State | Locally verified sync; PR integration authorized; not released or deployed |
+
+Applied the official release delta. See `DEC-20260930-015` for conflict decisions.
+`bun run verify` passed: 1304 tests, ESLint and TypeScript/single-file build.
+Browser checks cover v8 login, quota inventory, governance config and log display.
+Independent code review, final P0 review and additional targeted tests passed. No P0
+blocker was found in the local candidate. Production and real
+Codex Invite plugin runtime compatibility remain unverified. Pair CPA v8.0.4
+with CPAMC v1.25.0; do not deploy the new v8-only panel onto a v7 backend.
+
+Evidence and changed-file manifests: workspace `outputs/cpa-cpamc-sync-20260930/`.
+CatPaw creation was blocked by pre-existing CHORE-104 board validation errors;
+the local work record is retained with the evidence. No unrelated board repair.
+Recheck the latest official release before any future PR merge.
+
 ## 2026-09-24 Upstream `v1.24.2` Local Sync
 
 | Item | Value |
@@ -8,7 +32,7 @@
 | Previous upstream baseline | `v1.22.9` |
 | Target release commit | `4530da271ba2e89810d4dccebc57f3091afa590a` |
 | Candidate | `.worktrees/cpamc-v1.24.2-sync-20260924` (detached) |
-| State | Locally verified; not committed, pushed, released or deployed |
+| State | Historical local checkpoint; later committed as `17c3c84d` and published as `v1.24.2-ergouzi.1`; production not rechecked here |
 
 Applied the official release delta in an isolated worktree and resolved conflicts
 by contract. See `DEC-20260924-014`. The release API was checked again at
