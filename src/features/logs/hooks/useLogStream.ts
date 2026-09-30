@@ -96,7 +96,12 @@ export function useLogStream({ active, isFollowing, onFollow }: LogStreamOptions
       return;
     }
 
-    if (!useConfigStore.getState().config?.loggingToFile) {
+    if (
+      requiresFileLogging(
+        useAuthStore.getState().serverRuntimeKind,
+        useConfigStore.getState().config?.loggingToFile ?? false
+      )
+    ) {
       if (!incremental) {
         resetLogPosition();
         setFileLoggingRequired(false);
@@ -115,10 +120,11 @@ export function useLogStream({ active, isFollowing, onFollow }: LogStreamOptions
       // One owner drains at most three pages, then yields to the UI and other actions.
       for (let page = 0; page < 3; page++) {
         const cursor = logBufferRef.current.cursor;
-        const data = await logsApi.fetchLogs(buildLogsQuery(cursor));
+        const after = logBufferRef.current.after;
+        const data = await logsApi.fetchLogs(buildLogsQuery(cursor, after));
         if (!requests.logs.isCurrent(request)) return;
         const stickToBottom = isFollowing();
-        const next = applyLogPage(logBufferRef.current, data, cursor);
+        const next = applyLogPage(logBufferRef.current, data, cursor || after);
         const added = next.nextId - logBufferRef.current.nextId;
         logBufferRef.current = next;
         setLogBuffer(next);
@@ -158,6 +164,10 @@ export function useLogStream({ active, isFollowing, onFollow }: LogStreamOptions
   }
 
   const clearLogs = async () => {
+    if (useAuthStore.getState().serverRuntimeKind === 'home') {
+      showNotification(t('logs.home_clear_unavailable'), 'warning');
+      return;
+    }
     if (cpaNeedsFileLogging) {
       showNotification(t('logs.cpa_file_logging_required'), 'warning');
       return;
@@ -175,7 +185,14 @@ export function useLogStream({ active, isFollowing, onFollow }: LogStreamOptions
       onConfirm: async () => {
         if (!requests.session.isCurrent(session)) return;
         if (useAuthStore.getState().connectionStatus !== 'connected') return;
-        if (!useConfigStore.getState().config?.loggingToFile) return;
+        if (useAuthStore.getState().serverRuntimeKind === 'home') return;
+        if (
+          requiresFileLogging(
+            useAuthStore.getState().serverRuntimeKind,
+            useConfigStore.getState().config?.loggingToFile ?? false
+          )
+        )
+          return;
         const request = requests.logs.startClear();
         if (request === null) return;
         setClearingLogs(true);
@@ -226,7 +243,8 @@ export function useLogStream({ active, isFollowing, onFollow }: LogStreamOptions
         next.apiBase === previous.apiBase &&
         next.managementKey === previous.managementKey &&
         next.connectionStatus === previous.connectionStatus &&
-        next.isAuthenticated === previous.isAuthenticated
+        next.isAuthenticated === previous.isAuthenticated &&
+        next.serverRuntimeKind === previous.serverRuntimeKind
       )
         return;
       invalidateSession();
@@ -249,7 +267,7 @@ export function useLogStream({ active, isFollowing, onFollow }: LogStreamOptions
       loadLogs(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectionStatus, apiBase, managementKey, loggingToFileEnabled]);
+  }, [connectionStatus, apiBase, managementKey, loggingToFileEnabled, runtimeKind]);
 
   useEffect(() => {
     if (!autoRefresh || !active || connectionStatus !== 'connected' || showFileLoggingRequired) {

@@ -11,6 +11,8 @@ export interface LogBuffer {
   textUnits: number;
   evicted: number;
   cursor?: string;
+  after?: number | string;
+  requestLogHomeIpById: Record<string, string>;
 }
 
 export const emptyLogBuffer = (): LogBuffer => ({
@@ -19,17 +21,19 @@ export const emptyLogBuffer = (): LogBuffer => ({
   nextId: 0,
   textUnits: 0,
   evicted: 0,
+  requestLogHomeIpById: {},
 });
 
-export function buildLogsQuery(cursor?: string): LogsQuery {
-  return cursor ? { limit: LOG_PAGE_SIZE, cursor } : { limit: LOG_PAGE_SIZE };
+export function buildLogsQuery(cursor?: string, after?: number | string): LogsQuery {
+  if (cursor) return { limit: LOG_PAGE_SIZE, cursor };
+  return after !== undefined ? { limit: LOG_PAGE_SIZE, after } : { limit: LOG_PAGE_SIZE };
 }
 
 /** Cursor pages contain new records, including legitimate identical adjacent lines. */
 export function applyLogPage(
   current: LogBuffer,
   response: LogsResponse,
-  requestedCursor?: string,
+  requestedCursor?: string | number,
   maxLines = LOG_PAGE_SIZE,
   maxTextUnits = MAX_LOG_TEXT_UNITS
 ): LogBuffer {
@@ -55,6 +59,14 @@ export function applyLogPage(
     textUnits,
     evicted: (append ? current.evicted : 0) + drop,
     cursor: response.nextCursor,
+    // Home timestamps are a separate protocol, never an opaque CPA cursor.
+    after:
+      response.requestLogHomeIpById !== undefined
+        ? (response.latestAfter ?? (append ? current.after : undefined))
+        : undefined,
+    requestLogHomeIpById: append
+      ? { ...current.requestLogHomeIpById, ...response.requestLogHomeIpById }
+      : { ...response.requestLogHomeIpById },
   };
 }
 

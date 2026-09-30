@@ -71,6 +71,10 @@ export interface LogsRequestOptions {
   signal?: AbortSignal;
 }
 
+export interface RequestLogOptions extends LogsRequestOptions {
+  homeIp?: string;
+}
+
 const normalizeErrorLogsResponse = (data: unknown): ErrorLogsResponse => {
   if (!isRecord(data) || !Array.isArray(data.files)) return { files: [] };
   return {
@@ -105,10 +109,11 @@ export const responseDataToText = async (data: unknown): Promise<string> => {
   }
 };
 
-const downloadLog = async (path: string, options: LogsRequestOptions) => {
+const downloadLog = async (path: string, options: LogsRequestOptions, homeIp?: string) => {
   try {
     return await apiClient.getRaw(path, {
       ...options,
+      ...(homeIp ? { params: { home_ip: homeIp } } : {}),
       responseType: 'blob',
       timeout: LOGS_TIMEOUT_MS,
     });
@@ -247,7 +252,6 @@ const fetchCompleteHomeLogs = async (
   return { ...firstPage, logs: records, limit: records.length, offset: firstOffset };
 };
 
-
 export const logsApi = {
   async fetchLogs(params: LogsQuery = {}, options: LogsRequestOptions = {}): Promise<LogsResponse> {
     const data = await apiClient.get('/observability/logs', {
@@ -255,7 +259,8 @@ export const logsApi = {
       params,
       timeout: LOGS_TIMEOUT_MS,
     });
-    if (isRecord(data) && Array.isArray(data.logs)) return normalizeLogsResponse(await fetchCompleteHomeLogs(data, params, options));
+    if (isRecord(data) && Array.isArray(data.logs))
+      return normalizeLogsResponse(await fetchCompleteHomeLogs(data, params, options));
     return normalizeLogsResponse(data);
   },
 
@@ -272,6 +277,6 @@ export const logsApi = {
   downloadErrorLog: (filename: string, options: LogsRequestOptions = {}) =>
     downloadLog(`/observability/logs/errors/${encodeURIComponent(filename)}`, options),
 
-  downloadRequestLogById: (id: string, options: LogsRequestOptions = {}) =>
-    downloadLog(`/observability/logs/requests/${encodeURIComponent(id)}`, options),
+  downloadRequestLogById: (id: string, { homeIp, ...options }: RequestLogOptions = {}) =>
+    downloadLog(`/observability/logs/requests/${encodeURIComponent(id)}`, options, homeIp),
 };

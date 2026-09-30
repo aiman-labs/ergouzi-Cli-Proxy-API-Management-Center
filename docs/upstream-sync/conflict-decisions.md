@@ -395,3 +395,16 @@ and runtime-specific file-logging gating alongside the upstream cursor viewer.
 
 The release artifact remains a single HTML file. This candidate was verified
 against synthetic browser fixtures, not production or real credentials.
+
+PR #29 review follow-up (2026-10-01): preserve Home's timestamp `after`
+protocol independently of CPA opaque cursors. Retain the timestamp across empty
+incremental pages and merge node metadata with incremental logs; reset both
+on connection/runtime changes. Preview and download request logs with the
+associated `home_ip`, retaining cancellation. Home reads do not require file
+logging; Home clear and unsupported error-file listing remain unavailable,
+with live runtime checks before both confirmation and mutation.
+
+The complete verify suite passed 1308 tests plus lint and the single-file build.
+Synthetic Home browser checks verified disabled file logging, after polling,
+empty-page retention, preview/download node routing, and no clear/error-list
+requests. This is not a live Home or production acceptance claim.

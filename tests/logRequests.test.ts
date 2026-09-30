@@ -192,7 +192,8 @@ describe('logs controller lifecycle wiring', () => {
 
   test('queued reloads read current stores and delayed confirmations check their session', () => {
     expect(source).toContain("useAuthStore.getState().connectionStatus !== 'connected'");
-    expect(source).toContain('!useConfigStore.getState().config?.loggingToFile');
+    expect(source).toContain('useAuthStore.getState().serverRuntimeKind');
+    expect(source).toContain('useConfigStore.getState().config?.loggingToFile ?? false');
     expect(source).toContain('if (!requests.session.isCurrent(session)) return;');
     expect(source).toContain('requests.logs.startClear()');
     expect(source).toContain('requests.logs.finish(request, clearFailed)');
@@ -203,9 +204,9 @@ describe('logs controller lifecycle wiring', () => {
     expect(page).toContain('useLogScroller({');
     expect(page).not.toContain('logsApi.fetchLogs(');
     expect(source).toContain('const cursor = logBufferRef.current.cursor;');
-    expect(source).toContain('logsApi.fetchLogs(buildLogsQuery(cursor))');
+    expect(source).toContain('logsApi.fetchLogs(buildLogsQuery(cursor, after))');
     const checked = source.indexOf('if (!requests.logs.isCurrent(request)) return;');
-    const applied = source.indexOf('applyLogPage(logBufferRef.current, data, cursor)');
+    const applied = source.indexOf('applyLogPage(logBufferRef.current, data, cursor || after)');
     expect(checked).toBeGreaterThan(0);
     expect(applied).toBeGreaterThan(checked);
     expect(source).toContain('logBufferRef.current = next;');

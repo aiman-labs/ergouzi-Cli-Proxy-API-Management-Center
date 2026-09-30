@@ -58,6 +58,7 @@ export function LogsPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const apiBase = useAuthStore((state) => state.apiBase);
   const managementKey = useAuthStore((state) => state.managementKey);
+  const isHomeRuntime = useAuthStore((state) => state.serverRuntimeKind === 'home');
   const config = useConfigStore((state) => state.config);
   const requestLogEnabled = config?.requestLog ?? false;
 
@@ -113,7 +114,7 @@ export function LogsPage() {
   const disableControls = connectionStatus !== 'connected';
   const refreshDisabled = disableControls || loading || clearingLogs || cpaNeedsFileLogging;
   const autoRefreshDisabled = disableControls || showFileLoggingRequired;
-  const clearDisabled = disableControls || clearingLogs || showFileLoggingRequired;
+  const clearDisabled = disableControls || isHomeRuntime || clearingLogs || showFileLoggingRequired;
 
   const downloadLogs = () => {
     const text = logBuffer.buffer.join('\n');
@@ -122,6 +123,13 @@ export function LogsPage() {
   };
 
   const loadErrorLogs = async () => {
+    if (useAuthStore.getState().serverRuntimeKind === 'home') {
+      requests.errors.invalidate();
+      setLoadingErrors(false);
+      setErrorLogs([]);
+      setErrorLogsError('');
+      return;
+    }
     if (useAuthStore.getState().connectionStatus !== 'connected') {
       setLoadingErrors(false);
       return;
@@ -174,7 +182,9 @@ export function LogsPage() {
     try {
       if (item.size && item.size > 2 * 1024 * 1024) throw new Error(t('logs.preview_too_large'));
       const response = byRequestId
-        ? await logsApi.downloadRequestLogById(byRequestId)
+        ? await logsApi.downloadRequestLogById(byRequestId, {
+            homeIp: logBuffer.requestLogHomeIpById[byRequestId],
+          })
         : await logsApi.downloadErrorLog(item.name);
       if (response.data instanceof Blob && response.data.size > 2 * 1024 * 1024) {
         throw new Error(t('logs.preview_too_large'));
@@ -238,7 +248,8 @@ export function LogsPage() {
         next.apiBase === previous.apiBase &&
         next.managementKey === previous.managementKey &&
         next.connectionStatus === previous.connectionStatus &&
-        next.isAuthenticated === previous.isAuthenticated
+        next.isAuthenticated === previous.isAuthenticated &&
+        next.serverRuntimeKind === previous.serverRuntimeKind
       )
         return;
       invalidateSession();
@@ -262,7 +273,7 @@ export function LogsPage() {
     if (connectionStatus !== 'connected') return;
     void loadErrorLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, connectionStatus, apiBase, managementKey, requestLogEnabled]);
+  }, [activeTab, connectionStatus, apiBase, managementKey, requestLogEnabled, isHomeRuntime]);
 
   const [parseEntries] = useState(createLogParserCache);
   const entries = useMemo(() => parseEntries(logBuffer), [logBuffer, parseEntries]);
@@ -358,7 +369,9 @@ export function LogsPage() {
     const session = requests.session.capture();
     setRequestLogDownloading(true);
     try {
-      const response = await logsApi.downloadRequestLogById(id);
+      const response = await logsApi.downloadRequestLogById(id, {
+        homeIp: logBuffer.requestLogHomeIpById[id],
+      });
       if (!requests.session.isCurrent(session)) return;
       downloadBlob({
         filename: `request-${id}.log`,
@@ -953,7 +966,7 @@ export function LogsPage() {
                 size="sm"
                 onClick={loadErrorLogs}
                 loading={loadingErrors}
-                disabled={disableControls}
+                disabled={disableControls || isHomeRuntime}
               >
                 {t('common.refresh')}
               </Button>
@@ -962,7 +975,11 @@ export function LogsPage() {
             <div className={styles.errorBody}>
               <div className="hint">{t('logs.error_logs_description')}</div>
 
-              {requestLogEnabled && (
+              {isHomeRuntime && (
+                <div className="status-badge warning">{t('logs.error_logs_home_unavailable')}</div>
+              )}
+
+              {requestLogEnabled && !isHomeRuntime && (
                 <div>
                   <div className="status-badge warning">
                     {t('logs.error_logs_request_log_enabled')}

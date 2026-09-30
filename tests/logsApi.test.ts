@@ -4,8 +4,36 @@ import { apiClient } from '@/services/api/client';
 import { logsApi, responseDataToText } from '@/services/api/logs';
 import type { ApiError } from '@/types';
 import { LOGS_TIMEOUT_MS } from '@/utils/constants';
+import { applyLogPage, buildLogsQuery, emptyLogBuffer } from '../src/features/logs/model/logBuffer';
 
 describe('logs domain response normalization', () => {
+  test('Home polling sends after instead of refetching full history after an empty page', async () => {
+    const after = '2026-09-30T16:00:00.123Z';
+    const get = spyOn(apiClient, 'get').mockResolvedValue({
+      logs: [{ timestamp: after, line: 'Home record', request_id: 'r1', home_ip: 'node-a' }],
+      limit: 100,
+      offset: 0,
+      total: 1,
+    });
+    try {
+      const first = await logsApi.fetchLogs(buildLogsQuery());
+      const buffer = applyLogPage(emptyLogBuffer(), first);
+      expect(buffer.requestLogHomeIpById).toEqual({ r1: 'node-a' });
+      get.mockResolvedValue({ logs: [], limit: 100, total: 0 });
+      const empty = await logsApi.fetchLogs(buildLogsQuery(buffer.cursor, buffer.after));
+      const next = applyLogPage(buffer, empty, buffer.after);
+      expect(get).toHaveBeenLastCalledWith('/observability/logs', {
+        params: { after, limit: 10000 },
+        timeout: LOGS_TIMEOUT_MS,
+      });
+      expect(buildLogsQuery(next.cursor, next.after)).toEqual({ after, limit: 10000 });
+      expect(get).toHaveBeenCalledTimes(2);
+      expect(next.buffer).toEqual(['Home record']);
+    } finally {
+      get.mockRestore();
+    }
+  });
+
   test('normalizes lines and timestamps without altering opaque cursors', async () => {
     const get = spyOn(apiClient, 'get').mockResolvedValue({
       lines: [' first ', null, 2, ''],
@@ -89,6 +117,25 @@ describe('logs domain response normalization', () => {
 });
 
 describe('log downloads', () => {
+  test('Home request downloads preserve node routing together with cancellation', async () => {
+    const response = { data: new Blob(['node log']) };
+    const raw = spyOn(apiClient, 'getRaw').mockResolvedValue(response as never);
+    try {
+      const signal = new AbortController().signal;
+      expect(await logsApi.downloadRequestLogById('a/b', { homeIp: 'node-b', signal })).toBe(
+        response
+      );
+      expect(raw).toHaveBeenLastCalledWith('/observability/logs/requests/a%2Fb', {
+        params: { home_ip: 'node-b' },
+        signal,
+        responseType: 'blob',
+        timeout: LOGS_TIMEOUT_MS,
+      });
+    } finally {
+      raw.mockRestore();
+    }
+  });
+
   test('preserves raw successful downloads, encoded paths, timeout and signal', async () => {
     const response = { data: new Blob(['{"error":"this is log content"}']) };
     const raw = spyOn(apiClient, 'getRaw').mockResolvedValue(response as never);

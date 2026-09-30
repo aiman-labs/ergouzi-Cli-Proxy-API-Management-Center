@@ -48,4 +48,54 @@ describe('cursor log buffer', () => {
     expect(shouldCatchUp({ ...page, cursorReset: true }, 'old')).toBe(false);
     expect(shouldCatchUp({ ...page, lines: [] }, 'old')).toBe(false);
   });
+
+  test('Home refresh appends with after and retains its position across empty pages', () => {
+    const after = '2026-09-30T16:00:00.123Z';
+    const first = applyLogPage(emptyLogBuffer(), {
+      lines: ['older'],
+      latestAfter: after,
+      requestLogHomeIpById: { old: 'node-a' },
+    });
+    expect(buildLogsQuery(first.cursor, first.after)).toEqual({ limit: LOG_PAGE_SIZE, after });
+    const nextAfter = '2026-09-30T16:00:01.456Z';
+    const next = applyLogPage(
+      first,
+      {
+        lines: ['newer'],
+        latestAfter: nextAfter,
+        requestLogHomeIpById: { new: 'node-b' },
+      },
+      first.after
+    );
+    expect(next.buffer).toEqual(['older', 'newer']);
+    expect(next.requestLogHomeIpById).toEqual({ old: 'node-a', new: 'node-b' });
+    const empty = applyLogPage(next, { lines: [], requestLogHomeIpById: {} }, next.after);
+    expect(empty.after).toBe(nextAfter);
+    expect(empty.buffer).toEqual(next.buffer);
+    expect(empty.requestLogHomeIpById).toEqual(next.requestLogHomeIpById);
+    expect(buildLogsQuery(empty.cursor, empty.after)).toEqual({
+      limit: LOG_PAGE_SIZE,
+      after: nextAfter,
+    });
+    const reset = applyLogPage(
+      empty,
+      {
+        lines: ['replacement'],
+        cursorReset: true,
+        requestLogHomeIpById: { replacement: 'node-c' },
+      },
+      empty.after
+    );
+    expect(reset.buffer).toEqual(['replacement']);
+    expect(reset.after).toBeUndefined();
+    expect(reset.requestLogHomeIpById).toEqual({ replacement: 'node-c' });
+    expect(emptyLogBuffer().requestLogHomeIpById).toEqual({});
+  });
+
+  test('CPA timestamps do not enable the Home after protocol', () => {
+    const state = applyLogPage(emptyLogBuffer(), { lines: ['CPA'], latestAfter: 123 });
+    expect(state.after).toBeUndefined();
+    expect(buildLogsQuery(state.cursor, state.after)).toEqual({ limit: LOG_PAGE_SIZE });
+    expect(buildLogsQuery('opaque', 123)).toEqual({ limit: LOG_PAGE_SIZE, cursor: 'opaque' });
+  });
 });
