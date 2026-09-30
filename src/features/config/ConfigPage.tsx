@@ -74,6 +74,7 @@ export function ConfigPage() {
     visualValidationErrors,
     visualHasPayloadValidationErrors,
     loadVisualValuesFromYaml,
+    rebaseVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues,
   } = useVisualConfig();
@@ -104,6 +105,7 @@ export function ConfigPage() {
     visualDirty,
     visualParseError,
     loadVisualValuesFromYaml,
+    rebaseVisualValuesFromYaml,
     applyVisualChangesToYaml,
   });
   const sourceSearch = useSourceSearch();
@@ -146,10 +148,15 @@ export function ConfigPage() {
   const handleModeChange = useCallback(
     (nextMode: ConfigEditorMode) => {
       if (nextMode === mode) return;
+      if (nextMode === 'visual' && doc.sourceDirty) {
+        showNotification(t('config_management.source_changes_before_visual'), 'warning');
+        return;
+      }
 
       if (nextMode === 'source') {
         if (visualDirty) {
-          const nextContent = applyVisualChangesToYaml(doc.content);
+          // content may be an earlier local source preview, not a server readback.
+          const nextContent = applyVisualChangesToYaml(doc.content, 'draft');
           if (nextContent !== doc.content) {
             doc.syncContentFromVisual(nextContent);
           }
@@ -258,7 +265,8 @@ export function ConfigPage() {
   const sectionProps = {
     values: visualValues,
     validationErrors: visualValidationErrors,
-    disabled: disableControls || doc.loading,
+    disabled:
+      disableControls || doc.loading || doc.saving || doc.diffModalOpen || doc.recoveryRequired,
     animateIn: animateCards,
     onChange: setVisualValues,
   };
@@ -315,7 +323,11 @@ export function ConfigPage() {
         ) : (
           <SourceSearchBar search={sourceSearch} disabled={disableControls || doc.loading} />
         )}
-        <ModeSwitch mode={mode} disabled={doc.saving || doc.loading} onChange={handleModeChange} />
+        <ModeSwitch
+          mode={mode}
+          disabled={doc.saving || doc.loading || doc.diffModalOpen || doc.recoveryRequired}
+          onChange={handleModeChange}
+        />
       </div>
 
       {mode === 'visual' ? (
@@ -344,13 +356,19 @@ export function ConfigPage() {
           value={doc.content}
           onChange={doc.handleChange}
           theme={resolvedTheme}
-          editable={!disableControls && !doc.loading}
+          editable={!disableControls && !doc.loading && !doc.saving && !doc.diffModalOpen}
         />
       )}
 
       <FloatingSaveBar
         visible={isCurrentLayer && doc.isDirty}
-        statusText={t(isMobile ? status.shortLabelKey : status.labelKey)}
+        statusText={t(
+          doc.recoveryRequired
+            ? 'config_management.precise_save_recovery_required'
+            : isMobile
+              ? status.shortLabelKey
+              : status.labelKey
+        )}
         statusTone={status.tone}
         saving={doc.saving}
         saveDisabled={saveDisabled}

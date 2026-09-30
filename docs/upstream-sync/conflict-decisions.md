@@ -371,3 +371,51 @@ search, quota refresh and governance controls; light/dark desktop and 390x844
 mobile rendering. No live account mutation was used. Full job lifecycle across
 a target plus unrelated account edit remains a useful follow-up integration
 test; pure result-batch tests cover partial/all invalidation and replay.
+
+## DEC-20260930-015: Adopt v1.25.0 with Ergouzi governance contracts
+
+Status: decided.
+
+Adopt the v8 management/config API and upstream log workspace. Normalize saved
+v0/v8 full management URLs to the connection base, then use v8 only. Preserve
+backend-declared plugin extension paths without rewriting them to v8.
+
+Replace legacy provider-list index mutations with v8 group/credential source
+identity. Retain unknown fields, exact duplicate selection, stale-selection
+rejection, hidden-sponsor fallback and multi-key sponsor preservation. Replace
+obsolete helper-only concurrency tests with API-level v8 regressions.
+
+The hook and exported visual-config serializer share one implementation. Keep
+upstream draft recovery, rebased payload AST and stale-list guards, while
+retaining dirty-only governor fields and plan priorities at their existing
+paths. Correct capacity search-index paths to the real nested backend layout.
+Retain account batching, bounded grids, disabled visibility, quota job session
+isolation and captured-connection cancellation. Preserve Home log normalization
+and runtime-specific file-logging gating alongside the upstream cursor viewer.
+
+The release artifact remains a single HTML file. This candidate was verified
+against synthetic browser fixtures, not production or real credentials.
+
+PR #29 review follow-up (2026-10-01): preserve Home's timestamp `after`
+protocol independently of CPA opaque cursors. Retain the timestamp across empty
+incremental pages and merge node metadata with incremental logs; reset both
+on connection/runtime changes. Preview and download request logs with the
+associated `home_ip`, retaining cancellation. Home reads do not require file
+logging; Home clear and unsupported error-file listing remain unavailable,
+with live runtime checks before both confirmation and mutation.
+
+The complete verify suite passed 1308 tests plus lint and the single-file build.
+Synthetic Home browser checks verified disabled file logging, after polling,
+empty-page retention, preview/download node routing, and no clear/error-list
+requests. This is not a live Home or production acceptance claim.
+
+PR #29 provider follow-up: row-level Base URL edits must not rewrite a shared
+v8 group address. For a multi-key group, split around the selected credential
+into prefix, edited and suffix groups, retaining flattened credential order.
+Clone raw policies and null inheritance; keep unaffected sibling routes and
+keys exactly. Generate unique group names and remove only selected credential
+response metadata. A single-key group and OpenAI group-level edits retain
+their existing behavior. Seven provider families have change/clear regressions,
+plus duplicate keys, name collisions and first/middle/last position coverage.
+Full verification passed 1324 tests and a single-file build; focused final lint
+passed without warnings after removing an unused test binding.

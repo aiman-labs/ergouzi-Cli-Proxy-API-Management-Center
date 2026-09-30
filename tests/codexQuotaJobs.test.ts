@@ -110,7 +110,7 @@ describe('Codex quota refresh job API normalization', () => {
     }
 
     expect(capturedUrl).toBe(
-      'https://old-cpa.example.com/v0/management/codex/quota-refresh-jobs/old-job'
+      'https://old-cpa.example.com/v8/management/codex/quota-refresh-jobs/old-job'
     );
     expect(capturedAuthorization).toBe('Bearer old-key');
   });
@@ -147,7 +147,7 @@ describe('Codex quota refresh job API normalization', () => {
     }
 
     expect(capturedUrl).toBe(
-      'https://old-cpa.example.com/v0/management/codex/quota-refresh-jobs/old-job?after_seq=2'
+      'https://old-cpa.example.com/v8/management/codex/quota-refresh-jobs/old-job?after_seq=2'
     );
     expect(capturedAuthorization).toBe('Bearer old-key');
   });
