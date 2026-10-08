@@ -85,9 +85,17 @@ function harness(count = 2) {
 }
 
 describe('auth file status identity', () => {
+  test('filtered identity never expands to an invisible same-name credential', async () => {
+    const h = harness();
+    const pending = h.batch([getAuthFileRefreshKey(h.original[0])], false);
+    expect(h.requests.map((request) => request.args)).toEqual([['shared.json', true, 'a']]);
+    h.requests[0].resolve({ disabled: true });
+    await pending;
+    expect(h.files.map((file) => file.disabled)).toEqual([true, true]);
+  });
   test('queued batch writes stop before sending to a switched connection', async () => {
     const h = harness(8);
-    const pending = h.batch(['shared.json'], false);
+    const pending = h.batch(h.original.map(getAuthFileRefreshKey), false);
     expect(h.requests).toHaveLength(4);
     h.switchConnection();
     h.requests.forEach((request) => request.resolve({ disabled: true }));
@@ -125,9 +133,9 @@ describe('auth file status identity', () => {
 
   test('batch processes every selected identity and independently rolls back failures', async () => {
     const h = harness();
-    const pending = h.batch(['shared.json', 'shared.json'], true);
+    const pending = h.batch(h.original.map(getAuthFileRefreshKey), true);
     await h.toggle(h.original[1], false);
-    await h.batch(['shared.json'], true);
+    await h.batch(h.original.map(getAuthFileRefreshKey), true);
     expect(h.requests.map((r) => r.args)).toEqual([
       ['shared.json', false, 'a'],
       ['shared.json', false, 'b'],
@@ -142,7 +150,7 @@ describe('auth file status identity', () => {
   test('batch cannot overlap an in-flight single identity', async () => {
     const h = harness();
     const pending = h.toggle(h.original[0], false);
-    await h.batch(['shared.json'], true);
+    await h.batch(h.original.map(getAuthFileRefreshKey), true);
     expect(h.requests).toHaveLength(1);
     h.requests[0].resolve({ disabled: true });
     await pending;
@@ -151,7 +159,7 @@ describe('auth file status identity', () => {
   for (const batch of [false, true]) {
     test(`stale ${batch ? 'batch' : 'single'} completion cannot mutate a new connection`, async () => {
       const h = harness();
-      const pending = batch ? h.batch(['shared.json'], false) : h.toggle(h.original[0], false);
+      const pending = batch ? h.batch(h.original.map(getAuthFileRefreshKey), false) : h.toggle(h.original[0], false);
       h.switchConnection();
       const fresh = h.toggle(h.original[0], false);
       h.requests[0].reject(new Error('old connection'));

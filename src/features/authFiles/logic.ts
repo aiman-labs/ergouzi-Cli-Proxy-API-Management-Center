@@ -1,6 +1,7 @@
 /** Auth-file search and sorting helpers, kept React-free for direct tests. */
 
 import type { AuthFileItem } from '@/types';
+import { getAuthFileRefreshKey } from './manualRefresh';
 import { isRuntimeOnlyAuthFile } from './constants';
 import type { AuthFilesEnabledFilter, AuthFilesHealthFilter } from './uiState';
 export { sortAuthFiles } from './sort';
@@ -100,7 +101,7 @@ export const resolveAuthFileStatusTargets = (
     .filter(
       (file) =>
         !isRuntimeOnlyAuthFile(file) &&
-        manualRefreshing[file.name] !== true &&
+        manualRefreshing[getAuthFileRefreshKey(file)] !== true &&
         (file.disabled === true) === targetDisabled
     )
-    .map((file) => file.name);
+    .map(getAuthFileRefreshKey);

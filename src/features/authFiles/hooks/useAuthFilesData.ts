@@ -100,7 +100,7 @@ export type UseAuthFilesDataResult = {
   invertVisibleSelection: (visibleFiles: AuthFileItem[]) => void;
   deselectAll: () => void;
   batchDownload: (names: string[]) => Promise<void>;
-  batchSetStatus: (names: string[], enabled: boolean) => Promise<void>;
+  batchSetStatus: (identityKeys: string[], enabled: boolean) => Promise<void>;
   batchDelete: (names: string[], options?: BatchDeleteOptions) => void;
 };
 
@@ -800,7 +800,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
   );
 
   const batchSetStatus = useCallback(
-    async (names: string[], enabled: boolean) => {
+    async (identityKeys: string[], enabled: boolean) => {
       const revision = apiClient.getConnectionRevision();
       if (statusPendingRef.current.revision !== revision) {
         statusPendingRef.current = { revision, keys: new Set() };
@@ -810,10 +810,10 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
       }
       if (batchStatusPendingRef.current) return;
 
-      const uniqueNames = new Set(names);
+      const uniqueKeys = new Set(identityKeys);
       const targets = new Map(
         files
-          .filter((file) => uniqueNames.has(file.name) && !manualRefreshPendingRef.current.has(getAuthFileRefreshKey(file)))
+          .filter((file) => uniqueKeys.has(getAuthFileRefreshKey(file)) && !manualRefreshPendingRef.current.has(getAuthFileRefreshKey(file)))
           .map((file) => [getAuthFileRefreshKey(file), file])
       );
       if ([...targets.keys()].some((key) => statusPendingRef.current.keys.has(key))) return;

@@ -620,15 +620,15 @@ export function AuthFilesPage() {
     [selectablePageItems, selectedFiles]
   );
   const selectedHasStatusUpdating = useMemo(
-    () => selectedPageNames.some((name) => files.some((file) => file.name === name && statusUpdating[getAuthFileRefreshKey(file)] === true)),
-    [files, selectedPageNames, statusUpdating]
+    () => selectablePageItems.some((file) => selectedFiles.has(file.name) && statusUpdating[getAuthFileRefreshKey(file)] === true),
+    [selectablePageItems, selectedFiles, statusUpdating]
   );
   const filteredHasStatusUpdating = useMemo(
     () =>
       [...filteredEnableTargetNames, ...filteredDisableTargetNames].some(
-        (name) => files.some((file) => file.name === name && statusUpdating[getAuthFileRefreshKey(file)] === true)
+        (key) => statusUpdating[key] === true
       ),
-    [files, filteredDisableTargetNames, filteredEnableTargetNames, statusUpdating]
+    [filteredDisableTargetNames, filteredEnableTargetNames, statusUpdating]
   );
   const batchStatusButtonsDisabled =
     disableControls ||

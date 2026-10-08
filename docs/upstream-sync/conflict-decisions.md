@@ -420,11 +420,11 @@ plus duplicate keys, name collisions and first/middle/last position coverage.
 Full verification passed 1324 tests and a single-file build; focused final lint
 passed without warnings after removing an unused test binding.
 
-## DEC-20261008-016: Adopt v1.25.5 with Ergouzi lifecycle contracts
+## DEC-20261008-016: Adopt v1.25.6 with Ergouzi lifecycle contracts
 
 Status: decided.
 
-Adopt the official v1.25.0 to v1.25.5 release delta. Retain name/authIndex
+Adopt the official v1.25.0 to v1.25.6 release delta. Retain name/authIndex
 mutation identities, connection revisions, import options, batch actions and
 bounded quota concurrency. Adopt synchronous single-account refresh and remove
 obsolete polling. Initial quota state renders before optional enrichment; each
@@ -434,5 +434,8 @@ Every queued status mutation checks its captured connection before issuing PATCH
 Preserve the shared visual-config serializer, dirty validation, governance and
 baseline protection while adopting ICE and server additions. Preserve reset detail
 and expose Codex credit fields. Add fallback English translations for fork-only
-Vietnamese keys; native Vietnamese translation of these keys remains deferred.
+Vietnamese and Korean keys; native Vietnamese/Korean translation of these keys remains deferred.
 Keep canonical status messages and the structured provider resolver.
+
+The status target resolver and batch worker exchange full name/authIndex identity
+keys; a filtered snapshot must never expand to invisible same-name credentials.
