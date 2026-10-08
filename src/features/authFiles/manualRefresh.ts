@@ -1,5 +1,8 @@
 import type { AuthFileItem } from '@/types';
 
+/** Runtime actions must not share pending state across same-name credentials. */
+export const getAuthFileRefreshKey = (file: AuthFileItem): string =>
+  JSON.stringify([file.name, String(file.authIndex ?? '').trim()]);
 export const MANUAL_REFRESH_POLL_INTERVAL_MS = 750;
 export const MANUAL_REFRESH_POLL_ATTEMPTS = 20;
 
@@ -16,20 +19,22 @@ export const getManualRefreshInventorySnapshot = (
   displayedFile: AuthFileItem
 ): string =>
   getManualRefreshSnapshot(
-    files.find((file) => file.name === displayedFile.name) ?? displayedFile
+    files.find((file) => getAuthFileRefreshKey(file) === getAuthFileRefreshKey(displayedFile)) ?? displayedFile
   );
 
 export const mergeManualRefreshResult = (
   currentFiles: AuthFileItem[],
   refreshedFiles: AuthFileItem[],
-  targetName: string
+  targetName: string,
+  targetKey?: string
 ): AuthFileItem[] => {
-  const refreshedTarget = refreshedFiles.find((file) => file.name === targetName);
-  if (!refreshedTarget || !currentFiles.some((file) => file.name === targetName)) {
+  const matches = (file: AuthFileItem) => file.name === targetName && (!targetKey || getAuthFileRefreshKey(file) === targetKey);
+  const refreshedTarget = refreshedFiles.find(matches);
+  if (!refreshedTarget || !currentFiles.some(matches)) {
     return currentFiles;
   }
 
-  return currentFiles.map((file) => (file.name === targetName ? refreshedTarget : file));
+  return currentFiles.map((file) => (matches(file) ? refreshedTarget : file));
 };
 
 export const getManualRefreshSafeStatusTargetNames = (
@@ -40,6 +45,6 @@ export const getManualRefreshSafeStatusTargetNames = (
   files
     .filter(
       (file) =>
-        manualRefreshing[file.name] !== true && (file.disabled === true) === targetDisabled
+        manualRefreshing[getAuthFileRefreshKey(file)] !== true && manualRefreshing[file.name] !== true && (file.disabled === true) === targetDisabled
     )
     .map((file) => file.name);

@@ -71,7 +71,7 @@ export const COMMON_FIELD_IDS = [
  */
 export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualConfigFieldPath[]> =
   {
-    connectivity: ['port'],
+    connectivity: ['port', 'trustedProxies', 'discoveryServiceType'],
     network: [
       'requestRetry',
       'maxRetryCredentials',
@@ -80,6 +80,8 @@ export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualC
       'routingCodexProPlanPriority',
       'routingCodexPlusPlanPriority',
       'routingCodexTeamPlanPriority',
+      'transientErrorCooldownSeconds',
+      'videoResultAuthCacheTTL',
     ],
     logging: ['errorLogsMaxFiles', 'logsMaxTotalSizeMb', 'redisUsageQueueRetentionSeconds'],
     quota: [
@@ -106,7 +108,17 @@ export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualC
       'streaming.bootstrapRetries',
       'streaming.nonstreamKeepaliveInterval',
     ],
-    advanced: [],
+    advanced: [
+      'claudeHeaderTimezone',
+      'codexStreamBootstrapTimeout',
+      'antigravityConnectionPoolIdleTimeout',
+      'antigravityConnectionPoolMaxIdleConnsPerHost',
+      'codexLiveMediaRelayMaxSessions',
+      'codexLiveMediaRelayPublicIP',
+      'codexLiveMediaRelayUDPPortMin',
+      'codexLiveMediaRelayUDPPortMax',
+      'codexLiveMediaRelayICEServers',
+    ],
     payload: [],
   };
 
@@ -115,7 +127,44 @@ export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualC
  * The configFieldParity regression enforces parity with the sections and search index.
  */
 export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
+  routingSessionAffinitySubagents: ['routingSessionAffinitySubagents'],
+  saveCooldownStatus: ['saveCooldownStatus'],
+  transientErrorCooldownSeconds: ['transientErrorCooldownSeconds'],
+  videoResultAuthCacheTTL: ['videoResultAuthCacheTTL'],
+  claudeHeaderTimezone: ['claudeHeaderTimezone'],
+  claudeModelLevelCooling: ['claudeModelLevelCooling'],
+  claudeDisableCloakMode: ['claudeDisableCloakMode'],
+  claudeCodeDisableCloakingModelList: ['claudeCodeDisableCloakingModelList'],
+  codexDisableCloaking: ['codexDisableCloaking'],
+  codexModelLevelCooling: ['codexModelLevelCooling'],
+  codexStreamBootstrapBuffering: ['codexStreamBootstrapBuffering'],
+  codexStreamBootstrapTimeout: ['codexStreamBootstrapTimeout'],
+  codexOptimizeMultiAgentV2: ['codexOptimizeMultiAgentV2'],
+  codexOrphanDelegationCompatibility: ['codexOrphanDelegationCompatibility'],
+  codexResponseSteering: ['codexResponseSteering'],
+  antigravityConnectionPoolEnabled: ['antigravityConnectionPoolEnabled'],
+  antigravityConnectionPoolIdleTimeout: ['antigravityConnectionPoolIdleTimeout'],
+  antigravityConnectionPoolMaxIdleConnsPerHost: ['antigravityConnectionPoolMaxIdleConnsPerHost'],
+  xaiInjectXSearch: ['xaiInjectXSearch'],
+  codexLiveMediaRelayEnabled: ['codexLiveMediaRelayEnabled'],
+  codexLiveMediaRelayMaxSessions: ['codexLiveMediaRelayMaxSessions'],
+  codexLiveMediaRelayDisablePrivateRemoteIPs: ['codexLiveMediaRelayDisablePrivateRemoteIPs'],
+  codexLiveMediaRelayPublicIP: ['codexLiveMediaRelayPublicIP'],
+  codexLiveMediaRelayUDPPortMin: ['codexLiveMediaRelayUDPPortMin'],
+  codexLiveMediaRelayUDPPortMax: ['codexLiveMediaRelayUDPPortMax'],
+  codexLiveMediaRelayICEServers: ['codexLiveMediaRelayICEServers'],
+
   // ── connectivity ──────────────────────────────────────────────────────────
+  githubToken: ['githubToken'],
+  trustedProxies: ['trustedProxies'],
+  discoveryEnabled: ['discoveryEnabled'],
+  discoveryServiceName: ['discoveryServiceName'],
+  discoveryServiceType: ['discoveryServiceType'],
+  discoverySubtypes: ['discoverySubtypes'],
+  discoveryInterfacesInclude: ['discoveryInterfacesInclude'],
+  discoveryInterfacesExclude: ['discoveryInterfacesExclude'],
+  discoveryAuthRequired: ['discoveryAuthRequired'],
+  discoveryAdvertiseManagement: ['discoveryAdvertiseManagement'],
   host: ['host'],
   port: ['port'],
   authDir: ['authDir'],

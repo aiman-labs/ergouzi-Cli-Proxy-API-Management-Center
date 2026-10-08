@@ -9,6 +9,8 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiClient, authFilesApi } from '@/services/api';
+import type { AuthFileRefreshResult } from '@/services/api/authFiles';
+import { getAuthFileRefreshKey } from '@/features/authFiles/manualRefresh';
 import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
@@ -27,13 +29,7 @@ import {
   normalizeProviderKey,
   supportsAuthFileManualRefresh,
 } from '@/features/authFiles/constants';
-import {
-  getManualRefreshInventorySnapshot,
-  getManualRefreshSnapshot,
-  MANUAL_REFRESH_POLL_ATTEMPTS,
-  MANUAL_REFRESH_POLL_INTERVAL_MS,
-  mergeManualRefreshResult,
-} from '@/features/authFiles/manualRefresh';
+
 import { resolveAuthProvider } from '@/utils/quota';
 import { resolveAuthFileDeleteTargets } from '@/features/authFiles/logic';
 import { runLimitedSettledBatch } from '@/utils/runLimitedBatch';
@@ -80,6 +76,10 @@ export type UseAuthFilesDataResult = {
   deletingAll: boolean;
   statusUpdating: Record<string, boolean>;
   manualRefreshing: Record<string, boolean>;
+  refreshingAllCredentials: boolean;
+  refreshResults: AuthFileRefreshResult[] | null;
+  closeRefreshResults: () => void;
+  handleRefreshAllCredentials: () => void;
   cooldownResetting: Record<string, boolean>;
   batchStatusUpdating: boolean;
   importOptionsOpen: boolean;
@@ -100,7 +100,7 @@ export type UseAuthFilesDataResult = {
   invertVisibleSelection: (visibleFiles: AuthFileItem[]) => void;
   deselectAll: () => void;
   batchDownload: (names: string[]) => Promise<void>;
-  batchSetStatus: (names: string[], enabled: boolean) => Promise<void>;
+  batchSetStatus: (identityKeys: string[], enabled: boolean) => Promise<void>;
   batchDelete: (names: string[], options?: BatchDeleteOptions) => void;
 };
 
@@ -118,6 +118,10 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
   const [deletingAll, setDeletingAll] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
   const [manualRefreshing, setManualRefreshing] = useState<Record<string, boolean>>({});
+  const [refreshingAllCredentials, setRefreshingAllCredentials] = useState(false);
+  const [refreshResults, setRefreshResults] = useState<AuthFileRefreshResult[] | null>(null);
+  const refreshAllPendingRef = useRef(false);
+  const closeRefreshResults = useCallback(() => setRefreshResults(null), []);
   const [cooldownResetting, setCooldownResetting] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [importOptionsOpen, setImportOptionsOpen] = useState(false);
@@ -128,7 +132,8 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
   const manualRefreshPendingRef = useRef<Set<string>>(new Set());
   const cooldownResetPendingRef = useRef<Set<string>>(new Set());
   const batchStatusPendingRef = useRef(false);
-  const pendingImportOptionsRef = useRef<AuthFileImportOptions>(DEFAULT_AUTH_FILE_IMPORT_OPTIONS);
+  const statusPendingRef = useRef({ revision: -1, keys: new Set<string>() });
+    const pendingImportOptionsRef = useRef<AuthFileImportOptions>(DEFAULT_AUTH_FILE_IMPORT_OPTIONS);
   /** Request generation invalidates in-flight responses so stale polling cannot restore changed files. */
   const loadRequestIdRef = useRef(0);
   const invalidateInFlightLoads = useCallback(() => {
@@ -230,6 +235,10 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
     async (options?: LoadFilesOptions) => {
       const background = options?.background === true;
       const requestId = ++loadRequestIdRef.current;
+      const connectionRevision = apiClient.getConnectionRevision();
+      const isCurrentRequest = () =>
+        requestId === loadRequestIdRef.current &&
+        connectionRevision === apiClient.getConnectionRevision();
 
       if (background) {
         setRefreshing(true);
@@ -240,15 +249,15 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
 
       try {
         const data = await authFilesApi.list();
-        if (requestId !== loadRequestIdRef.current) return; // Superseded by a newer request or mutation.
+        if (!isCurrentRequest()) return; // 已被更新的请求/连接/变更取代
         setFiles(data?.files || []);
         setError('');
       } catch (err: unknown) {
-        if (requestId !== loadRequestIdRef.current) return;
+        if (!isCurrentRequest()) return;
         const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
         setError(errorMessage);
       } finally {
-        if (requestId === loadRequestIdRef.current) {
+        if (isCurrentRequest()) {
           setLoading(false);
           setRefreshing(false);
         }
@@ -565,60 +574,89 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
     async (item: AuthFileItem) => {
       const name = item.name.trim();
       const provider = resolveAuthProvider(item);
+      const key = getAuthFileRefreshKey(item);
+      const connectionRevision = apiClient.getConnectionRevision();
       if (
         !name ||
         item.disabled === true ||
         isRuntimeOnlyAuthFile(item) ||
         !supportsAuthFileManualRefresh(provider) ||
-        manualRefreshPendingRef.current.has(name)
+        refreshAllPendingRef.current ||
+        manualRefreshPendingRef.current.has(key)
       ) {
         return;
       }
 
-      manualRefreshPendingRef.current.add(name);
-      setManualRefreshing((prev) => ({ ...prev, [name]: true }));
+      manualRefreshPendingRef.current.add(key);
+      setManualRefreshing((prev) => ({ ...prev, [key]: true }));
 
       try {
-        const initialSnapshot = getManualRefreshInventorySnapshot(files, item);
-        await authFilesApi.requestManualRefresh(name);
+        await authFilesApi.requestManualRefresh(
+          name,
+          String(item.authIndex ?? '').trim() || undefined
+        );
+        if (connectionRevision !== apiClient.getConnectionRevision()) return;
+        invalidateInFlightLoads();
         showNotification(t('auth_files.manual_refresh_requested', { name }), 'info');
         notifyAuthFilesChanged();
         onFilesMutatedRef.current?.([name]);
-
-        for (let attempt = 0; attempt < MANUAL_REFRESH_POLL_ATTEMPTS; attempt += 1) {
-          await new Promise((resolve) => {
-            window.setTimeout(resolve, MANUAL_REFRESH_POLL_INTERVAL_MS);
-          });
-
-          let refreshedFiles: AuthFileItem[];
-          try {
-            const data = await authFilesApi.list();
-            refreshedFiles = data?.files || [];
-          } catch {
-            continue;
-          }
-
-          const refreshedItem = refreshedFiles.find((file) => file.name === name);
-          setFiles((currentFiles) => mergeManualRefreshResult(currentFiles, refreshedFiles, name));
-          if (!refreshedItem || getManualRefreshSnapshot(refreshedItem) !== initialSnapshot) {
-            break;
-          }
-        }
+        await loadFiles({ background: true });
       } catch (err: unknown) {
+        if (connectionRevision !== apiClient.getConnectionRevision()) return;
         const message = err instanceof Error ? err.message : t('notification.update_failed');
         showNotification(t('auth_files.manual_refresh_failed', { name, message }), 'error');
       } finally {
-        manualRefreshPendingRef.current.delete(name);
+        manualRefreshPendingRef.current.delete(key);
         setManualRefreshing((prev) => {
-          if (!prev[name]) return prev;
+          if (connectionRevision !== apiClient.getConnectionRevision() || !prev[key]) return prev;
           const next = { ...prev };
-          delete next[name];
+          delete next[key];
           return next;
         });
       }
     },
-    [files, showNotification, t]
+    [invalidateInFlightLoads, loadFiles, showNotification, t]
   );
+
+  const handleRefreshAllCredentials = useCallback(() => {
+    if (refreshAllPendingRef.current || manualRefreshPendingRef.current.size > 0) return;
+    const connectionRevision = apiClient.getConnectionRevision();
+    showConfirmation({
+      title: t('auth_files.refresh_all_button'),
+      message: t('auth_files.refresh_all_confirm'),
+      confirmText: t('auth_files.refresh_all_button'),
+      onConfirm: async () => {
+        if (
+          connectionRevision !== apiClient.getConnectionRevision() ||
+          refreshAllPendingRef.current ||
+          manualRefreshPendingRef.current.size > 0
+        )
+          return;
+        refreshAllPendingRef.current = true;
+        setRefreshingAllCredentials(true);
+        setRefreshResults(null);
+        try {
+          const results = await authFilesApi.requestAllManualRefresh();
+          if (connectionRevision !== apiClient.getConnectionRevision()) return;
+          setRefreshResults(results);
+        } catch (err: unknown) {
+          if (connectionRevision !== apiClient.getConnectionRevision()) return;
+          const message = err instanceof Error ? err.message : t('notification.update_failed');
+          showNotification(t('auth_files.refresh_all_failed', { message }), 'error');
+        } finally {
+          refreshAllPendingRef.current = false;
+          if (connectionRevision === apiClient.getConnectionRevision()) {
+            setRefreshingAllCredentials(false);
+            // Even a timeout can follow partial backend mutations.
+            invalidateInFlightLoads();
+            onFilesMutatedRef.current?.();
+            notifyAuthFilesChanged();
+            await loadFiles({ background: true });
+          }
+        }
+      },
+    });
+  }, [invalidateInFlightLoads, loadFiles, showConfirmation, showNotification, t]);
 
   const handleCooldownReset = useCallback(
     (item: AuthFileItem) => {
@@ -694,19 +732,40 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
 
   const handleStatusToggle = useCallback(
     async (item: AuthFileItem, enabled: boolean) => {
+      const revision = apiClient.getConnectionRevision();
+      if (statusPendingRef.current.revision !== revision) {
+        statusPendingRef.current = { revision, keys: new Set() };
+        batchStatusPendingRef.current = false;
+        setBatchStatusUpdating(false);
+        setStatusUpdating({});
+      }
+      const key = getAuthFileRefreshKey(item);
+      if (statusPendingRef.current.keys.has(key)) return;
+      statusPendingRef.current.keys.add(key);
       const name = item.name;
       const nextDisabled = !enabled;
       const previousDisabled = item.disabled === true;
 
-      setStatusUpdating((prev) => ({ ...prev, [name]: true }));
+      setStatusUpdating((prev) => ({ ...prev, [key]: true }));
       invalidateInFlightLoads();
-      setFiles((prev) => prev.map((f) => (f.name === name ? { ...f, disabled: nextDisabled } : f)));
+      setFiles((prev) =>
+        prev.map((f) => (getAuthFileRefreshKey(f) === key ? { ...f, disabled: nextDisabled } : f))
+      );
 
       try {
-        const res = await authFilesApi.setStatus(name, nextDisabled);
+        const res = await authFilesApi.setStatus(
+          name,
+          nextDisabled,
+          String(item.authIndex ?? '').trim() || undefined
+        );
+        if (revision !== apiClient.getConnectionRevision()) return;
         invalidateInFlightLoads();
         setFiles((prev) =>
-          prev.map((f) => (f.name === name ? { ...f, disabled: res.disabled } : f))
+          revision !== apiClient.getConnectionRevision()
+            ? prev
+            : prev.map((f) =>
+                getAuthFileRefreshKey(f) === key ? { ...f, disabled: res.disabled } : f
+              )
         );
         showNotification(
           enabled
@@ -715,37 +774,51 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
           'success'
         );
       } catch (err: unknown) {
+        if (revision !== apiClient.getConnectionRevision()) return;
         const errorMessage = err instanceof Error ? err.message : '';
         setFiles((prev) =>
-          prev.map((f) => (f.name === name ? { ...f, disabled: previousDisabled } : f))
+          revision !== apiClient.getConnectionRevision()
+            ? prev
+            : prev.map((f) =>
+                getAuthFileRefreshKey(f) === key ? { ...f, disabled: previousDisabled } : f
+              )
         );
         showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
       } finally {
-        setStatusUpdating((prev) => {
-          if (!prev[name]) return prev;
-          const next = { ...prev };
-          delete next[name];
-          return next;
-        });
+        if (revision === apiClient.getConnectionRevision()) {
+          statusPendingRef.current.keys.delete(key);
+          setStatusUpdating((prev) => {
+            if (revision !== apiClient.getConnectionRevision()) return prev;
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+        }
       }
     },
     [invalidateInFlightLoads, showNotification, t]
   );
 
   const batchSetStatus = useCallback(
-    async (names: string[], enabled: boolean) => {
+    async (identityKeys: string[], enabled: boolean) => {
+      const revision = apiClient.getConnectionRevision();
+      if (statusPendingRef.current.revision !== revision) {
+        statusPendingRef.current = { revision, keys: new Set() };
+        batchStatusPendingRef.current = false;
+        setBatchStatusUpdating(false);
+        setStatusUpdating({});
+      }
       if (batchStatusPendingRef.current) return;
 
-      const uniqueNames = Array.from(new Set(names)).filter(
-        (name) => !manualRefreshPendingRef.current.has(name)
-      );
-      if (uniqueNames.length === 0) return;
-      if (uniqueNames.some((name) => statusUpdating[name] === true)) return;
-
-      const originalDisabled = new Map(
+      const uniqueKeys = new Set(identityKeys);
+      const targets = new Map(
         files
-          .filter((file) => uniqueNames.includes(file.name))
-          .map((file) => [file.name, file.disabled === true])
+          .filter((file) => uniqueKeys.has(getAuthFileRefreshKey(file)) && !manualRefreshPendingRef.current.has(getAuthFileRefreshKey(file)))
+          .map((file) => [getAuthFileRefreshKey(file), file])
+      );
+      if ([...targets.keys()].some((key) => statusPendingRef.current.keys.has(key))) return;
+      const originalDisabled = new Map(
+        [...targets].map(([key, file]) => [key, file.disabled === true])
       );
       const targetNames = new Set(originalDisabled.keys());
       const targetNameList = Array.from(targetNames);
@@ -754,6 +827,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
       const nextDisabled = !enabled;
 
       batchStatusPendingRef.current = true;
+      targetNameList.forEach((key) => statusPendingRef.current.keys.add(key));
       setBatchStatusUpdating(true);
       invalidateInFlightLoads();
       setStatusUpdating((prev) => {
@@ -765,7 +839,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
       });
       setFiles((prev) =>
         prev.map((file) =>
-          targetNames.has(file.name) ? { ...file, disabled: nextDisabled } : file
+          targetNames.has(getAuthFileRefreshKey(file)) ? { ...file, disabled: nextDisabled } : file
         )
       );
 
@@ -773,8 +847,13 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         const results = await runLimitedSettledBatch({
           items: targetNameList,
           concurrency: BATCH_STATUS_CONCURRENCY,
-          worker: (name) => authFilesApi.setStatus(name, nextDisabled),
+          worker: (key) => {
+            if (revision !== apiClient.getConnectionRevision()) throw new Error('Connection changed');
+            const file = targets.get(key)!;
+            return authFilesApi.setStatus(file.name, nextDisabled, String(file.authIndex ?? '').trim() || undefined);
+          },
         });
+        if (revision !== apiClient.getConnectionRevision()) return;
         invalidateInFlightLoads();
 
         let successCount = 0;
@@ -794,15 +873,18 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         });
 
         setFiles((prev) =>
-          prev.map((file) => {
-            if (failedNames.has(file.name)) {
-              return { ...file, disabled: originalDisabled.get(file.name) === true };
-            }
-            if (confirmedDisabled.has(file.name)) {
-              return { ...file, disabled: confirmedDisabled.get(file.name) };
-            }
-            return file;
-          })
+          revision !== apiClient.getConnectionRevision()
+            ? prev
+            : prev.map((file) => {
+                const key = getAuthFileRefreshKey(file);
+                if (failedNames.has(key)) {
+                  return { ...file, disabled: originalDisabled.get(key) === true };
+                }
+                if (confirmedDisabled.has(key)) {
+                  return { ...file, disabled: confirmedDisabled.get(key) };
+                }
+                return file;
+              })
         );
 
         if (failCount === 0) {
@@ -819,18 +901,22 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
 
         deselectAll();
       } finally {
-        batchStatusPendingRef.current = false;
-        setBatchStatusUpdating(false);
-        setStatusUpdating((prev) => {
-          const next = { ...prev };
-          targetNameList.forEach((name) => {
-            delete next[name];
+        if (revision === apiClient.getConnectionRevision()) {
+          batchStatusPendingRef.current = false;
+          targetNameList.forEach((key) => statusPendingRef.current.keys.delete(key));
+          setBatchStatusUpdating(false);
+          setStatusUpdating((prev) => {
+            if (revision !== apiClient.getConnectionRevision()) return prev;
+            const next = { ...prev };
+            targetNameList.forEach((key) => {
+              delete next[key];
+            });
+            return next;
           });
-          return next;
-        });
+        }
       }
     },
-    [deselectAll, files, invalidateInFlightLoads, showNotification, statusUpdating, t]
+    [deselectAll, files, invalidateInFlightLoads, showNotification, t]
   );
 
   const batchDownload = useCallback(
@@ -923,6 +1009,10 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
     deletingAll,
     statusUpdating,
     manualRefreshing,
+    refreshingAllCredentials,
+    refreshResults,
+    closeRefreshResults,
+    handleRefreshAllCredentials,
     cooldownResetting,
     batchStatusUpdating,
     importOptionsOpen,

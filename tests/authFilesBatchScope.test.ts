@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { resolveAuthFileStatusTargets } from '@/features/authFiles/logic';
+import { getAuthFileRefreshKey } from '@/features/authFiles/manualRefresh';
 import type { AuthFileItem } from '@/types';
 
 describe('auth-files batch scope', () => {
@@ -12,10 +13,10 @@ describe('auth-files batch scope', () => {
       { name: 'runtime.json', disabled: true, runtimeOnly: true },
     ];
 
-    expect(resolveAuthFileStatusTargets(files, { 'refreshing.json': true }, true)).toEqual([
-      'disabled-a.json',
+    expect(resolveAuthFileStatusTargets(files, { [getAuthFileRefreshKey(files[2])]: true }, true)).toEqual([
+      getAuthFileRefreshKey(files[0]),
     ]);
-    expect(resolveAuthFileStatusTargets(files, {}, false)).toEqual(['enabled-a.json']);
+    expect(resolveAuthFileStatusTargets(files, {}, false)).toEqual([getAuthFileRefreshKey(files[1])]);
   });
 
   test('renders filtered-result enable and disable actions in the new page structure', () => {

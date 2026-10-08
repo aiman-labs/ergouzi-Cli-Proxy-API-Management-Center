@@ -1,5 +1,17 @@
 # Sync History
 
+## 2026-10-08 Upstream `v1.25.6` Local Candidate
+
+- Previous upstream: `v1.25.0`; integration branch: `sync/upstream-v1.25.5-20261008`.
+- Official release-to-release delta; decisions: `DEC-20261008-016`.
+- 1732 tests, type-check, lint and production build passed.
+- Independent local review found no remaining P0/P1/P2 blocker in reviewed scope.
+- State: local candidate; PR, release and production deployment pending.
+- Evidence: workspace `outputs/cpa-cpamc-sync-20261008/`.
+- Production account pool currently empty; real OAuth forwarding cannot be tested.
+- Recheck the official latest release before merge. Existing CatPaw board errors
+  prevent Work creation; evidence remains local without unrelated board repair.
+
 ## 2026-09-30 Upstream `v1.25.0` Local Candidate
 
 | Item | Value |

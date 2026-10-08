@@ -18,6 +18,21 @@ import type {
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
 import { assertConfigListsUnchanged, ConfigDraftConflictError } from '@/services/api/configPatch';
+import {
+  ADDITION_FIELDS,
+  ICE_KEY,
+  readVisualAdditions,
+  writeVisualAdditions,
+  writeICEServers,
+  validateVisualAdditions,
+} from '@/features/config/visualConfigAdditions';
+
+import {
+  SERVER_FIELDS,
+  readVisualServer,
+  writeVisualServer,
+  validateVisualServer,
+} from '@/features/config/visualConfigServer';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -235,9 +250,12 @@ function getOptionalPercentRangeError(value: string): 'percent_range' | undefine
 }
 
 export function getVisualConfigValidationErrors(
-  values: VisualConfigValues
+  values: VisualConfigValues,
+  dirtyFields?: ReadonlySet<string>
 ): VisualConfigValidationErrors {
   return {
+    ...validateVisualAdditions(values, dirtyFields),
+    ...validateVisualServer(values),
     port: getPortError(values.port),
     errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
@@ -1193,6 +1211,7 @@ function alignRebasedValues(
     }));
   return {
     ...draft,
+    [ICE_KEY]: alignRebasedEntries(baseline[ICE_KEY], draft[ICE_KEY], (row) => row.urlsText),
     payloadDefaultRules: alignRules(baseline.payloadDefaultRules, draft.payloadDefaultRules),
     payloadDefaultRawRules: alignRules(
       baseline.payloadDefaultRawRules,
@@ -1221,6 +1240,7 @@ function alignRebasedValues(
 }
 
 type VisualConfigState = {
+  baselineYaml: string;
   visualValues: VisualConfigValues;
   baselineValues: VisualConfigValues;
   dirtyFields: Set<string>;
@@ -1231,6 +1251,7 @@ type VisualConfigState = {
 type VisualConfigAction =
   | {
       type: 'load_success';
+      yaml: string;
       values: VisualConfigValues;
     }
   | {
@@ -1252,6 +1273,7 @@ type VisualConfigAction =
 function createInitialVisualConfigState(): VisualConfigState {
   const initialValues = deepClone(DEFAULT_VISUAL_VALUES);
   return {
+    baselineYaml: '{}',
     visualValues: initialValues,
     baselineValues: deepClone(initialValues),
     dirtyFields: new Set(),
@@ -1290,6 +1312,19 @@ function getNextDirtyFields(
       updateDirty(key, nextValues[key] === baselineValues[key]);
     }
   };
+
+  SERVER_FIELDS.forEach(({ key }) => {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) {
+      updateDirty(key, JSON.stringify(nextValues[key]) === JSON.stringify(baselineValues[key]));
+    }
+  });
+  ADDITION_FIELDS.forEach(({ key }) => updateScalarDirty(key));
+  if (Object.prototype.hasOwnProperty.call(patch, ICE_KEY)) {
+    updateDirty(
+      ICE_KEY,
+      withoutEditorIds(nextValues[ICE_KEY]) === withoutEditorIds(baselineValues[ICE_KEY])
+    );
+  }
 
   (
     [
@@ -1466,6 +1501,7 @@ function visualConfigReducer(
   switch (action.type) {
     case 'load_success':
       return {
+        baselineYaml: action.yaml,
         visualValues: action.values,
         baselineValues: deepClone(action.values),
         rebasedPayload: null,
@@ -1475,6 +1511,7 @@ function visualConfigReducer(
     case 'rebase_success': {
       const values = alignRebasedValues(action.baseline, action.draft);
       return {
+        baselineYaml: action.serverYaml,
         visualValues: values,
         baselineValues: action.baseline,
         rebasedPayload: {
@@ -1565,7 +1602,8 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
   const v8OauthProviders = asRecord(v8Oauth?.['providers']);
   const v8OauthProvidersAistudio = asRecord(v8OauthProviders?.['aistudio']);
   const v8OauthProvidersCodex = asRecord(v8OauthProviders?.['codex']);
-  const v8OauthProvidersClaude = asRecord(v8OauthProviders?.['claude']);
+  const v8Upstream = asRecord(parsed?.['upstream']);
+  const v8UpstreamClaude = asRecord(v8Upstream?.['claude']);
   const v8OauthProvidersAntigravity = asRecord(v8OauthProviders?.['antigravity']);
   const v8Multimedia = asRecord(parsed?.['multimedia']);
   const v8Observability = asRecord(parsed?.['observability']);
@@ -1580,7 +1618,7 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
   const plugins = asRecord(parsed.plugins);
   const antigravity = asRecord(v8OauthProviders?.['antigravity']);
   const devin = asRecord(v8OauthProviders?.['devin']);
-  const claudeHeaderDefaults = asRecord(v8OauthProvidersClaude?.['header-defaults']);
+  const claudeHeaderDefaults = asRecord(v8UpstreamClaude?.['header-defaults']);
   const codexHeaderDefaults = asRecord(v8OauthProvidersCodex?.['header-defaults']);
 
   const quotaAutoDisable = asRecord(parsed['quota-auto-disable']);
@@ -1589,6 +1627,8 @@ export function parseVisualConfigValuesFromYaml(yamlContent: string): VisualConf
   const quotaCapacityPlans = asRecord(quotaCapacityAlerts?.plans);
   const routingCodexPlanPriorities = asRecord(routing?.['codex-plan-priorities']);
   const newValues: VisualConfigValues = {
+    ...readVisualAdditions(document),
+    ...readVisualServer(document),
     host: typeof v8Server?.['host'] === 'string' ? v8Server?.['host'] : '',
     port: String(v8Server?.['port'] ?? ''),
 
@@ -1814,7 +1854,8 @@ export function applyVisualConfigValuesToYaml(
   dirtyFields: Set<string>,
   baselineValues: VisualConfigValues = values,
   rebasedPayload: { yaml: string; serverYaml: string; values: VisualConfigValues } | null = null,
-  target: 'server' | 'draft' = 'server'
+  target: 'server' | 'draft' = 'server',
+  baselineYaml: string = currentYaml
 ): string {
       try {
         const doc = parseDocument(currentYaml);
@@ -1842,7 +1883,25 @@ export function applyVisualConfigValuesToYaml(
             }
           });
         }
-
+        writeVisualAdditions(doc, values, dirtyFields);
+        writeVisualServer(
+          doc,
+          values,
+          dirtyFields,
+          rebasedPayload?.yaml ?? baselineYaml,
+          rebasedPayload?.serverYaml ?? baselineYaml,
+          target === 'server'
+        );
+        if (dirtyFields.has(ICE_KEY)) {
+          writeICEServers(
+            doc,
+            rebasedPayload?.yaml ?? baselineYaml,
+            rebasedPayload?.serverYaml ?? baselineYaml,
+            payloadBaseline[ICE_KEY],
+            values[ICE_KEY],
+            target === 'server'
+          );
+        }
         const shouldWritePluginStoreAuth = dirtyFields.has('pluginStoreAuth');
 
         // The backend accepts null routing as defaults, but YAML setIn cannot traverse it.
@@ -2087,57 +2146,57 @@ export function applyVisualConfigValuesToYaml(
           dirtyFields.has('claudeHeaderTimeout') ||
           dirtyFields.has('claudeHeaderStabilizeDeviceProfile');
         if (claudeHeadersDirty) {
-          ensureMapInDoc(doc, ['oauth', 'providers', 'claude', 'header-defaults']);
+          ensureMapInDoc(doc, ['upstream', 'claude', 'header-defaults']);
           if (dirtyFields.has('claudeHeaderUserAgent')) {
             setStringInDoc(
               doc,
-              ['oauth', 'providers', 'claude', 'header-defaults', 'user-agent'],
+              ['upstream', 'claude', 'header-defaults', 'user-agent'],
               values.claudeHeaderUserAgent
             );
           }
           if (dirtyFields.has('claudeHeaderPackageVersion')) {
             setStringInDoc(
               doc,
-              ['oauth', 'providers', 'claude', 'header-defaults', 'package-version'],
+              ['upstream', 'claude', 'header-defaults', 'package-version'],
               values.claudeHeaderPackageVersion
             );
           }
           if (dirtyFields.has('claudeHeaderRuntimeVersion')) {
             setStringInDoc(
               doc,
-              ['oauth', 'providers', 'claude', 'header-defaults', 'runtime-version'],
+              ['upstream', 'claude', 'header-defaults', 'runtime-version'],
               values.claudeHeaderRuntimeVersion
             );
           }
           if (dirtyFields.has('claudeHeaderOs')) {
             setStringInDoc(
               doc,
-              ['oauth', 'providers', 'claude', 'header-defaults', 'os'],
+              ['upstream', 'claude', 'header-defaults', 'os'],
               values.claudeHeaderOs
             );
           }
           if (dirtyFields.has('claudeHeaderArch')) {
             setStringInDoc(
               doc,
-              ['oauth', 'providers', 'claude', 'header-defaults', 'arch'],
+              ['upstream', 'claude', 'header-defaults', 'arch'],
               values.claudeHeaderArch
             );
           }
           if (dirtyFields.has('claudeHeaderTimeout')) {
             setStringInDoc(
               doc,
-              ['oauth', 'providers', 'claude', 'header-defaults', 'timeout'],
+              ['upstream', 'claude', 'header-defaults', 'timeout'],
               values.claudeHeaderTimeout
             );
           }
           if (dirtyFields.has('claudeHeaderStabilizeDeviceProfile')) {
             setBooleanInDoc(
               doc,
-              ['oauth', 'providers', 'claude', 'header-defaults', 'stabilize-device-profile'],
+              ['upstream', 'claude', 'header-defaults', 'stabilize-device-profile'],
               values.claudeHeaderStabilizeDeviceProfile
             );
           }
-          deleteIfMapEmpty(doc, ['oauth', 'providers', 'claude', 'header-defaults']);
+          deleteIfMapEmpty(doc, ['upstream', 'claude', 'header-defaults']);
         }
 
         const codexHeadersDirty =
@@ -2582,11 +2641,11 @@ export function useVisualConfig() {
     undefined,
     createInitialVisualConfigState
   );
-  const { visualValues, baselineValues, visualParseError, dirtyFields, rebasedPayload } = state;
+  const { visualValues, baselineValues, baselineYaml, visualParseError, dirtyFields, rebasedPayload } = state;
   const visualDirty = dirtyFields.size > 0;
   const visualValidationErrors = useMemo(
-    () => getVisualConfigValidationErrors(visualValues),
-    [visualValues]
+    () => getVisualConfigValidationErrors(visualValues, dirtyFields),
+    [visualValues, dirtyFields]
   );
   const visualHasPayloadValidationErrors = useMemo(
     () =>
@@ -2605,7 +2664,7 @@ export function useVisualConfig() {
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
       const newValues = parseVisualConfigValuesFromYaml(yamlContent);
-      dispatch({ type: 'load_success', values: newValues });
+      dispatch({ type: 'load_success', values: newValues, yaml: yamlContent });
       return { ok: true as const };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Invalid YAML';
@@ -2631,8 +2690,8 @@ export function useVisualConfig() {
 
   const applyVisualChangesToYaml = useCallback(
     (currentYaml: string, target: 'server' | 'draft' = 'server'): string =>
-      applyVisualConfigValuesToYaml(currentYaml, visualValues, dirtyFields, baselineValues, rebasedPayload, target),
-    [baselineValues, dirtyFields, visualValues, rebasedPayload]
+      applyVisualConfigValuesToYaml(currentYaml, visualValues, dirtyFields, baselineValues, rebasedPayload, target, baselineYaml),
+    [baselineValues, baselineYaml, dirtyFields, visualValues, rebasedPayload]
   );
 
   const setVisualValues = useCallback((newValues: Partial<VisualConfigValues>) => {

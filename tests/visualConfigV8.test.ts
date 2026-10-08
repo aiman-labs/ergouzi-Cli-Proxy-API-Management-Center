@@ -179,6 +179,11 @@ describe('v8 scalar read/write path parity', () => {
     'maxRetryInterval',
     'authAutoRefreshWorkers',
     ...Object.keys(DEFAULT_VISUAL_VALUES).filter((key) => /^(quotaAutoDisable|quotaCapacity|routingCodex)/.test(key) && typeof DEFAULT_VISUAL_VALUES[key as keyof VisualConfigValues] === 'string'),
+    'transientErrorCooldownSeconds',
+    'antigravityConnectionPoolMaxIdleConnsPerHost',
+    'codexLiveMediaRelayMaxSessions',
+    'codexLiveMediaRelayUDPPortMin',
+    'codexLiveMediaRelayUDPPortMax',
   ]);
   for (const entry of CONFIG_FIELD_SEARCH_INDEX) {
     const field = FIELD_VALUE_KEYS[entry.fieldId][0];

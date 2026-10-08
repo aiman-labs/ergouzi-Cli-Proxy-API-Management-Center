@@ -1,12 +1,14 @@
 /** Auth-file search and sorting helpers, kept React-free for direct tests. */
 
 import type { AuthFileItem } from '@/types';
+import { getAuthFileRefreshKey } from './manualRefresh';
 import { isRuntimeOnlyAuthFile } from './constants';
 import type { AuthFilesEnabledFilter, AuthFilesHealthFilter } from './uiState';
 export { sortAuthFiles } from './sort';
 import { resolveAuthProvider } from '@/utils/quota';
 import {
   QUOTA_PROVIDER_TYPES,
+  getAuthFileStatusMessage,
   type AuthFileQuotaFilter,
   type QuotaProviderType,
 } from './constants';
@@ -53,8 +55,7 @@ export const matchesAuthFileSearch = (
     file.note,
     file.authIndex,
     file.status,
-    file.statusMessage,
-    file.status_message,
+    getAuthFileStatusMessage(file),
   ].some((value) => {
     const content = (value || '').toString();
     return wildcard ? wildcard.test(content) : content.toLowerCase().includes(needle);
@@ -100,7 +101,7 @@ export const resolveAuthFileStatusTargets = (
     .filter(
       (file) =>
         !isRuntimeOnlyAuthFile(file) &&
-        manualRefreshing[file.name] !== true &&
+        manualRefreshing[getAuthFileRefreshKey(file)] !== true &&
         (file.disabled === true) === targetDisabled
     )
-    .map((file) => file.name);
+    .map(getAuthFileRefreshKey);
