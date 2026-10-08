@@ -2,7 +2,7 @@ interface RunLimitedBatchOptions<TItem, TResult> {
   items: TItem[];
   concurrency: number;
   worker: (item: TItem, index: number) => Promise<TResult>;
-  onResult?: (result: TResult, index: number, item: TItem) => void;
+  onResult?: (result: TResult, index: number, item: TItem) => void | Promise<void>;
 }
 
 type RunLimitedSettledBatchOptions<TItem, TResult> = Omit<
@@ -31,7 +31,7 @@ export async function runLimitedBatch<TItem, TResult>({
       const item = items[index];
       const result = await worker(item, index);
       results[index] = result;
-      onResult?.(result, index, item);
+      await onResult?.(result, index, item);
     }
   };
 

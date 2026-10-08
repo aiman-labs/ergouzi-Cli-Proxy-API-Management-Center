@@ -12,14 +12,14 @@ describe('auth-file details cache invalidation wiring', () => {
       'utf8'
     );
     const patchIndex = hookSource.indexOf('await authFilesApi.patchFields(name, payload);');
-    const invalidateIndex = hookSource.indexOf('onFileMutated(name);', patchIndex);
+    const invalidateIndex = hookSource.indexOf('onFilesMutated?.([name]);', patchIndex);
     const reloadIndex = hookSource.indexOf('await loadFiles();', invalidateIndex);
 
     expect(patchIndex).toBeGreaterThanOrEqual(0);
     expect(invalidateIndex).toBeGreaterThan(patchIndex);
     expect(reloadIndex).toBeGreaterThan(invalidateIndex);
     expect(pageSource).toContain(
-      'onFileMutated: (name) => invalidateDerivedCaches([name])'
+      'onFilesMutated: invalidateDerivedCaches'
     );
   });
 });

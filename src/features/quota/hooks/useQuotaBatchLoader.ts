@@ -4,10 +4,12 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { captureQuotaCacheGeneration, commitIfQuotaCacheCurrent } from '@/stores';
 import { getStatusFromError } from '@/utils/quota';
+import { apiClient } from '@/services/api/client';
 import { runLimitedBatch } from '@/utils/runLimitedBatch';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import type { QuotaFileEntry } from '../logic';
 import { QUOTA_ADAPTERS, getQuotaSetter } from '../providers';
+import { enrichQuotaInBackground } from '../quotaEnrichment';
 import type { QuotaProviderType } from '../providers/types';
 
 interface BatchFetchResult {
@@ -34,6 +36,7 @@ export function useQuotaBatchLoader() {
       if (targets.length === 0) return;
       loadingRef.current = true;
       const requestId = ++requestIdRef.current;
+      const revision = apiClient.getConnectionRevision();
       const cacheGeneration = captureQuotaCacheGeneration();
       setBatchLoading(true);
 
@@ -63,6 +66,7 @@ export function useQuotaBatchLoader() {
             const cacheKey = getQuotaCacheKey(file);
             const adapter = QUOTA_ADAPTERS[type];
             try {
+              if (revision !== apiClient.getConnectionRevision()) throw new Error('Connection changed');
               const data = await adapter.fetchQuota(file, t);
               return { name: file.name, cacheKey, type, status: 'success', data };
             } catch (err: unknown) {
@@ -77,22 +81,19 @@ export function useQuotaBatchLoader() {
               };
             }
           },
-          onResult: (result) => {
+          onResult: async (result, _index, entry) => {
             if (requestId !== requestIdRef.current) return;
             const adapter = QUOTA_ADAPTERS[result.type];
             const setQuota = getQuotaSetter(adapter);
-            commitIfQuotaCacheCurrent(cacheGeneration, () => {
-              setQuota((prev) => ({
-                ...prev,
-                [result.cacheKey]:
-                  result.status === 'success'
-                    ? adapter.buildSuccessState(result.data)
-                    : adapter.buildErrorState(
-                        result.error || t('common.unknown_error'),
-                        result.errorStatus
-                      ),
-              }));
+            const state = result.status === 'success'
+              ? adapter.buildSuccessState(result.data)
+              : adapter.buildErrorState(result.error || t('common.unknown_error'), result.errorStatus);
+            const committed = commitIfQuotaCacheCurrent(cacheGeneration, () => {
+              setQuota((prev) => ({ ...prev, [result.cacheKey]: state }));
             }, result.name);
+            if (committed && result.status === 'success' && revision === apiClient.getConnectionRevision()) {
+              await enrichQuotaInBackground(adapter, entry.file, result.data, state, t);
+            }
           },
         });
       } finally {

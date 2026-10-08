@@ -2,6 +2,26 @@ import { describe, expect, test } from 'bun:test';
 import { runLimitedBatch, runLimitedSettledBatch } from '../src/utils/runLimitedBatch';
 
 describe('runLimitedBatch', () => {
+  test('publishes quota immediately but bounds slow asynchronous enrichment', async () => {
+    let active = 0;
+    let peak = 0;
+    let published = 0;
+    await runLimitedBatch({
+      items: Array.from({ length: 20 }, (_, index) => index),
+      concurrency: 4,
+      worker: async (item) => item,
+      onResult: async () => {
+        published++;
+        active++;
+        peak = Math.max(peak, active);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        active--;
+      },
+    });
+    expect(published).toBe(20);
+    expect(peak).toBe(4);
+    expect(active).toBe(0);
+  });
   test('limits concurrent workers and preserves result order', async () => {
     let active = 0;
     let maxActive = 0;

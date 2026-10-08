@@ -28,8 +28,10 @@ import {
   vertexToResource,
   xaiToResource,
 } from './adapters';
-import { PROVIDER_BRAND_ORDER } from './descriptors';
-import { buildThinkingFromLevels } from './thinkingLevels';
+import { PROVIDER_BRAND_ORDER, PROVIDER_DESCRIPTORS } from './descriptors';
+import { buildRuntimePolicy } from './runtimePolicy';
+import { buildModelOptions } from './modelOptions';
+import { pickProviderBehavior } from './providerBehavior';
 import type {
   ProviderBrand,
   ProviderEntryFormInput,
@@ -117,16 +119,6 @@ const headersFromEntries = (
   return out;
 };
 
-const parseThinkingJson = (value: string | undefined): Record<string, unknown> | undefined => {
-  const trimmed = (value ?? '').trim();
-  if (!trimmed) return undefined;
-  const parsed = JSON.parse(trimmed) as unknown;
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Thinking config must be a JSON object');
-  }
-  return parsed as Record<string, unknown>;
-};
-
 /**
  * `'*'` encodes a disabled provider and is owned exclusively by `form.disabled`.
  * `stripDisableAllModelsRule` moves it into that flag on load, and save restores it only from
@@ -160,10 +152,7 @@ const buildModelAliases = (
         name: m.name.trim(),
         alias: m.alias?.trim() || undefined,
         priority: m.priority,
-        testModel: m.testModel,
-        thinking: m.thinkingLevelsTouched
-          ? buildThinkingFromLevels(m.thinkingLevels)
-          : parseThinkingJson(m.thinkingJson),
+        ...buildModelOptions(m),
       };
       if (includeImage) {
         entry.image = m.image === true;
@@ -193,7 +182,14 @@ const buildProviderKeyConfig = (
     headers: Object.keys(headers).length ? headers : undefined,
     excludedModels: excluded,
     disableCooling: input.disableCooling,
+    ...(input.runtimePolicy
+      ? buildRuntimePolicy(
+          input.runtimePolicy,
+          PROVIDER_DESCRIPTORS[brand].supportsRequestScopedErrors
+        )
+      : {}),
     authIndex: existing?.authIndex,
+    ...pickProviderBehavior(input, brand),
   };
   if ((brand === 'codex' || brand === 'xai') && input.websockets !== undefined) {
     next.websockets = input.websockets;
@@ -240,11 +236,12 @@ const buildOpenAIConfig = (
     prefix: input.prefix.trim() || undefined,
     apiKeyEntries,
     disabled: input.disabled,
+    ...pickProviderBehavior(input, 'openaiCompatibility'),
     disableCooling: input.disableCooling,
+    ...(input.runtimePolicy ? buildRuntimePolicy(input.runtimePolicy) : {}),
     headers: Object.keys(headers).length ? headers : undefined,
     models: models.length ? models : undefined,
     priority: input.priority,
-    testModel: input.testModel?.trim() || undefined,
   };
 };
 
@@ -271,9 +268,11 @@ const buildSponsorOpenAIConfig = (
     ...(existing ?? {}),
     name: providerName,
     baseUrl: urls.openai,
+    ...pickProviderBehavior(entry, 'openaiCompatibility'),
     prefix: entry.prefix.trim() || undefined,
     disabled: entry.disabled,
     disableCooling: entry.disableCooling,
+    ...(entry.runtimePolicy ? buildRuntimePolicy(entry.runtimePolicy) : {}),
     priority: entry.priority,
     apiKeyEntries,
     models: models.length ? models : undefined,
@@ -297,11 +296,13 @@ const buildSponsorProviderKeyConfig = (
     ...(existing ?? {}),
     apiKey,
     baseUrl: protocol === 'claude' ? urls.anthropic : urls.codex,
+    ...pickProviderBehavior(entry, protocol),
     proxyUrl: entry.proxyUrl.trim() || undefined,
     prefix: entry.prefix.trim() || undefined,
     priority: entry.priority,
     weight: entry.weight,
     disableCooling: entry.disableCooling,
+    ...(entry.runtimePolicy ? buildRuntimePolicy(entry.runtimePolicy) : {}),
     excludedModels: excluded,
     models: models.length ? models : undefined,
   };
@@ -328,6 +329,7 @@ const buildSponsorGeminiConfig = (
     priority: entry.priority,
     weight: entry.weight,
     disableCooling: entry.disableCooling,
+    ...(entry.runtimePolicy ? buildRuntimePolicy(entry.runtimePolicy) : {}),
     excludedModels: excluded,
     models: models.length ? models : undefined,
   };

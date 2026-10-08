@@ -7,6 +7,7 @@ export { sortAuthFiles } from './sort';
 import { resolveAuthProvider } from '@/utils/quota';
 import {
   QUOTA_PROVIDER_TYPES,
+  getAuthFileStatusMessage,
   type AuthFileQuotaFilter,
   type QuotaProviderType,
 } from './constants';
@@ -53,8 +54,7 @@ export const matchesAuthFileSearch = (
     file.note,
     file.authIndex,
     file.status,
-    file.statusMessage,
-    file.status_message,
+    getAuthFileStatusMessage(file),
   ].some((value) => {
     const content = (value || '').toString();
     return wildcard ? wildcard.test(content) : content.toLowerCase().includes(needle);
