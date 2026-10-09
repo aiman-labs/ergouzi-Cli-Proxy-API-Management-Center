@@ -23,7 +23,7 @@ changed.
 - For upstream synchronization, baseline selection, conflict DEC records, and
   sync PR preparation, use `ergouzi:fork-upstream-sync` first.
 - For CPAMC release, tag, `management.html` asset publication, production panel
-  cache refresh, rollback, and verification, use `ergouzi:cpa-release-manager`.
+  cache refresh, rollback, and verification, use `ergouzi:release-manager`.
 - For GitHub PRs that rely on Codex automated review, use
   `ergouzi:github-pr-review-loop`. Treat `👀` as review in progress and `👍` or
   "Didn't find any major issues" as the accepted signal for the latest commit.
