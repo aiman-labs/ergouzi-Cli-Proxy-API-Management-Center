@@ -53,7 +53,7 @@ export const CONFIG_TAB_ICONS: Record<ConfigTabId, ComponentType<IconProps>> = {
   payload: IconCode,
 };
 
-/** Eight common fields shared with canonical sections through fields/sharedFields.tsx. */
+/** Six common fields shared with canonical sections through fields/sharedFields.tsx. */
 export const COMMON_FIELD_IDS = [
   'host',
   'port',
@@ -61,8 +61,6 @@ export const COMMON_FIELD_IDS = [
   'proxyUrl',
   'debug',
   'loggingToFile',
-  'quotaSwitchProject',
-  'quotaSwitchPreviewModel',
 ] as const;
 
 /**
@@ -204,9 +202,6 @@ export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   redisUsageQueueRetentionSeconds: ['redisUsageQueueRetentionSeconds'],
   usageStatisticsEnabled: ['usageStatisticsEnabled'],
   // ── quota ─────────────────────────────────────────────────────────────────
-  quotaSwitchProject: ['quotaSwitchProject'],
-  quotaSwitchPreviewModel: ['quotaSwitchPreviewModel'],
-  quotaAntigravityCredits: ['quotaAntigravityCredits'],
   quotaAutoDisableEnabled: ['quotaAutoDisableEnabled'],
   quotaAutoDisableAutoEnable: ['quotaAutoDisableAutoEnable'],
   quotaAutoDisableScanIntervalSeconds: ['quotaAutoDisableScanIntervalSeconds'],
@@ -243,6 +238,7 @@ export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   streamingBootstrapRetries: ['streaming.bootstrapRetries'],
   streamingNonstreamKeepalive: ['streaming.nonstreamKeepaliveInterval'],
   // ── advanced ──────────────────────────────────────────────────────────────
+  quotaAntigravityCredits: ['quotaAntigravityCredits'],
   pluginsEnabled: ['pluginsEnabled'],
   pluginStoreSources: ['pluginStoreSources'],
   pluginStoreAuth: ['pluginStoreAuth'],

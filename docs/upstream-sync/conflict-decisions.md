@@ -439,3 +439,37 @@ Keep canonical status messages and the structured provider resolver.
 
 The status target resolver and batch worker exchange full name/authIndex identity
 keys; a filtered snapshot must never expand to invisible same-name credentials.
+
+
+## DEC-20261015-017: Compose v1.26.4 settings and OAuth with fork isolation
+
+Status: decided for an uncommitted local candidate; no release or deployment.
+
+Apply the exact v1.25.6 to v1.26.4 release delta; preserve the squash-integrated
+baseline. Adopt upstream setting rows and OAuth feature layout. Retain the fork
+quota-governance tab and three plan-priority inputs using the new field primitives.
+Remove obsolete switch-project/preview-model controls and parsing. Move Antigravity
+credit settings to Advanced and remove duplicate search entries. Preserve visual
+serializer dirty validation, baseline protection and opaque/unknown document data;
+the backend remains authoritative about valid configuration sections.
+
+Retain structured Team resolution: aggregate Team includes Bug, K12 and Regular;
+filename labels never override persisted structured identity. Preserve full
+name/authIndex mutation targets, filtered batch boundaries, priority PATCH,
+synchronous single-account refresh, bounded enrichment and cancel confirmation.
+Retain disabled account visibility and fork quota controls alongside new plugin
+quota cards and Claude usage rendering.
+
+Capture the connection revision before plugin quota discovery; check before the
+legacy plugin POST and after its response. Vertex imports own a cancellable attempt,
+synchronously invalidate on base/key/auth changes and suppress all late state,
+notification and credential-count effects. Plugin OAuth discovery resets and
+refetches on same-base key/auth changes and rejects stale success/error responses.
+Regressions execute the actual hook bodies without adding a DOM framework.
+
+Compose six locale trees, preserving fork keys and adopting upstream changes.
+Retain existing English fallbacks for untranslated fork-only Vietnamese/Korean
+keys. Keep hash routing, version injection and a single inlined dist/index.html;
+dist is generated evidence, not committed source. All application APIs use v8
+management paths; no v0 data fallback is added. Validate against the paired CPA
+candidate plus explicitly synthetic OAuth/quota fixtures, never real credentials.

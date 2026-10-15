@@ -1,37 +1,37 @@
-// Single rendering source for eight common fields shared by SectionCommon and canonical sections.
-// This prevents structural drift between the two views. Only the active tab mounts, so
-// FieldAnchor DOM IDs remain unique.
+// 6 个高频字段的唯一渲染源：SectionCommon（常用 tab）与各正典分区共用这些组件，
+// 两处渲染结构性不可能漂移（旧简单模式靠共享 JSX 常量达成同一目的）。
+// 注意：只挂载激活 tab，所以设置行的 DOM id 不会重复。
 
 import { useTranslation } from 'react-i18next';
-import type { ReactNode } from 'react';
-import { Input } from '@/components/ui/Input';
 import type { VisualConfigValues } from '@/types/visualConfig';
 import { SPONSORS } from '../../sponsors';
 import { ApiKeysCardEditor } from '../blocks/ApiKeysCardEditor';
-import { FieldAnchor, FieldGroup, ToggleRow } from './FieldPrimitives';
+import { SettingCell, SettingList, TextSetting, ToggleSetting } from './FieldPrimitives';
 import fieldStyles from './Field.module.scss';
 
 export type SharedFieldProps = {
   values: VisualConfigValues;
   disabled: boolean;
   onChange: (patch: Partial<VisualConfigValues>) => void;
-  /** Optional spacer used to align a neighboring field with the proxy URL sponsor row. */
-  topExtra?: ReactNode;
+  /**
+   * 原样转给设置行。SettingList 只看直接子元素的 props 排布两列，
+   * 所以「占整行」必须写在调用处（或由 SettingList 给落单行注入），不能藏在组件内部。
+   */
+  wide?: boolean;
 };
 
-export function HostField({ values, disabled, onChange, topExtra }: SharedFieldProps) {
+export function HostField({ values, disabled, onChange, wide }: SharedFieldProps) {
   const { t } = useTranslation();
   return (
-    <FieldAnchor fieldId="host">
-      <Input
-        label={t('config_management.visual.sections.server.host')}
-        placeholder="0.0.0.0"
-        value={values.host}
-        onChange={(e) => onChange({ host: e.target.value })}
-        disabled={disabled}
-        topExtra={topExtra}
-      />
-    </FieldAnchor>
+    <TextSetting
+      fieldId="host"
+      wide={wide}
+      label={t('config_management.visual.sections.server.host')}
+      placeholder="0.0.0.0"
+      value={values.host}
+      onChange={(host) => onChange({ host })}
+      disabled={disabled}
+    />
   );
 }
 
@@ -40,140 +40,101 @@ export function PortField({
   disabled,
   onChange,
   error,
-  topExtra,
+  wide,
 }: SharedFieldProps & { error?: string }) {
   const { t } = useTranslation();
   return (
-    <FieldAnchor fieldId="port">
-      <Input
-        label={t('config_management.visual.sections.server.port')}
-        type="number"
-        placeholder="8317"
-        value={values.port}
-        onChange={(e) => onChange({ port: e.target.value })}
-        disabled={disabled}
-        error={error}
-        topExtra={topExtra}
-      />
-    </FieldAnchor>
+    <TextSetting
+      fieldId="port"
+      wide={wide}
+      label={t('config_management.visual.sections.server.port')}
+      type="number"
+      size="sm"
+      placeholder="8317"
+      value={values.port}
+      onChange={(port) => onChange({ port })}
+      disabled={disabled}
+      error={error}
+    />
   );
 }
 
-export function ProxyUrlField({ values, disabled, onChange }: SharedFieldProps) {
+export function ProxyUrlField({ values, disabled, onChange, wide }: SharedFieldProps) {
   const { t } = useTranslation();
-  // Proxy URLs span two columns and show the optional sponsor link below the label.
+  // 代理 URL 较长，调用处传 wide 独占整行；说明位挂赞助跳转（数据见 sponsors.ts，空则不渲染）。
   const sponsor = SPONSORS[0];
   return (
-    <FieldAnchor fieldId="proxyUrl" wide>
-      <Input
-        label={t('config_management.visual.sections.network.proxy_url')}
-        labelExtra={
-          sponsor ? (
-            <p className={fieldStyles.fieldSponsorHint}>
-              {t('config_management.visual.sections.network.proxy_url_sponsor_hint')}{' '}
-              <a
-                className={fieldStyles.fieldSponsorLink}
-                href={sponsor.url}
-                target="_blank"
-                rel="noopener noreferrer sponsored"
-              >
-                {sponsor.logo ? (
-                  <img className={fieldStyles.fieldSponsorLogo} src={sponsor.logo} alt="" />
-                ) : null}
-                {sponsor.name}
-              </a>
-            </p>
-          ) : undefined
-        }
-        placeholder="socks5://user:pass@127.0.0.1:1080/"
-        value={values.proxyUrl}
-        onChange={(e) => onChange({ proxyUrl: e.target.value })}
-        disabled={disabled}
-      />
-    </FieldAnchor>
-  );
-}
-
-/** Keeps neighboring inputs aligned with the proxy URL sponsor row. */
-export function SponsorHintSpacer() {
-  if (SPONSORS.length === 0) return null;
-  return (
-    <p className={fieldStyles.fieldSponsorSpacer} aria-hidden="true">
-      &nbsp;
-    </p>
+    <TextSetting
+      fieldId="proxyUrl"
+      wide={wide}
+      size="lg"
+      label={t('config_management.visual.sections.network.proxy_url')}
+      description={
+        sponsor ? (
+          <>
+            {t('config_management.visual.sections.network.proxy_url_sponsor_hint')}{' '}
+            <a
+              className={fieldStyles.fieldSponsorLink}
+              href={sponsor.url}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+            >
+              {sponsor.logo ? (
+                <img className={fieldStyles.fieldSponsorLogo} src={sponsor.logo} alt="" />
+              ) : null}
+              {sponsor.name}
+            </a>
+          </>
+        ) : undefined
+      }
+      placeholder="socks5://user:pass@127.0.0.1:1080/"
+      value={values.proxyUrl}
+      onChange={(proxyUrl) => onChange({ proxyUrl })}
+      disabled={disabled}
+    />
   );
 }
 
 export function ApiKeysField({ values, disabled, onChange }: SharedFieldProps) {
   return (
-    <FieldAnchor fieldId="apiKeys">
-      <FieldGroup>
+    <SettingList>
+      <SettingCell fieldId="apiKeys">
         <ApiKeysCardEditor
           value={values.apiKeysText}
           disabled={disabled}
           onChange={(apiKeysText) => onChange({ apiKeysText })}
         />
-      </FieldGroup>
-    </FieldAnchor>
+      </SettingCell>
+    </SettingList>
   );
 }
 
-export function DebugToggle({ values, disabled, onChange }: SharedFieldProps) {
+export function DebugToggle({ values, disabled, onChange, wide }: SharedFieldProps) {
   const { t } = useTranslation();
   return (
-    <FieldAnchor fieldId="debug">
-      <ToggleRow
-        title={t('config_management.visual.sections.system.debug')}
-        description={t('config_management.visual.sections.system.debug_desc')}
-        checked={values.debug}
-        disabled={disabled}
-        onChange={(debug) => onChange({ debug })}
-      />
-    </FieldAnchor>
+    <ToggleSetting
+      fieldId="debug"
+      wide={wide}
+      label={t('config_management.visual.sections.system.debug')}
+      description={t('config_management.visual.sections.system.debug_desc')}
+      checked={values.debug}
+      disabled={disabled}
+      onChange={(debug) => onChange({ debug })}
+    />
   );
 }
 
-export function LoggingToFileToggle({ values, disabled, onChange }: SharedFieldProps) {
+export function LoggingToFileToggle({ values, disabled, onChange, wide }: SharedFieldProps) {
   const { t } = useTranslation();
   return (
-    <FieldAnchor fieldId="loggingToFile">
-      <ToggleRow
-        title={t('config_management.visual.sections.system.logging_to_file')}
-        description={t('config_management.visual.sections.system.logging_to_file_desc')}
-        checked={values.loggingToFile}
-        disabled={disabled}
-        onChange={(loggingToFile) => onChange({ loggingToFile })}
-      />
-    </FieldAnchor>
-  );
-}
-
-export function QuotaSwitchProjectToggle({ values, disabled, onChange }: SharedFieldProps) {
-  const { t } = useTranslation();
-  return (
-    <FieldAnchor fieldId="quotaSwitchProject">
-      <ToggleRow
-        title={t('config_management.visual.sections.quota.switch_project')}
-        description={t('config_management.visual.sections.quota.switch_project_desc')}
-        checked={values.quotaSwitchProject}
-        disabled={disabled}
-        onChange={(quotaSwitchProject) => onChange({ quotaSwitchProject })}
-      />
-    </FieldAnchor>
-  );
-}
-
-export function QuotaSwitchPreviewModelToggle({ values, disabled, onChange }: SharedFieldProps) {
-  const { t } = useTranslation();
-  return (
-    <FieldAnchor fieldId="quotaSwitchPreviewModel">
-      <ToggleRow
-        title={t('config_management.visual.sections.quota.switch_preview_model')}
-        description={t('config_management.visual.sections.quota.switch_preview_model_desc')}
-        checked={values.quotaSwitchPreviewModel}
-        disabled={disabled}
-        onChange={(quotaSwitchPreviewModel) => onChange({ quotaSwitchPreviewModel })}
-      />
-    </FieldAnchor>
+    <ToggleSetting
+      fieldId="loggingToFile"
+      wide={wide}
+      label={t('config_management.visual.sections.system.logging_to_file')}
+      description={t('config_management.visual.sections.system.logging_to_file_desc')}
+      checked={values.loggingToFile}
+      disabled={disabled}
+      onChange={(loggingToFile) => onChange({ loggingToFile })}
+    />
   );
 }
