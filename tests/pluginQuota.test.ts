@@ -387,6 +387,41 @@ describe('generic plugin quota', () => {
     }
   });
 
+  test('legacy quota discovery skips disabled matches in favor of an enabled plugin', async () => {
+    const post = spyOn(apiClient, 'post').mockResolvedValue({});
+    list.mockResolvedValue(
+      pluginList([
+        quotaPlugin({ id: 'inactive', effectiveEnabled: false }),
+        quotaPlugin({ id: 'active' }),
+      ])
+    );
+    try {
+      await fetchPluginQuota(
+        { name: 'synthetic.json', authIndex: '7', quotaProvider: 'kiro' },
+        i18n.t
+      );
+      expect(post.mock.calls).toEqual([['/plugins/active/quota', { auth_index: '7' }]]);
+    } finally {
+      post.mockRestore();
+    }
+  });
+
+  test('legacy quota discovery never calls a disabled sole plugin', async () => {
+    const post = spyOn(apiClient, 'post').mockResolvedValue({});
+    list.mockResolvedValue(pluginList([quotaPlugin({ effectiveEnabled: false })]));
+    try {
+      await expect(
+        fetchPluginQuota(
+          { name: 'synthetic.json', authIndex: '7', quotaProvider: 'kiro' },
+          i18n.t
+        )
+      ).rejects.toThrow(i18n.t('plugin_quota.plugin_not_found', { provider: 'kiro' }));
+      expect(post).not.toHaveBeenCalled();
+    } finally {
+      post.mockRestore();
+    }
+  });
+
   test('resolves the quota plugin like the backend first pass, then a sole provider', () => {
     const plugins = [
       quotaPlugin({ id: 'unregistered', quotaProvider: 'kiro', registered: false }),

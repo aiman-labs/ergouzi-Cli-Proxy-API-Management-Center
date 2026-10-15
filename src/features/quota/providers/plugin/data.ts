@@ -67,7 +67,7 @@ const normalizeProviderId = (value: unknown) =>
  * Compatibility heuristic for older v8 credentials without quotaPluginId.
  * Prefer a quota identifier, plugin ID, then auth provider match. A
  * plugin matched only through DescribeQuota's supported providers is not exposed by /plugins,
- * so fall back to the sole quota plugin when exactly one is registered.
+ * so fall back to the sole quota plugin when exactly one is registered and enabled.
  */
 export const resolveQuotaPluginId = (
   plugins: readonly PluginListEntry[],
@@ -75,7 +75,9 @@ export const resolveQuotaPluginId = (
 ): string | null => {
   const target = normalizeProviderId(provider);
   if (!target) return null;
-  const candidates = plugins.filter((plugin) => plugin.registered && plugin.supportsQuota);
+  const candidates = plugins.filter(
+    (plugin) => plugin.registered && plugin.effectiveEnabled && plugin.supportsQuota
+  );
   const match =
     candidates.find((plugin) => normalizeProviderId(plugin.quotaProvider) === target) ??
     candidates.find((plugin) => normalizeProviderId(plugin.id) === target) ??

@@ -467,6 +467,10 @@ notification and credential-count effects. Plugin OAuth discovery resets and
 refetches on same-base key/auth changes and rejects stale success/error responses.
 Regressions execute the actual hook bodies without adding a DOM framework.
 
+Legacy quota discovery also requires the backend's effectiveEnabled flag. Disabled
+plugins cannot shadow an enabled provider match or become the sole fallback route;
+request-level regressions cover both cases after GitHub review identified the gap.
+
 Compose six locale trees, preserving fork keys and adopting upstream changes.
 Retain existing English fallbacks for untranslated fork-only Vietnamese/Korean
 keys. Keep hash routing, version injection and a single inlined dist/index.html;
