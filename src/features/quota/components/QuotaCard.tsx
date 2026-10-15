@@ -1,17 +1,13 @@
 /**
- * Quota card: provider icon and mono filename header, four-state body, and action footer.
- *
- * - idle: the entire body is click-to-load; upstream rate limits preclude automatic loading.
- * - loading: two ghost-row skeletons with aria-busy and a visually hidden text equivalent.
- * - error: failure bar with retry through the footer refresh action.
- * - success: provider body using the full-page QuotaBody.module.scss skin.
+ * Provider quota card: identity, loading/error state, quota body, and actions.
+ * Claude observations remain visible while refreshing or after a failed read.
  */
 
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconRefreshCw } from '@/components/ui/icons';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import type { ResolvedTheme } from '@/types';
+import type { ClaudeQuotaState, ResolvedTheme } from '@/types';
 import { isDisabledAuthFile, resolveQuotaErrorMessage } from '@/utils/quota';
 import { getQuotaDisplayName } from '@/utils/quota/identity';
 import {
@@ -25,10 +21,11 @@ import { QUOTA_ADAPTERS, type QuotaCardState } from '../providers';
 import { isQuotaRefreshDisabled, isQuotaResetDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import { ClaudeResetGrantDetails } from '../providers/claude/ClaudeResetGrantDetails';
+import { hasClaudeUsageData } from '../providers/claude/data';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
-/** Full-page quota skin bound to the typed contract; missing keys fail during module initialization. */
+/** Bind the quota-page styles to the shared rendering contract. */
 const quotaClasses = bindQuotaClasses(bodyStyles, 'QuotaBody.module.scss');
 
 export type QuotaCardProps = {
@@ -65,9 +62,11 @@ export function QuotaCard(props: QuotaCardProps) {
   const { t } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
+  const retainedClaudeUsage =
+    entry.type === 'claude' && hasClaudeUsageData(quota as ClaudeQuotaState | undefined);
   const displayName = getQuotaDisplayName(file);
 
-  // Capture the delay once on mount; later null props do not affect this card, avoiding render-time ref reads in React 19.
+  // Capture the entrance delay only at mount, without a render-time ref read.
   const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);
   const entranceStyle =
     mountEntranceDelayMs === null
@@ -83,8 +82,14 @@ export function QuotaCard(props: QuotaCardProps) {
     quota,
     onRefresh
   );
-  const iconSrc = getAuthFileIcon(entry.type, resolvedTheme);
-  const typeLabel = getTypeLabel(t, entry.type);
+  const providerType =
+    entry.type === 'plugin'
+      ? String(
+          file.quotaProvider ?? file['quota_provider'] ?? file.provider ?? file.type ?? 'plugin'
+        )
+      : entry.type;
+  const iconSrc = getAuthFileIcon(providerType, resolvedTheme);
+  const typeLabel = getTypeLabel(t, providerType);
   const errorMessage = resolveQuotaErrorMessage(
     t,
     quota?.errorStatus,
@@ -106,7 +111,7 @@ export function QuotaCard(props: QuotaCardProps) {
           className={styles.iconWrap}
           title={typeLabel}
           style={
-            isThemeSurfaceIconProvider(entry.type)
+            isThemeSurfaceIconProvider(providerType)
               ? { background: getThemeSurfaceIconBackground(resolvedTheme) }
               : undefined
           }
@@ -159,7 +164,7 @@ export function QuotaCard(props: QuotaCardProps) {
             <IconRefreshCw size={15} aria-hidden="true" className={styles.idleGlyph} />
             <span className={styles.idleHint}>{t(`${adapter.i18nPrefix}.idle`)}</span>
           </button>
-        ) : loading ? (
+        ) : loading && !retainedClaudeUsage ? (
           <div className={styles.skeleton} aria-busy="true">
             <span className={styles.srOnly}>{t(`${adapter.i18nPrefix}.loading`)}</span>
             {[0, 1].map((row) => (
@@ -173,15 +178,21 @@ export function QuotaCard(props: QuotaCardProps) {
           <div className={styles.errorStrip} role="alert">
             {t(`${adapter.i18nPrefix}.load_failed`, { message: errorMessage })}
           </div>
-        ) : quota ? (
+        ) : quota && !retainedClaudeUsage ? (
           <adapter.Body
             quota={quota}
             classes={quotaClasses}
             showCodexResetCreditExpiries={showCodexResetCreditExpiries}
           />
-        ) : (
+        ) : !retainedClaudeUsage ? (
           <div className={styles.idleHint}>{t(`${adapter.i18nPrefix}.idle`)}</div>
+        ) : null}
+        {loading && retainedClaudeUsage && (
+          <div role="status" aria-busy="true" className={quotaClasses.quotaMessage}>
+            {t(`${adapter.i18nPrefix}.loading`)}
+          </div>
         )}
+        {retainedClaudeUsage && quota && <adapter.Body quota={quota} classes={quotaClasses} />}
       </div>
 
       {status !== 'idle' && (

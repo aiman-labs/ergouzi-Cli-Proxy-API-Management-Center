@@ -249,6 +249,16 @@ const readRuntimeOnlyField = (entry: AuthFileEntry): boolean => {
   return false;
 };
 
+const readBooleanField = (value: unknown): boolean | undefined => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1') return true;
+    if (normalized === 'false' || normalized === '0') return false;
+  }
+  return undefined;
+};
+
 /**
  * Normalize backend kebab/snake_case fields into AuthFileItem camelCase fields at the API boundary.
  * Preserve all raw fields because quota resolvers still read plan_type, id_token, metadata,
@@ -270,12 +280,20 @@ const normalizeAuthFileEntry = (
   const modified = readDateField(entry);
   const priority = readIntegerField(entry['priority']);
   const weight = readIntegerField(entry['weight']);
+  const supportsQuota = readBooleanField(entry['supports_quota'] ?? entry.supportsQuota);
+  const quotaProvider =
+    readTextField(entry, 'quota_provider') || readTextField(entry, 'quotaProvider');
+  const quotaPluginId =
+    readTextField(entry, 'quota_plugin_id') || readTextField(entry, 'quotaPluginId');
 
   return {
     ...entry,
     cooldownSnapshot: normalizeAuthFileCooldowns(entry.cooldowns, observedAt, receivedAtMs),
     runtimeOnly: readRuntimeOnlyField(entry),
     authIndex: normalizeRecentRequestAuthIndex(entry['auth_index'] ?? entry.authIndex),
+    ...(supportsQuota !== undefined ? { supportsQuota } : {}),
+    ...(quotaProvider ? { quotaProvider } : {}),
+    quotaPluginId: quotaPluginId || undefined,
     recentRequests: normalizeRecentRequestBuckets(entry.recent_requests ?? entry.recentRequests),
     successCount: normalizeUsageTotal(entry.success),
     failureCount: normalizeUsageTotal(entry.failed),

@@ -213,8 +213,6 @@ export type VisualConfigValues = {
   disableImageGeneration: DisableImageGenerationMode;
   gptImage2BaseModel: string;
   authAutoRefreshWorkers: string;
-  quotaSwitchProject: boolean;
-  quotaSwitchPreviewModel: boolean;
   /** OAuth-only: oauth.providers.antigravity.antigravity-credits. */
   quotaAntigravityCredits: boolean;
   quotaAutoDisableEnabled: boolean;
@@ -345,8 +343,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   disableImageGeneration: 'false',
   gptImage2BaseModel: '',
   authAutoRefreshWorkers: '',
-  quotaSwitchProject: false,
-  quotaSwitchPreviewModel: false,
   quotaAntigravityCredits: false,
   quotaAutoDisableEnabled: false,
   quotaAutoDisableAutoEnable: true,

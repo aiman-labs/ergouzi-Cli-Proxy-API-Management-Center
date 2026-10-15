@@ -15,6 +15,7 @@ import { CODEX_CONFIG } from './providers/codex/data';
 import { DEVIN_CONFIG } from './providers/devin/data';
 import { KIMI_CONFIG } from './providers/kimi/data';
 import { META_CONFIG } from './providers/meta/data';
+import { PLUGIN_CONFIG } from './providers/plugin/data';
 import { XAI_CONFIG } from './providers/xai/data';
 import type { QuotaProviderType } from './providers/types';
 import type { QuotaCardState } from './providers';
@@ -27,6 +28,7 @@ const QUOTA_FILTER_MAP: Record<QuotaProviderType, (file: AuthFileItem) => boolea
   devin: DEVIN_CONFIG.filterFn,
   kimi: KIMI_CONFIG.filterFn,
   meta: META_CONFIG.filterFn,
+  plugin: PLUGIN_CONFIG.filterFn,
   xai: XAI_CONFIG.filterFn,
 };
 
@@ -154,7 +156,9 @@ export function canRefreshQuotaAfterList(
 }
 
 export const resolveQuotaProviderType = (file: AuthFileItem): QuotaProviderType | null =>
-  QUOTA_TAB_ORDER.find((type) => QUOTA_FILTER_MAP[type](type === 'devin' || type === 'meta' ? file : { ...file, disabled: false })) ?? null;
+  PLUGIN_CONFIG.filterFn(file)
+    ? 'plugin'
+    : (QUOTA_TAB_ORDER.find((type) => QUOTA_FILTER_MAP[type](type === 'devin' || type === 'meta' ? file : { ...file, disabled: false })) ?? null);
 
 /**
  * Classify every supported credential, including disabled credentials, so

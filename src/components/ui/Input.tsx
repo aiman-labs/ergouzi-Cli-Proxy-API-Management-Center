@@ -13,8 +13,6 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function Input({
   label,
-  labelExtra,
-  topExtra,
   hint,
   error,
   rightElement,
@@ -31,9 +29,7 @@ export function Input({
 
   return (
     <div className="form-group">
-      {topExtra}
       {label && <label htmlFor={inputId}>{label}</label>}
-      {labelExtra}
       <div style={{ position: 'relative' }}>
         <input
           id={inputId}

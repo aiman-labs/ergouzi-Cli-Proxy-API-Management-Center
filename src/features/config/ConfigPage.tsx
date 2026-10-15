@@ -41,9 +41,9 @@ import { SectionAdvanced } from './components/sections/SectionAdvanced';
 import { SectionCommon } from './components/sections/SectionCommon';
 import { SectionConnectivity } from './components/sections/SectionConnectivity';
 import { SectionLogging } from './components/sections/SectionLogging';
+import { SectionQuota } from './components/sections/SectionQuota';
 import { SectionNetwork } from './components/sections/SectionNetwork';
 import { SectionPayload } from './components/sections/SectionPayload';
-import { SectionQuota } from './components/sections/SectionQuota';
 import { SectionStreaming } from './components/sections/SectionStreaming';
 import styles from './ConfigPage.module.scss';
 
