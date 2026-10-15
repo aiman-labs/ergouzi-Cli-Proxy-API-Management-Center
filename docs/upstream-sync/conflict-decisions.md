@@ -443,7 +443,7 @@ keys; a filtered snapshot must never expand to invisible same-name credentials.
 
 ## DEC-20261015-017: Compose v1.26.4 settings and OAuth with fork isolation
 
-Status: decided for an uncommitted local candidate; no release or deployment.
+Status: decided for the validated release candidate; no release or deployment.
 
 Apply the exact v1.25.6 to v1.26.4 release delta; preserve the squash-integrated
 baseline. Adopt upstream setting rows and OAuth feature layout. Retain the fork

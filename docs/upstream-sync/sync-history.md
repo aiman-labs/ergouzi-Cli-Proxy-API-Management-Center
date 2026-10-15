@@ -1,13 +1,14 @@
 # Sync History
 
-## 2026-10-15 Upstream `v1.26.4` Uncommitted Local Candidate
+## 2026-10-15 Upstream `v1.26.4` Validated Release Candidate
 
-- Verified fork base / unchanged candidate HEAD: `d837cc81d6abf2df44d1a6754eb8931354100804`.
+- Verified fork base before integration: `d837cc81d6abf2df44d1a6754eb8931354100804`.
 - Fixed target: `v1.26.4` / `13f94b47f3400e681dfdede65acf1a1242ee3fce`.
 - Worktree: `.worktrees/sync-cpamc-v1.26.4-20261015`; branch: `sync/upstream-v1.26.4-20261015`.
 - Method: binary-safe three-way application of the exact `v1.25.6..v1.26.4`
   official release delta; decisions: `DEC-20261015-017`.
-- State: uncommitted local candidate. No push, PR, main update, release or deploy.
+- State: local verification complete. GitHub records subsequent commit/PR/merge
+  state; this local verification snapshot does not claim release or deployment.
 - Evidence: workspace `outputs/upstream-sync-execution-20261015/cpa-cpamc/`.
 
 Bun 1.3.14 frozen installation, type-check and verify passed (1834 tests,
@@ -15,7 +16,8 @@ lint and single-file build). The paired local v8 backend and explicit synthetic
 fixtures are used for browser contract acceptance; details and screenshots
 are retained in the workspace report.
 Independent read-only review is bound to the final content fingerprint in that
-report, because HEAD remains the original base. No real credential, OAuth or
+report, captured before the first integration commit. Later documentation-only
+status clarifications do not change that reviewed source. No real credential, OAuth or
 production forwarding acceptance is claimed; installed Codex Invite binary
 compatibility remains a later isolated/production acceptance boundary.
 
@@ -28,7 +30,7 @@ record their dates and stages. They are not current release/deployment or
 account-pool facts, and do not justify replaying already absorbed deltas.
 The upstream baseline is content-integrated through a squash workflow, not
 necessarily a Git ancestor. Latest official releases matched these targets at
-startup; recheck again before any separately authorized future merge.
+startup; recheck again immediately before merging the authorized PR.
 
 
 ## 2026-10-08 Upstream `v1.25.6` Local Candidate
