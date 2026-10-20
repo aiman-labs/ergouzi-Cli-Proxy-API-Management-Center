@@ -40,3 +40,16 @@
 ## ⚠️ 风险与回滚 / Risk & Rollback
 - Risk: `...`
 - Rollback: `...`
+
+## Feature provenance and upstream impact / 功能来源与同步影响
+
+- Feature IDs and linked requirements/design/DEC: <!-- Existing ID, new ID, or docs-only N/A -->
+- Origin and upstream strategy: <!-- downstream/hybrid/upstream; preserve/reconcile/replace-if-equivalent/drop -->
+- Observable rules changed and source surfaces affected:
+- Cross-repository producer/consumer contract and paired compatibility checks: <!-- N/A if none -->
+- Validation: <!-- Actual commands/results, failure/retry/concurrency/security cases, and checks not run -->
+- Migration, data compatibility and recovery: <!-- Include old-image/schema limits; N/A if none -->
+- Sync only: <!-- Exact previous upstream baseline, target official tag/SHA, impacted IDs, DEC and history entry -->
+- [ ] New behavior uses a feature branch and updates an affected record; fixes reuse a valid ID; exceptions are explained.
+- [ ] Feature contract check passed against the intended PR base; semantic and affected regression checks are reported separately.
+- [ ] Requirements, registry and protection matrix agree; release/deployment status is stated independently.

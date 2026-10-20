@@ -1,5 +1,13 @@
 # Sync History
 
+## 2026-10-20 本地生命周期核验补记
+
+- 只读核验：本地 HEAD `9c0f98c`；与缓存的 `origin/main` 一致；本次未 fetch，也未查询在线 Release 或生产。
+- HEAD 上的本地 fork tag：`v1.26.4-ergouzi.1`。
+- 本次新增功能索引与 PR 检查配置，见 `docs/features/`。这不是业务代码同步、发布或部署。
+- 下方“本地候选 / 尚未合入”属于当时验证快照；以上本地引用补记仅澄清代码/tag 状态，不改写当时测试结果，也不证明远端发布物或当前生产版本。
+- 后续每次同步在本条目后续记录实际 upstream baseline/target、功能 ID/DEC、检查与限制；合入、发布、部署分别追加已核实的 commit/tag/回执引用，不让 README 的历史候选充当当前状态。
+
 ## 2026-10-15 Upstream `v1.26.4` Validated Release Candidate
 
 - Verified fork base before integration: `d837cc81d6abf2df44d1a6754eb8931354100804`.

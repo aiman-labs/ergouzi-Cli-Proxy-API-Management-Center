@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "repository": "aiman-labs/ergouzi-Cli-Proxy-API-Management-Center",
+  "source_paths": [
+    "src/**"
+  ],
+  "features": [
+    {
+      "id": "CPAMC-F001",
+      "title": "Account pool identity and bulk operations",
+      "summary": "Retain account classification, scoped priority and safe refresh/export UX.",
+      "state": "implemented",
+      "origin": "hybrid",
+      "upstream_strategy": "reconcile",
+      "invariants": [
+        "Bulk operations resolve a fixed structured scope; priorities update only intended accounts.",
+        "Retain credential boundaries, stable identity and manual refresh result ownership."
+      ],
+      "paths": [
+        "src/features/authFiles/**",
+        "src/services/api/authFiles.ts",
+        "src/utils/authFiles.ts"
+      ],
+      "verification": [
+        "bun run verify"
+      ],
+      "docs": [
+        "docs/upstream-sync/conflict-decisions.md"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "CPAMC-F002",
+      "title": "Quota model and late result isolation",
+      "summary": "Retain provider quota semantics and session-revision protection.",
+      "state": "implemented",
+      "origin": "hybrid",
+      "upstream_strategy": "reconcile",
+      "invariants": [
+        "Provider identity, paid/free classes and reset instants retain their recorded meanings.",
+        "Connection/base/key/auth revision changes suppress stale success/error/state effects."
+      ],
+      "paths": [
+        "src/features/quota/**",
+        "src/components/quota/**",
+        "src/utils/quota/**"
+      ],
+      "verification": [
+        "bun run verify"
+      ],
+      "docs": [
+        "docs/upstream-sync/conflict-decisions.md"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "CPAMC-F003",
+      "title": "Plugin source and OAuth ownership",
+      "summary": "Keep plugin source awareness and cancelled discovery/import semantics.",
+      "state": "implemented",
+      "origin": "hybrid",
+      "upstream_strategy": "reconcile",
+      "invariants": [
+        "Same plugin ID from different sources remains distinguishable.",
+        "Disabled providers cannot shadow enabled routes; stale OAuth/quota discovery cannot publish results."
+      ],
+      "paths": [
+        "src/features/plugins/**",
+        "src/features/authFiles/hooks/useAuthFilesOauth.tsx"
+      ],
+      "verification": [
+        "bun run verify"
+      ],
+      "docs": [
+        "docs/upstream-sync/conflict-decisions.md"
+      ],
+      "dependencies": [
+        {
+          "repository": "ergouzi-cpa-plugin-codex-invite",
+          "feature": "INVITE-F001",
+          "contract": "Resolve codex-invite by registry/source and version, not ID alone; consume the public fork registry and archive."
+        }
+      ]
+    },
+    {
+      "id": "CPAMC-F004",
+      "title": "Single-file management asset and configuration",
+      "summary": "Preserve static delivery, hash routing, config API and locale contracts.",
+      "state": "implemented",
+      "origin": "hybrid",
+      "upstream_strategy": "reconcile",
+      "invariants": [
+        "Publish exactly management.html as the single inlined asset; retain hash routing/version injection.",
+        "Use v8 application API; compose locale trees without losing fork keys."
+      ],
+      "paths": [
+        "vite.config.ts",
+        "src/features/config/**",
+        "src/services/api/**"
+      ],
+      "verification": [
+        "bun run verify"
+      ],
+      "docs": [
+        "docs/upstream-sync/conflict-decisions.md"
+      ],
+      "dependencies": [
+        {
+          "repository": "ergouzi-CLIProxyAPI",
+          "feature": "CPA-F004",
+          "contract": "The management.html artifact and v8 config/auth/OAuth/plugin contracts must match the paired CPA candidate."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+name: Feature Contract
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  feature-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the PR candidate
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check feature provenance and changed surfaces
+        env:
+          FEATURE_BASE: ${{ github.event.pull_request.base.sha }}
+          FEATURE_HEAD: ${{ github.event.pull_request.head.sha }}
+          FEATURE_BRANCH: ${{ github.head_ref }}
+        run: >-
+          node .github/scripts/feature-contract.mjs --repo .
+          --base "$FEATURE_BASE" --head "$FEATURE_HEAD" --branch "$FEATURE_BRANCH"
