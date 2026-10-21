@@ -1,144 +1,118 @@
 # AGENTS.md — Ergouzi CPAMC
 
-This repository is the Ergouzi fork of the CLI Proxy API Management Center. It
-builds the single-file `management.html` asset used by Ergouzi CPA.
+Ergouzi fork of `router-for-me/Cli-Proxy-API-Management-Center`, published at
+`aiman-labs/ergouzi-Cli-Proxy-API-Management-Center`. React/TypeScript/Vite management frontend, not
+the proxy server; its single-file `management.html` is consumed by `ergouzi-CLIProxyAPI`.
 
-## Repository Role
+## Workflow and Delivery
 
-- Upstream: `router-for-me/Cli-Proxy-API-Management-Center`
-- Ergouzi fork: `aiman-labs/ergouzi-Cli-Proxy-API-Management-Center`
-- Release artifact: `management.html`
-- Production consumer: `ergouzi-CLIProxyAPI`
+| Task | Skill, when available |
+|---|---|
+| Refresh workspace context | `ergouzi:workspace-context-refresh` |
+| Upstream sync and baseline decisions | `ergouzi:fork-upstream-sync` |
+| Release, deploy, rollback and receipts | `ergouzi:release-manager` |
 
-CPAMC-only releases update the management panel asset. They should not restart
-New API or CPA runtime unless the server fork or production configuration also
-changed.
+For authorized Codex PR work, use `ergouzi:github-pr-review-loop` when available. Close only after
+latest-head review completes and triage leaves no confirmed P0/P1; do not chase an emoji. There is
+no fixed round cap: continue with substantive progress, stop and hand off
+repetition/oscillation/stalls, and keep unresolved confirmed P0/P1 blocking.
 
-## Ergouzi Workflow Skills
+- Releases use `vX.Y.Z-ergouzi.N` from verified upstream releases/tags; if none exists, record the
+  exact upstream commit baseline in `docs/upstream-sync/`.
+- Preserve hash routing and single-file deployment: `dist/index.html` is renamed to
+  `management.html`. Imports/assets/code splitting must not require extra deployed files. Do not
+  edit generated `dist/`.
+- Keep `__APP_VERSION__` precedence (`VERSION` → git tag → package version → `dev`). The release
+  workflow triggers on `v*` tags.
+- A panel-only release must not restart CPA or New API unless their runtime/configuration also
+  changed.
 
-- When the user says `刷新 Ergouzi 工作上下文`,
-  `同步二狗工作流上下文`, `Ergouzi context refresh`, or asks a thread to
-  catch up with recent Ergouzi repo/workflow changes, use
-  `ergouzi:workspace-context-refresh` before continuing.
-- For upstream synchronization, baseline selection, conflict DEC records, and
-  sync PR preparation, use `ergouzi:fork-upstream-sync` first.
-- For CPAMC release, tag, `management.html` asset publication, production panel
-  cache refresh, rollback, and verification, use `ergouzi:release-manager`.
-- For GitHub PRs that rely on Codex automated review, use
-  `ergouzi:github-pr-review-loop`. Treat `👀` as review in progress and `👍` or
-  "Didn't find any major issues" as the accepted signal for the latest commit.
-- Ergouzi CPAMC releases use upstream release/tag baselines with
-  `vX.Y.Z-ergouzi.N` tags when an upstream version exists. If upstream has no
-  release/tag, record the upstream commit baseline in `docs/upstream-sync/`.
+## Development and Verification
 
-## Commands
+- Use the Bun version in `package.json`, existing `bun.lock`, and CI's configured Node version; do
+  not add another package manager's lockfile.
+- `bun install --frozen-lockfile`; `bun run dev`; focused tests with
+  `bun test tests/<file>.test.ts`; `bun run verify` runs tests, lint and build. `bun run type-check`
+  checks `src`, not `tests`; lint does not enforce zero warnings. Format changed files rather than
+  all `src/`.
+- Tests use `bun:test` under `tests/`, fixtures/helpers in matching subdirectories. Static React
+  markup/source checks do not verify browser interactions; there is no configured DOM harness.
+  Follow nearby test patterns rather than introducing a framework by default.
+- Code changes need relevant regression tests and `bun run verify`; UI changes also need
+  affected-route browser checks with screenshots/notes. Report unavailable backend/browser evidence.
+  Docs-only work uses content/link/diff checks.
 
-```bash
-bun install --frozen-lockfile
-bun run test
-bun run type-check
-bun run build
-bun run lint
-bun run verify
-```
+## API, State and Security
 
-The production release asset must be named exactly `management.html`.
-Run focused tests while developing and `bun run verify` before handoff.
+- Use `/v8/management` and v8 config only; no v0 data/login fallbacks. Backend-declared
+  plugin/custom extension paths remain exceptions. `src/services/api/legacyBackendProbe.ts` may only
+  detect outdated backends after a v8-login 404.
+- Before contract changes inspect sibling `../ergouzi-CLIProxyAPI` (if available). Backend source
+  owns endpoint/payload/provider/OAuth/auth-file/plugin semantics; report missing evidence rather
+  than guessing or editing the backend outside scope.
+- Reuse `src/services/api/client.ts` and domain modules for authentication, prefix, normalized
+  errors/fields and headers. Preserve `unauthorized`, `server-version-update` and
+  `server-plugin-support-update` events and backend capability gates.
+- Use `useConfigStore.fetchConfig(forceRefresh?)` full-config TTL/deduplication and existing
+  mutation invalidation. Preserve stale-request guards and clear caches on logout/connection
+  changes; old responses must never overwrite another session.
+- Extend provider `descriptors.ts` / `adapters.ts` in `src/features/providers/`, not scattered
+  component conditionals. Keep feature code under `src/features/`, shared UI/hooks/utilities in
+  their existing directories; do not migrate unrelated legacy pages.
+- Never commit/log real management keys, provider credentials, auth files or secret URLs; redact
+  fixtures/screenshots. Preserve remember-password semantics. `secureStorage.ts` is reversible
+  obfuscation, not encryption; do not weaken authentication, plugin trust or session isolation.
 
-## Working Rules
+## UI and Style
 
-- Default response language is Simplified Chinese; code and comments use
-  English.
-- Keep UI changes consistent with the existing management-console design.
-- Prefer focused UX changes over broad visual rewrites.
-- Do not commit management keys, auth files, production URLs with secrets, or
-  local-only credential notes.
-- Before committing, show the exact staged file scope.
-- Do not add AI signatures, generated-by footers, or AI co-author trailers.
+- Simplified Chinese responses; English code/comments. Follow existing typed React, `@/` imports,
+  SCSS Modules and shared UI/theme tokens. Formatting: 2 spaces, semicolons, single quotes, ES5
+  trailing commas, 100 columns; use `unknown` and narrowing at untrusted boundaries.
+- Keep changes focused and visually consistent. Update all six locale files in `src/i18n/locales/`,
+  including accessible labels; preserve `zh-CN` fallback, keyboard/focus and reduced-motion
+  behavior.
+- Reuse motion tokens in `src/styles/themes.scss` and helpers in `src/hooks/motion.ts`; Vite already
+  injects SCSS variables. Prefer existing abstractions to hard-coded colors/motion or broad visual
+  rewrites.
+- Use Conventional Commits when authorized. PRs follow `.github/PULL_REQUEST_TEMPLATE.md`, with
+  actual verification, relevant backend version/reproduction and UI evidence.
+- Shared guidance lives here; synchronize `CLAUDE.md` identically if it exists. Shared rules must
+  not depend on that ignored/untracked local file.
 
-## Project Scope & Structure
+## Authorization
 
-This is a React 19 + TypeScript + Vite management frontend for CLI Proxy API, not the proxy itself. It exclusively uses the backend v8 Management API under `/v8/management` and the v8 configuration layout; do not add v0 fallbacks or legacy config adapters. Plugin resources and custom HTTP extensions are exceptions: preserve their backend-declared paths. The one sanctioned v0 touchpoint is `src/services/api/legacyBackendProbe.ts`: after a v8 login 404 it only detects an outdated backend to show a clearer error, and must never supply application data or act as a login fallback.
-
-- `src/features/`: feature-owned pages, components, hooks, types, and logic. Current features are `dashboard`, `providers`, `authFiles`, `oauth`, `quota`, `config`, `logs`, and `plugins`. Prefer this layout for new feature work.
-- `src/pages/`: remaining route pages outside the feature layout (login, system, and the auth-file OAuth excluded-model/model-alias editors); `LogsPage.tsx` there is only a re-export of the logs feature. Follow nearby conventions when modifying these; do not migrate unrelated code.
-- `src/components/`, `src/hooks/`, `src/utils/`: shared UI, hooks, and utilities. Keep feature-specific code within its feature rather than promoting it prematurely.
-- `src/services/api/`: API client, domain endpoints, and backend data normalization. `src/services/storage/`: browser persistence.
-- `src/stores/`: Zustand state. `src/types/`: shared types. `src/styles/`: global styles and theme tokens.
-- `src/App.tsx`: hash-router setup. `src/router/MainRoutes.tsx`: authenticated route table. `ProtectedRoute` and `MainLayout` guard and wrap the authenticated app.
-- `src/assets/`: bundled assets, including provider icons in `icons/`.
-- `src/i18n/locales/`: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`, `vi.json`, and `ko.json`; fallback language is `zh-CN`. Update all six files when adding or changing translation keys, including accessible labels.
-
-## Build, Test, and Development Commands
-
-Use Bun; `package.json` pins `bun@1.3.14`, and CI uses Node.js 24. Keep dependency changes consistent with `bun.lock`; do not introduce another package manager's lockfile.
-
-- `bun install --frozen-lockfile`: install locked dependencies.
-- `bun run dev`: start Vite at `http://localhost:5173` by default.
-- `bun run build`: TypeScript compilation followed by the production Vite build.
-- `bun run preview`: serve the built output locally.
-- `bun run test`: run all Bun tests.
-- `bun test tests/apiError.test.ts`: example focused test run.
-- `bun run lint`: run ESLint over TypeScript/TSX files. Some rules emit warnings; the current command does not enforce zero warnings.
-- `bun run type-check`: run `tsc --noEmit`; the main TypeScript config includes `src`, not `tests`.
-- `bun run verify`: run tests, lint, and build (which includes TypeScript compilation).
-- `bun run format`: format all `src/**/*.{ts,tsx,css,scss}`. Prefer targeted formatting of changed files during routine work to avoid unrelated diffs.
-
-## Deployment Constraints
-
-The production artifact is a single `dist/index.html` with JS/CSS and bundled assets inlined by `vite-plugin-singlefile`. The release workflow renames it to `management.html` for backend hosting; `vX.Y.Z` tags trigger releases.
-
-Preserve hash routing and single-file deployment. Changes to assets, imports, code splitting, or build configuration must not introduce required external build artifacts. Do not edit generated `dist/` files. App version is injected as `__APP_VERSION__` from `VERSION`, then git tags, then the package version, falling back to `dev`.
-
-## API Contracts & State
-
-- Treat backend contracts as the source of truth. Inspect `../../ergouzi-CLIProxyAPI` before changing endpoint names, payloads, provider keys, OAuth callback parameters, auth-file semantics, or plugin/config contracts. If that checkout is unavailable, report the missing evidence rather than guessing; do not modify the backend unless requested.
-- Reuse `apiClient` from `src/services/api/client.ts` for Management API requests through domain modules. It centralizes the API prefix, bearer authentication, error normalization, and response-header handling. Avoid bypassing it with ad hoc requests in components.
-- Preserve the client's event integration: `unauthorized` handles 401s, `server-version-update` carries version/build metadata, and `server-plugin-support-update` carries plugin capability information. Keep plugin routes gated by backend support.
-- Normalize backend fields on read and serialize on write in the API layer; consult `transformers.ts` and the relevant domain module. Keep raw backend field-name handling out of ordinary UI components.
-- `useConfigStore.fetchConfig(forceRefresh?: boolean)` uses a full-config TTL cache and in-flight request deduplication, not section-based fetching. Reuse it where appropriate and invalidate/update caches after mutations using existing store actions.
-- Preserve stale-request guards and cache cleanup when switching connections or logging out. Old asynchronous responses must not overwrite the new session's state.
-- Provider UI capabilities live in `src/features/providers/descriptors.ts`; `adapters.ts` maps provider configs to the shared resource model. Extend these existing abstractions rather than scattering provider-specific conditionals across components.
-
-## Coding Style & UI Conventions
-
-Use 2-space indentation, semicolons, single quotes, ES5 trailing commas, and 100-character line width. Prefer typed React components and `unknown` with narrowing for untrusted data; avoid introducing `any` unless an unavoidable boundary requires it. Use the `@/` alias for `src` imports.
-
-Component files use PascalCase, hooks use `useName`, and API modules use domain names such as `oauth.ts`. SCSS Modules sit beside their page or component as `Name.module.scss`. Vite automatically injects `src/styles/variables.scss` into SCSS; new modules do not need to import it again. Reuse shared components from `src/components/ui/` and existing theme tokens before adding new primitives or hard-coded colors.
-
-Keep user-facing text in i18n. Preserve keyboard interaction, accessible names, focus behavior, and reduced-motion handling when modifying interactive UI. For motion, reuse the timing tokens in `src/styles/themes.scss` (`--ease-out-strong`, `--dur-press`, `--dur-hover`) and the helpers in `src/hooks/motion.ts` (`prefersReducedMotion`, `useRevealOnScroll`, `useRevealGroup`, `useCountUp`) instead of ad hoc durations and easings.
-
-## Testing & Verification
-
-Tests are centralized under `tests/` as `*.test.ts` and use `bun:test`; shared fixtures live in `tests/fixtures/` and helpers in `tests/helpers/`. Existing suites cover pure logic, React server-side static rendering via `renderToStaticMarkup`, and source/contract checks. There is no configured browser DOM test harness; static markup tests do not verify browser interactions. Prefer extracting testable logic and following nearby test patterns rather than introducing a new framework by default.
-
-For code changes, add or update relevant regression tests, run focused tests while iterating, and run `bun run verify` before handoff. For UI changes, also verify the affected route in a browser and include screenshots or notes. Report commands actually run, failures, and anything not verified; if a backend or browser is unavailable, state the limitation explicitly. Documentation-only changes can be checked with diff/content validation instead of a full build.
-
-## Security
-
-Never commit real management keys, provider credentials, auth files, or other secrets; redact them from logs, screenshots, and test fixtures. Management keys are entered at runtime and persisted according to the remember-password setting. `src/services/storage/secureStorage.ts` provides reversible obfuscation, not encryption or a security boundary. Do not weaken authentication, plugin trust checks, or session isolation for convenience.
-
-## Commits & Guidance Maintenance
-
-Use Conventional Commits, such as `feat(providers): add a provider` or `fix(auth-files): preserve disabled actions`. Keep changes focused. Pull requests should include a summary, linked issue when applicable, backend version/reproduction details for integration work, UI screenshots or notes when relevant, and verification results.
-
-Maintain shared repository guidance in `AGENTS.md`. When updating it, synchronize the local `CLAUDE.md` to identical content if present; `CLAUDE.md` is currently ignored and untracked, so shared guidance must not depend on it. Keep guidance aligned with source and configuration rather than duplicating long implementation details.
+- Preserve unrelated changes. Branch/worktree creation and commits each require explicit user
+  authorization; push, PRs, comments, merge, release and deployment require their own scoped
+  authorization.
+- Show the exact file scope before committing. Do not add AI signatures, generated-by markers or AI
+  co-author trailers; do not rewrite history without explicit authorization.
 
 ## Feature Development and Protection
 
-- Use `ergouzi:feature-workflow` for new capabilities, changed business rules and
-  feature provenance. Read `docs/features/README.md` and `registry.json` first.
-- New behavior uses `feature/<topic>` and updates an affected stable feature
-  record with invariants, focused source paths, regression entrypoints, upstream
-  strategy and cross-repository contracts. Bounded fixes can use `fix/<topic>`
-  and reuse the record; do not label inherited upstream behavior as downstream.
-- Before a PR, run the read-only `.github/scripts/feature-contract.mjs` check
-  against the intended base and fill this repository's PR template. Pure docs
-  changes need no new feature ID. Checks do not replace semantic review/tests.
-- Upstream synchronization uses an authorized `sync/upstream-<version>` branch
-  from verified product main; never develop or integrate directly on main.
-  Analyze the explicit upstream baseline-to-tag delta against the registry,
-  then update DEC/matrix/history with actual results and limitations.
-- Feature records describe code; release and deployment remain separate facts.
-  This routing grants no branch/worktree creation, commit, push, PR, merge,
-  release, deployment or production permission.
+- For feature work, use `ergouzi:feature-workflow` when available; read `docs/features/README.md`
+  and `docs/features/registry.json`.
+- New behavior uses an authorized `feature/<topic>` branch; bounded regressions may use
+  `fix/<topic>` and reuse the feature ID. Update affected records with invariants, focused paths,
+  regression entrypoints, upstream provenance/strategy and cross-repository contracts. Inherited
+  upstream behavior is not original downstream work.
+- Before a PR, read `.github/PULL_REQUEST_TEMPLATE.md` and run
+  `node .github/scripts/feature-contract.mjs --repo . --base <intended-base>`. Pure docs changes
+  need no new feature ID; the checker does not replace semantic review or tests.
+- Sync uses an authorized `sync/upstream-<version>` from verified product main, never direct
+  integration on main. Read `docs/upstream-sync/{README.md,conflict-decisions.md,sync-history.md}`
+  and any protection matrix; analyze the explicit upstream baseline-to-target delta against the
+  registry, then update DEC/matrix/history with actual results and limitations.
+- Feature implementation, release and deployment are separate facts. This guidance grants no Git,
+  GitHub, release or production permissions.
+
+## Code Review Rules
+
+- Report only high-confidence P0/P1 defects introduced or materially worsened by this PR: critical
+  outages or serious reachable correctness, security, billing, data-integrity or production
+  regressions.
+- Identify the concrete trigger, affected code path and serious consequence, supported by code,
+  focused tests or runtime evidence. Do not invent environmental assumptions; an executable exploit
+  is unnecessary when the code proves the failure.
+- Exclude P2/P3, style, routine refactors, speculative hardening, unrelated old defects, and missing
+  tests/docs or convention violations alone. Return no findings when nothing meets the threshold.
+- Required CI, tests, human approvals and merge authorization remain separate requirements.
