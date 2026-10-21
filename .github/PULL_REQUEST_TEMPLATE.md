@@ -43,6 +43,8 @@
 
 ## Feature provenance and upstream impact / 功能来源与同步影响
 
+未配置功能台账或检查器的仓库可填写 N/A 并说明原因；已有机制的仓库按实际要求填写。纯文档变更无需新增功能 ID；无上游或无跨仓影响时，对应项填写 N/A。
+
 - Feature IDs and linked requirements/design/DEC: <!-- Existing ID, new ID, or docs-only N/A -->
 - Origin and upstream strategy: <!-- downstream/hybrid/upstream; preserve/reconcile/replace-if-equivalent/drop -->
 - Observable rules changed and source surfaces affected:
@@ -51,5 +53,13 @@
 - Migration, data compatibility and recovery: <!-- Include old-image/schema limits; N/A if none -->
 - Sync only: <!-- Exact previous upstream baseline, target official tag/SHA, impacted IDs, DEC and history entry -->
 - [ ] New behavior uses a feature branch and updates an affected record; fixes reuse a valid ID; exceptions are explained.
-- [ ] Feature contract check passed against the intended PR base; semantic and affected regression checks are reported separately.
+- [ ] Feature contract check passed against the intended PR base; semantic and affected regression checks are reported separately; repositories without this checker explain N/A.
 - [ ] Requirements, registry and protection matrix agree; release/deployment status is stated independently.
+
+## Release notes / 发布日志
+
+仅发布类 PR 填写；其他 PR 填写 N/A。遵循本仓发布文档，入口见 `AGENTS.md`。
+
+- 使用上一个正式 Release tag 到本次候选 tag 的提交范围，例如 `git log <previous-tag>..<candidate-tag>`；fork 项目使用正式 fork Release tag。
+- 核验两个 tag 的提交与实际 Release，不以发布时间筛选提交；squash/cherry-pick 按功能归并，排除已发布内容。
+- 明确版本、兼容性、验证限制和生产部署状态；候选 tag 尚未创建时标明拟用 tag 与准确候选 SHA，不声称已经发布。
