@@ -477,3 +477,34 @@ keys. Keep hash routing, version injection and a single inlined dist/index.html;
 dist is generated evidence, not committed source. All application APIs use v8
 management paths; no v0 data fallback is added. Validate against the paired CPA
 candidate plus explicitly synthetic OAuth/quota fixtures, never real credentials.
+
+## DEC-20261031-018: Compose v1.27.0 login, routing and quotas
+
+Status: local candidate; no merge, release or deployment.
+
+Apply the exact official v1.26.4 to v1.27.0 delta to the squash-integrated baseline.
+Adopt login reveal/redirect, SIWC, routing and quota changes while preserving
+connection revisions, runtime-kind detection, account name/authIndex targets,
+filtered batch scope, quota governance, bounded enrichment and priority controls.
+Credential field writes keep the backend's existing name contract; runtime-only
+entries remain locked. Do not invent an authIndex field unsupported by that API.
+
+Storage v2 retires pre-v2 remembered login credentials without decoding/migrating
+them; users must re-enter their management key. The new format is reversible
+obfuscation, not cryptographic encryption. Do not represent browser storage as
+protection against same-origin scripts. Old persisted credentials stay retired
+when rolling back; recovery is a fresh login with the existing management key.
+
+Preserve approved auth/quota badge assets and the Pro platinum tier, adding Pro
+Max without downgrading Pro. Merge locale trees from the explicit upstream delta,
+retaining fork keys; untranslated fork-only Turkish keys use English fallback,
+matching the established Vietnamese/Korean policy. Native fallback translation is
+deferred, not claimed complete.
+
+Keep hash routing, version injection, pinned Bun 1.4.3 and the single inlined
+management.html artifact contract. All application APIs remain v8-only; do not
+add v0 data fallback. CPA v8 is required; new v1.27 endpoints should be enabled
+only with the paired v8.0.48 host. Upgrade CPA before refreshing the panel; rollback
+the panel before an older incompatible host. The public repository contains no
+private operations facts. Isolated loopback fixtures cannot prove real OAuth,
+quota-provider access or an installed production plugin.

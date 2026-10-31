@@ -7,6 +7,8 @@
  * the legacy string styleMap's silent class="undefined".
  */
 
+import type { ReactNode } from 'react';
+
 export interface QuotaClassMap {
   // Quota rows shared by all five providers.
   quotaRow: string;
@@ -100,4 +102,8 @@ export interface QuotaBodyProps<TState> {
   quota: TState;
   classes: QuotaClassMap;
   showCodexResetCreditExpiries?: boolean;
+  /** Host-owned chips appended to the provider's plan row (`codexPlanItem` spans). */
+  planItems?: ReactNode;
+  /** Host-owned content placed right after the plan row, before usage rows. */
+  afterPlan?: ReactNode;
 }
