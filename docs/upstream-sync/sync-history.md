@@ -16,7 +16,7 @@
   and seven warnings in existing fork surfaces; production single-file build passed.
   Earlier failed adaptation attempts remain in the task evidence and are not passes.
 - `dist/index.html` is the only build file: 3,937,232 bytes,
-  SHA256 `c084578a9fb0bbb7adfd17fd687ee43ea712905c1ed6af00f8b456c9b3fe6ff7`.
+  Initial browser-fixture SHA256 `c084578a9fb0bbb7adfd17fd687ee43ea712905c1ed6af00f8b456c9b3fe6ff7`.
   It is served as `management.html`; no additional deployed asset is required.
 - Isolated loopback browser checks passed for login/reveal, remembered v2 reload,
   old credential retirement/fresh login/protected redirect, auth-file inventory,
@@ -32,10 +32,22 @@
 - Feature contract passed against actual `origin/main` and both explicit upstream
   release SHAs; whitespace/conflict scans passed. Focused independent source
   review found no confirmed P0/P1 in its stated scope; GitHub review is separate.
-- The paired CPA candidate's root/race/old-schema plugin checks were still pending
+- The paired CPA candidate's race/old-schema plugin checks were still pending
   when this panel was prepared. This panel is not a claim that the pair is ready
   for release. Real provider OAuth/quota/invite and installed production plugin
   compatibility were not run.
+
+CI follow-up: the first PR verify run failed 2074/1 because an existing
+cooldown test compared an unescaped English tooltip against React's escaped HTML
+attribute. The test now checks the complete serialized title in English and
+Simplified Chinese, restores language state and retains contextual availability,
+disabled and pending-spinner assertions. No application code changed. Complete
+pinned Bun verify passed again (2075/0, lint zero errors/seven warnings, build)
+with one test concurrency and bounded runtime pools. The follow-up build SHA256
+`c9e536686123b3067aab2738c41d1ac289d861441a24394c233d12616c20afc7`
+differs only in the automatic git-describe version stamp after the first commit
+(exact byte replacement verified). The first failed CI log is
+retained; the new-head CI and remote review remain independent gates.
 
 Upgrade CPA before exposing the new panel endpoints. A panel-only refresh must
 not restart CPA. Roll back the panel before an older incompatible host. Storage-v2
