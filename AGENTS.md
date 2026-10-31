@@ -29,7 +29,7 @@ repetition/oscillation/stalls, and keep unresolved confirmed P0/P1 blocking.
 
 ## Development and Verification
 
-- Use the Bun version in `package.json`, existing `bun.lock`, and CI's configured Node version; do
+- Use `bun@1.4.3`, pinned in `package.json`, existing `bun.lock`, and CI's configured Node version; do
   not add another package manager's lockfile.
 - `bun install --frozen-lockfile`; `bun run dev`; focused tests with
   `bun test tests/<file>.test.ts`; `bun run verify` runs tests, lint and build. `bun run type-check`

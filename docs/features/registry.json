@@ -27,7 +27,15 @@
       "docs": [
         "docs/upstream-sync/conflict-decisions.md"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "upstream_sync": {
+        "baseline": "v1.26.4",
+        "baseline_sha": "13f94b47f3400e681dfdede65acf1a1242ee3fce",
+        "target": "v1.27.0",
+        "target_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
+        "decision": "DEC-20261031-018",
+        "strategy": "reconcile exact release delta with downstream invariants"
+      }
     },
     {
       "id": "CPAMC-F002",
@@ -51,7 +59,15 @@
       "docs": [
         "docs/upstream-sync/conflict-decisions.md"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "upstream_sync": {
+        "baseline": "v1.26.4",
+        "baseline_sha": "13f94b47f3400e681dfdede65acf1a1242ee3fce",
+        "target": "v1.27.0",
+        "target_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
+        "decision": "DEC-20261031-018",
+        "strategy": "reconcile exact release delta with downstream invariants"
+      }
     },
     {
       "id": "CPAMC-F003",
@@ -80,7 +96,15 @@
           "feature": "INVITE-F001",
           "contract": "Resolve codex-invite by registry/source and version, not ID alone; consume the public fork registry and archive."
         }
-      ]
+      ],
+      "upstream_sync": {
+        "baseline": "v1.26.4",
+        "baseline_sha": "13f94b47f3400e681dfdede65acf1a1242ee3fce",
+        "target": "v1.27.0",
+        "target_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
+        "decision": "DEC-20261031-018",
+        "strategy": "reconcile exact release delta with downstream invariants"
+      }
     },
     {
       "id": "CPAMC-F004",
@@ -110,7 +134,15 @@
           "feature": "CPA-F004",
           "contract": "The management.html artifact and v8 config/auth/OAuth/plugin contracts must match the paired CPA candidate."
         }
-      ]
+      ],
+      "upstream_sync": {
+        "baseline": "v1.26.4",
+        "baseline_sha": "13f94b47f3400e681dfdede65acf1a1242ee3fce",
+        "target": "v1.27.0",
+        "target_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
+        "decision": "DEC-20261031-018",
+        "strategy": "reconcile exact release delta with downstream invariants"
+      }
     }
   ]
 }

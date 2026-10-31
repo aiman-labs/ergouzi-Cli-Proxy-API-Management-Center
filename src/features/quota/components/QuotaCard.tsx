@@ -1,6 +1,9 @@
 /**
  * Provider quota card: identity, loading/error state, quota body, and actions.
  * Claude observations remain visible while refreshing or after a failed read.
+ *
+ * The card surface follows the plan tier (cardTier.ts); see the tier section
+ * of QuotaCard.module.scss for the materials.
  */
 
 import { useState, type CSSProperties } from 'react';
@@ -17,6 +20,7 @@ import {
   isThemeSurfaceIconProvider,
 } from '@/features/authFiles/constants';
 import { bindQuotaClasses } from '../types';
+import { resolveInitialQuotaCardTier, resolveQuotaCardTier, type QuotaCardTier } from '../cardTier';
 import { QUOTA_ADAPTERS, type QuotaCardState } from '../providers';
 import { isQuotaRefreshDisabled, isQuotaResetDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
@@ -27,6 +31,12 @@ import styles from './QuotaCard.module.scss';
 
 /** Bind the quota-page styles to the shared rendering contract. */
 const quotaClasses = bindQuotaClasses(bodyStyles, 'QuotaBody.module.scss');
+
+const TIER_CLASS: Record<QuotaCardTier, string | undefined> = {
+  standard: undefined,
+  premium: styles.premium,
+  flagship: styles.flagship,
+};
 
 export type QuotaCardProps = {
   entry: QuotaFileEntry;
@@ -75,6 +85,16 @@ export function QuotaCard(props: QuotaCardProps) {
 
   const status = quota?.status ?? 'idle';
   const loading = status === 'loading';
+
+  // Loading/error states drop the plan, so the last known tier is kept: a
+  // refresh must not flash the suite back to a standard card.
+  const arrivedTier = resolveQuotaCardTier(entry.type, quota);
+  const [tier, setTier] = useState<QuotaCardTier>(
+    () => arrivedTier ?? resolveInitialQuotaCardTier(entry.type, file)
+  );
+  if (arrivedTier !== null && arrivedTier !== tier) {
+    setTier(arrivedTier);
+  }
   const claudeReset = useClaudeResetGrants(
     file,
     entry.type === 'claude' && status !== 'idle',
@@ -95,6 +115,24 @@ export function QuotaCard(props: QuotaCardProps) {
     quota?.errorStatus,
     quota?.error || t('common.unknown_error')
   );
+  // Claude banked resets join the plan chip row; their expiry list follows it.
+  const showClaudeReset = entry.type === 'claude' && status === 'success';
+  const claudePlanItems = showClaudeReset ? (
+    <span className={quotaClasses.codexPlanItem}>
+      <span className={quotaClasses.codexPlanLabel}>{t('claude_reset.remaining')}</span>
+      <span className={quotaClasses.codexPlanValue}>{claudeReset.count ?? '--'}</span>
+    </span>
+  ) : undefined;
+  const claudeAfterPlan = showClaudeReset ? (
+    <>
+      <ClaudeResetGrantDetails grants={claudeReset.grants} classes={quotaClasses} />
+      {claudeReset.message && (
+        <div role="status" className={quotaClasses.codexResetCreditsError}>
+          {t(`claude_reset.${claudeReset.message}`)}
+        </div>
+      )}
+    </>
+  ) : undefined;
   const showReset =
     status === 'success' &&
     Boolean(adapter.resetQuota) &&
@@ -103,8 +141,15 @@ export function QuotaCard(props: QuotaCardProps) {
 
   return (
     <article
-      className={`${styles.card} ${mountEntranceDelayMs === null ? '' : styles.cardEnter}`}
+      className={[
+        styles.card,
+        TIER_CLASS[tier],
+        mountEntranceDelayMs === null ? undefined : styles.cardEnter,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={entranceStyle}
+      data-tier={tier}
     >
       <header className={styles.head}>
         <span
@@ -138,22 +183,6 @@ export function QuotaCard(props: QuotaCardProps) {
       </header>
 
       <div className={styles.body}>
-        {entry.type === 'claude' && status === 'success' && (
-          <>
-            <div className={quotaClasses.codexPlan}>
-              <span className={quotaClasses.codexPlanItem}>
-                <span className={quotaClasses.codexPlanLabel}>{t('claude_reset.remaining')}</span>
-                <span className={quotaClasses.codexPlanValue}>{claudeReset.count ?? '--'}</span>
-              </span>
-            </div>
-            <ClaudeResetGrantDetails grants={claudeReset.grants} classes={quotaClasses} />
-            {claudeReset.message && (
-              <div role="status" className={quotaClasses.codexResetCreditsError}>
-                {t(`claude_reset.${claudeReset.message}`)}
-              </div>
-            )}
-          </>
-        )}
         {status === 'idle' ? (
           <button
             type="button"
@@ -183,6 +212,8 @@ export function QuotaCard(props: QuotaCardProps) {
             quota={quota}
             classes={quotaClasses}
             showCodexResetCreditExpiries={showCodexResetCreditExpiries}
+            planItems={claudePlanItems}
+            afterPlan={claudeAfterPlan}
           />
         ) : !retainedClaudeUsage ? (
           <div className={styles.idleHint}>{t(`${adapter.i18nPrefix}.idle`)}</div>
@@ -192,7 +223,14 @@ export function QuotaCard(props: QuotaCardProps) {
             {t(`${adapter.i18nPrefix}.loading`)}
           </div>
         )}
-        {retainedClaudeUsage && quota && <adapter.Body quota={quota} classes={quotaClasses} />}
+        {retainedClaudeUsage && quota && (
+          <adapter.Body
+            quota={quota}
+            classes={quotaClasses}
+            planItems={claudePlanItems}
+            afterPlan={claudeAfterPlan}
+          />
+        )}
       </div>
 
       {status !== 'idle' && (

@@ -1,5 +1,48 @@
 # Sync History
 
+## 2026-10-31 Upstream `v1.27.0` Candidate
+
+- Fork base: `b2a479e5734c7c056590f310caf4e9a832c65b63`; PR base: `main`.
+- Official baseline: `v1.26.4` / `13f94b47f3400e681dfdede65acf1a1242ee3fce`; target: `v1.27.0` / `4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e`.
+- Exact release delta: 46 commits / 146 paths; binary-safe three-way delta application because the baseline is content-integrated through squash, not direct ancestry.
+- Decision: `DEC-20261031-018`; all indexed protection clusters assessed against explicit upstream endpoints.
+- Local validation and compatibility results are recorded below before publication. GitHub latest-head review and required checks remain independent gates.
+- No fork version/tag bump, release, merge or deployment is part of this candidate.
+
+### Candidate validation and compatibility
+
+- Pinned Bun 1.4.3 frozen installation and explicit `bun run type-check` passed.
+- Complete `bun run verify` passed: 2075 tests, zero failures; lint zero errors
+  and seven warnings in existing fork surfaces; production single-file build passed.
+  Earlier failed adaptation attempts remain in the task evidence and are not passes.
+- `dist/index.html` is the only build file: 3,937,232 bytes,
+  SHA256 `c084578a9fb0bbb7adfd17fd687ee43ea712905c1ed6af00f8b456c9b3fe6ff7`.
+  It is served as `management.html`; no additional deployed asset is required.
+- Isolated loopback browser checks passed for login/reveal, remembered v2 reload,
+  old credential retirement/fresh login/protected redirect, auth-file inventory,
+  quota inventory, populated routing priority7, OAuth provider choices, loaded
+  editable config and explicit plugin empty state. Final screenshots reject
+  loading/skeleton states; earlier navigation-only captures are not acceptance.
+- Synthetic v0/v8 management requests reject missing keys and accept the test key;
+  v8 credential priority patch/readback preserves the disabled account. Optional
+  absent OAuth config nodes return routed JSON `not_found`404; the standalone
+  nodes probe returns a missing-route404. No v0 application fallback was added.
+- The deliberately blocked external proxy makes plugin-store discovery return502;
+  this is an untested external service boundary, not a successful store check.
+- Feature contract passed against actual `origin/main` and both explicit upstream
+  release SHAs; whitespace/conflict scans passed. Focused independent source
+  review found no confirmed P0/P1 in its stated scope; GitHub review is separate.
+- The paired CPA candidate's root/race/old-schema plugin checks were still pending
+  when this panel was prepared. This panel is not a claim that the pair is ready
+  for release. Real provider OAuth/quota/invite and installed production plugin
+  compatibility were not run.
+
+Upgrade CPA before exposing the new panel endpoints. A panel-only refresh must
+not restart CPA. Roll back the panel before an older incompatible host. Storage-v2
+requires fresh login and uses reversible obfuscation; old keys are not migrated
+or restored by rollback. No server data migration is performed by this panel.
+
+
 ## 2026-10-20 本地生命周期核验补记
 
 - 只读核验：本地 HEAD `9c0f98c`；与缓存的 `origin/main` 一致；本次未 fetch，也未查询在线 Release 或生产。

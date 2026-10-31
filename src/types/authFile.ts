@@ -1,6 +1,5 @@
 /**
- * 认证文件相关类型
- * 基于原项目 src/modules/auth-files.js
+ * Auth-file types.
  */
 
 import type { RecentRequestBucket } from '@/utils/recentRequests';
@@ -42,15 +41,19 @@ export interface AuthFileCooldownSnapshot {
 
 export interface AuthFileItem {
   name: string;
+  siwcBindSupported?: boolean;
+  useSiwc?: boolean;
+  siwcBound?: boolean;
+  siwcExpiresAt?: string;
   type?: AuthFileType | string;
   provider?: string;
   /**
-   * Credential email populated by both auth_files paths: disk JSON and registry metadata.
-   * It leads the card identity. The backend also returns account/account_type, but API-key
-   * credentials expose the API key itself as account, so it must never be displayed or searched.
+   * Account email supplied by the file scanner or credential registry.
+   * Never display or search account/account_type: API-key credentials may expose
+   * the API key itself through those fields.
    */
   email?: string;
-  /** GCP or Vertex project ID used as an identity fallback when email is absent. */
+  /** GCP / Vertex project ID, used when account email is absent. */
   projectId?: string;
   size?: number;
   authIndex?: string | number | null;
@@ -74,7 +77,7 @@ export interface AuthFileItem {
   note?: string;
   success?: unknown;
   failed?: unknown;
-  /** Normalized cumulative success/failure counts populated from raw API fields. */
+  /** Cumulative success/failure counts normalized by the API boundary. */
   successCount?: number;
   failureCount?: number;
   recent_requests?: RecentRequestBucket[];

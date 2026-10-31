@@ -82,3 +82,10 @@ remote-management:
 
 If upstream changes the release workflow, `vite.config.ts`, or output path,
 review the CLIProxyAPI contract at the same time.
+
+## 2026-10-31 release-delta candidate
+
+The current synchronization candidate covers `v1.26.4..v1.27.0` in full.
+See the dated sync-history entry and `DEC-20261031-018` for preserved downstream
+contracts, exact provenance, validation limits and independent upgrade constraints.
+This record does not claim merge, release or deployment.
