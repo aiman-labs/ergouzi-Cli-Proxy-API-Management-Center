@@ -1,9 +1,11 @@
 # Ergouzi CPAMC Upstream Sync
 
+Latest verified lifecycle: `v1.27.0-ergouzi.1` was merged and released on 2026-11-01 (UTC+8); see [lifecycle record](sync-history.md#2026-11-01-v1270-ergouzi1-released). Authorized deployment and stage receipts are separately recorded in private Ops; historical candidate restrictions below are not current lifecycle state.
+
 功能开发先读 [Feature registry](../features/README.md) 和
 [功能索引](../features/registry.json)。同步前用两个明确的上游端点运行重叠分析；
 功能记录、DEC、保护矩阵与同步历史一起维护。下文旧候选/发布描述保留历史语境，
-最近的本地代码核验见同步历史的 2026-10-20 补记；生产状态须另外核实。
+2026-10-20 本地核验与下方候选描述均为历史快照；最新生命周期见文首记录，生产状态须另外核实。
 
 Lightweight rules for maintaining
 `aiman-labs/ergouzi-Cli-Proxy-API-Management-Center` while periodically syncing

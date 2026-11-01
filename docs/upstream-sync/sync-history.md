@@ -1,5 +1,12 @@
 # Sync History
 
+## 2026-11-01 v1.27.0-ergouzi.1 released
+
+- Explicit lifecycle continuation: PR 32 merged as `decd5e2921439c2ee8965ca9ed99f195ed442c22`; merged tree exactly matches the reviewed candidate. Latest-head Codex review completed without findings; earlier candidate notes below retain their original scope and failures.
+- Formal tag `v1.27.0-ergouzi.1` resolves to that merge commit. Release: https://github.com/aiman-labs/ergouzi-Cli-Proxy-API-Management-Center/releases/tag/v1.27.0-ergouzi.1 .
+- Workflow41224606677 succeeded. Public `management.html`: 3937221 bytes, SHA256 `7636571b24e2f490f49d1d604cfa06f40eab4b872846eafb1f366a98aa9a7702`; anonymous download, GitHub digest and formal local version build match. Candidate2075 tests/typecheck/lint/build and latest-head CI passed with seven inherited lint warnings.
+- Authorized static-only deployment and both stage receipts completed; private Ops holds runtime and recovery evidence. Upgrade compatible CPA first; refresh does not require a CPA restart. Storage-v2 needs fresh login, uses reversible obfuscation and cannot recover retired remembered credentials on rollback. Real provider OAuth/quota/invite writes remain unvalidated.
+
 ## 2026-10-31 Upstream `v1.27.0` Candidate
 
 - Fork base: `b2a479e5734c7c056590f310caf4e9a832c65b63`; PR base: `main`.
