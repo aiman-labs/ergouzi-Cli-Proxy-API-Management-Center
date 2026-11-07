@@ -508,3 +508,24 @@ only with the paired v8.0.48 host. Upgrade CPA before refreshing the panel; roll
 the panel before an older incompatible host. The public repository contains no
 private operations facts. Isolated loopback fixtures cannot prove real OAuth,
 quota-provider access or an installed production plugin.
+
+## DEC-20261107-019: Compose v1.27.3 OAuth entries and preserve quota presentation
+
+Apply the complete official `v1.27.0..v1.27.3` delta. Multi-entry plugin OAuth
+metadata is decoded once and rendered as untrusted React text or attributes;
+only declared identifiers may provide entry metadata. Disabled providers cannot
+shadow enabled providers, and discovery/result publication remains fenced by
+the current connection revision. New backend capabilities require the paired
+CPA `v8.0.58` candidate; deploy the host before refreshing the panel.
+
+Retain the approved downstream Pro flagship/platinum style, full card-tier
+surfaces, initial tier resolution and previous tier during loading/error states.
+The upstream jade palette and removal of tiered card surfaces are intentionally
+not adopted. These are presentation decisions, not upstream defect fixes.
+
+Compose AIcodemirror with existing source/index mutation identity and the
+temporary hidden-sponsor rules. Generic provider groups still retain hidden
+brand entries while excluding AIcodemirror entries from duplicate display.
+Merge the locale trees structurally and retain downstream keys. Preserve hash
+routing, version injection and the single inlined `management.html` contract.
+Real OAuth/provider writes are not proven by synthetic or static checks.

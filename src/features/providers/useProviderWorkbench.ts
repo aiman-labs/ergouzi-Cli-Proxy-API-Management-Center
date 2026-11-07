@@ -24,6 +24,7 @@ import {
   metaToResource,
   openaiToResource,
   qiniuCloudToResource,
+  aiCodeMirrorToResource,
   kimiToResource,
   vertexToResource,
   xaiToResource,
@@ -56,6 +57,13 @@ import {
   isQiniuCloudGeminiProvider,
   isQiniuCloudOpenAIProvider,
 } from './qiniuCloud';
+import {
+  buildAiCodeMirrorRaw,
+  isAiCodeMirrorClaudeProvider,
+  isAiCodeMirrorCodexProvider,
+  isAiCodeMirrorGeminiProvider,
+  isAiCodeMirrorOpenAIProvider,
+} from './aiCodeMirror';
 import {
   buildKimiRaw,
   isKimiClaudeProvider,
@@ -393,7 +401,10 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
     switch (brand) {
       case 'gemini':
         resources = (config.geminiApiKeys ?? []).reduce<ProviderResource[]>((out, item, index) => {
-          if ((TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('qiniuCloud') || !isQiniuCloudGeminiProvider(item))) {
+          if (
+            (TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('qiniuCloud') || !isQiniuCloudGeminiProvider(item)) &&
+            !isAiCodeMirrorGeminiProvider(item)
+          ) {
             out.push(geminiToResource(item, index));
           }
           return out;
@@ -410,6 +421,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
             !isApiKeyFunCodexProvider(item) &&
             (TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('fennoAI') || !isFennoAICodexProvider(item)) &&
             (TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('qiniuCloud') || !isQiniuCloudCodexProvider(item)) &&
+            !isAiCodeMirrorCodexProvider(item) &&
             !isKimiCodexProvider(item)
           ) {
             out.push(codexToResource(item, index));
@@ -429,6 +441,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
             !isApiKeyFunClaudeProvider(item) &&
             (TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('fennoAI') || !isFennoAIClaudeProvider(item)) &&
             (TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('qiniuCloud') || !isQiniuCloudClaudeProvider(item)) &&
+            !isAiCodeMirrorClaudeProvider(item) &&
             !isKimiClaudeProvider(item)
           ) {
             out.push(claudeToResource(item, index));
@@ -445,7 +458,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
         resources = (config.openaiCompatibility ?? []).reduce<ProviderResource[]>(
           (out, item, index) => {
             if (
-              shouldShowInGenericOpenAIGroup(item)
+              shouldShowInGenericOpenAIGroup(item) && !isAiCodeMirrorOpenAIProvider(item)
             ) {
               out.push(openaiToResource(item, index));
             }
@@ -466,6 +479,11 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
       }
       case 'qiniuCloud': {
         const sponsorResource = qiniuCloudToResource(buildQiniuCloudRaw(config));
+        resources = sponsorResource ? [sponsorResource] : [];
+        break;
+      }
+      case 'aiCodeMirror': {
+        const sponsorResource = aiCodeMirrorToResource(buildAiCodeMirrorRaw(config));
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
@@ -565,7 +583,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             ? buildFennoAIRaw(config)
             : brand === 'qiniuCloud'
               ? buildQiniuCloudRaw(config)
-              : buildKimiRaw(config);
+              : brand === 'aiCodeMirror'
+                ? buildAiCodeMirrorRaw(config)
+                : buildKimiRaw(config);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
       const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
       const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
@@ -714,6 +734,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
         } else if (
           brand === 'apikeyFun' ||
           brand === 'fennoAI' ||
+          brand === 'aiCodeMirror' ||
           brand === 'qiniuCloud' ||
           brand === 'kimi'
         ) {
@@ -789,6 +810,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             buildOpenAIConfig(input, resource.raw as OpenAIProviderConfig)
           );
         } else if (
+          brand === 'aiCodeMirror' ||
           brand === 'apikeyFun' ||
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||
@@ -878,6 +900,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           sel.brand === 'apikeyFun' ||
           sel.brand === 'fennoAI' ||
           sel.brand === 'qiniuCloud' ||
+          sel.brand === 'aiCodeMirror' ||
           sel.brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(async () => {
@@ -994,6 +1017,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             (resource.raw as OpenAIProviderConfig).source
           );
         } else if (
+          brand === 'aiCodeMirror' ||
           brand === 'apikeyFun' ||
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||

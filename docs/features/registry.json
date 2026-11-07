@@ -29,11 +29,11 @@
       ],
       "dependencies": [],
       "upstream_sync": {
-        "baseline": "v1.26.4",
-        "baseline_sha": "13f94b47f3400e681dfdede65acf1a1242ee3fce",
-        "target": "v1.27.0",
-        "target_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
-        "decision": "DEC-20261031-018",
+        "baseline": "v1.27.0",
+        "baseline_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
+        "target": "v1.27.3",
+        "target_sha": "953fb2444350c6c36052dda46cac0abce6b23ea6",
+        "decision": "DEC-20261107-019",
         "strategy": "reconcile exact release delta with downstream invariants"
       }
     },
@@ -61,11 +61,11 @@
       ],
       "dependencies": [],
       "upstream_sync": {
-        "baseline": "v1.26.4",
-        "baseline_sha": "13f94b47f3400e681dfdede65acf1a1242ee3fce",
-        "target": "v1.27.0",
-        "target_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
-        "decision": "DEC-20261031-018",
+        "baseline": "v1.27.0",
+        "baseline_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
+        "target": "v1.27.3",
+        "target_sha": "953fb2444350c6c36052dda46cac0abce6b23ea6",
+        "decision": "DEC-20261107-019",
         "strategy": "reconcile exact release delta with downstream invariants"
       }
     },
@@ -82,7 +82,10 @@
       ],
       "paths": [
         "src/features/plugins/**",
-        "src/features/authFiles/hooks/useAuthFilesOauth.tsx"
+        "src/features/authFiles/hooks/useAuthFilesOauth.tsx",
+        "src/features/oauth/**",
+        "src/services/api/plugins.ts",
+        "src/types/plugin.ts"
       ],
       "verification": [
         "bun run verify"
@@ -98,11 +101,11 @@
         }
       ],
       "upstream_sync": {
-        "baseline": "v1.26.4",
-        "baseline_sha": "13f94b47f3400e681dfdede65acf1a1242ee3fce",
-        "target": "v1.27.0",
-        "target_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
-        "decision": "DEC-20261031-018",
+        "baseline": "v1.27.0",
+        "baseline_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
+        "target": "v1.27.3",
+        "target_sha": "953fb2444350c6c36052dda46cac0abce6b23ea6",
+        "decision": "DEC-20261107-019",
         "strategy": "reconcile exact release delta with downstream invariants"
       }
     },
@@ -136,11 +139,11 @@
         }
       ],
       "upstream_sync": {
-        "baseline": "v1.26.4",
-        "baseline_sha": "13f94b47f3400e681dfdede65acf1a1242ee3fce",
-        "target": "v1.27.0",
-        "target_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
-        "decision": "DEC-20261031-018",
+        "baseline": "v1.27.0",
+        "baseline_sha": "4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e",
+        "target": "v1.27.3",
+        "target_sha": "953fb2444350c6c36052dda46cac0abce6b23ea6",
+        "decision": "DEC-20261107-019",
         "strategy": "reconcile exact release delta with downstream invariants"
       }
     }

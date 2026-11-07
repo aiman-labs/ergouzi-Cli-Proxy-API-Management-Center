@@ -1,5 +1,16 @@
 # Sync History
 
+## 2026-11-07 Upstream `v1.27.3` Candidate
+
+- Product base: `502b524d24d45a9958d47115a35dc8264f7a2317`.
+- Exact official delta: `v1.27.0` / `4e4aeff23f9f82b3ccdbe48b2e774d5dc918234e` to `v1.27.3` / `953fb2444350c6c36052dda46cac0abce6b23ea6`; 42 upstream paths.
+- Binary-safe three-way application retains the squash-integrated product history. Decisions: `DEC-20261107-019`; protection records `CPAMC-F001` through `CPAMC-F004` assessed.
+- Adopt multi-entry plugin OAuth metadata and escaped-text decoding, AIcodemirror provider management, normalized quota-limit labels and Grok client metadata.
+- Retain approved platinum and full card-tier assets, initial tier selection and loading/error tier retention. Keep hidden-sponsor grouping, fixed source/index mutations, disabled-plugin filtering and connection-revision guards.
+- Final pinned Bun 1.4.3 full verification: 2106 tests passed, no failures; type-check and single-file build passed; lint has zero errors and seven inherited warnings. Independent focused source/tests found no P0/P1 and confirmed all eight presentation protection files match the previous product source.
+- Playwright synthetic browser checks passed for login, both plugin OAuth entries and one-pass entity decoding, seeded Pro flagship quota card, AIcodemirror presence, loaded images and 390px mobile layout without horizontal overflow. Screenshots were inspected. Optional node probing and the intentionally unimplemented fixture model list returned 404; this is not real provider verification.
+- Proposed fork release: `v1.27.3-ergouzi.1`. This candidate is not yet merged, released or deployed. Real provider OAuth/quota writes are outside synthetic local verification.
+
 ## 2026-11-01 v1.27.0-ergouzi.1 released
 
 - Explicit lifecycle continuation: PR 32 merged as `decd5e2921439c2ee8965ca9ed99f195ed442c22`; merged tree exactly matches the reviewed candidate. Latest-head Codex review completed without findings; earlier candidate notes below retain their original scope and failures.
