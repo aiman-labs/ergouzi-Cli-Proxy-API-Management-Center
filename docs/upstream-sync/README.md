@@ -1,6 +1,6 @@
 # Ergouzi CPAMC Upstream Sync
 
-Latest verified lifecycle: `v1.27.0-ergouzi.1` was merged and released on 2026-11-01 (UTC+8); see [lifecycle record](sync-history.md#2026-11-01-v1270-ergouzi1-released). Authorized deployment and stage receipts are separately recorded in private Ops; historical candidate restrictions below are not current lifecycle state.
+Current sync candidate: official `v1.27.0..v1.27.3`; see [candidate record](sync-history.md#2026-11-07-upstream-v1273-candidate) and `DEC-20261107-019`. The previous published fork remains `v1.27.0-ergouzi.1` until the separate release gate completes. Production facts and stage receipts belong in private Ops.
 
 功能开发先读 [Feature registry](../features/README.md) 和
 [功能索引](../features/registry.json)。同步前用两个明确的上游端点运行重叠分析；
