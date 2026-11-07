@@ -1,5 +1,13 @@
 # Sync History
 
+## 2026-11-07 v1.27.3-ergouzi.1 released
+
+- PR33 merged as `d3622d1b778a9012666f0cce4c0caa4659c86351`; its tree equals reviewed candidate `dc6afe830340f8d963c3cbc622e08071c60d033d`. Latest-head Codex review completed without findings; verify/feature-contract CI succeeded. Initial automatic review credit failure was superseded by a completed manual review.
+- Annotated tag and matching [GitHub Release](https://github.com/aiman-labs/ergouzi-Cli-Proxy-API-Management-Center/releases/tag/v1.27.3-ergouzi.1) published; workflow42340763791 succeeded. Public `management.html`: 4010485 bytes; SHA256 `cb0fb8b5cc21e0c5c137af7bd5ef5c1fc6a666ce4f6cb55d3812ab6d317f1eaa`. GitHub digest, authenticated/anonymous downloads, version/feature markers and single-file contract agree.
+- Source validation remains2106 tests/typecheck/build, zero lint errors/seven inherited warnings and synthetic browser coverage. Approved Pro/platinum/full-tier assets remain protected by DEC-20261107-019.
+- Compatibility handoff: use a compatible CPA8.0.58 host before multiple OAuth entries; refresh the static asset independently without a server restart. Private operators own their runtime, recovery and notification records.
+- Real provider OAuth/quota writes and production browser-session acceptance are not claimed; storage-v2 may require fresh login. Earlier candidate snapshots retain their dated verification scope.
+
 ## 2026-11-07 Upstream `v1.27.3` Candidate
 
 - Product base: `502b524d24d45a9958d47115a35dc8264f7a2317`.
