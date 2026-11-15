@@ -45,6 +45,15 @@ function getAntigravityWindowOrder(bucket: AntigravityQuotaBucket): number {
   return ANTIGRAVITY_BUCKET_WINDOW_ORDER.get(window) ?? Number.MAX_SAFE_INTEGER;
 }
 
+export function compareAntigravityQuotaBuckets(
+  a: AntigravityQuotaBucket,
+  b: AntigravityQuotaBucket
+): number {
+  const orderDiff = getAntigravityWindowOrder(a) - getAntigravityWindowOrder(b);
+  if (orderDiff !== 0) return orderDiff;
+  return a.label.localeCompare(b.label);
+}
+
 /**
  * Window length in hours for an Antigravity bucket.
  *
@@ -114,11 +123,7 @@ export function buildAntigravityQuotaGroups(
           };
         })
         .filter((bucket): bucket is AntigravityQuotaBucket => bucket !== null)
-        .sort((a, b) => {
-          const orderDiff = getAntigravityWindowOrder(a) - getAntigravityWindowOrder(b);
-          if (orderDiff !== 0) return orderDiff;
-          return a.label.localeCompare(b.label);
-        });
+        .sort(compareAntigravityQuotaBuckets);
 
       if (parsedBuckets.length === 0) return null;
 

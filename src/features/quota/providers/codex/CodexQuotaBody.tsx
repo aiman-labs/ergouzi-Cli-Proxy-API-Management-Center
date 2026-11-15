@@ -1,5 +1,5 @@
 /**
- * Codex 额度渲染体：套餐 chip 行（档位见 cardTier.ts）、重置积分明细、用量窗口水位条。
+ * Codex 额度渲染体：套餐 chip 行（档位见 cardTier.ts）、宿主插槽、重置积分明细、用量窗口水位条。
  */
 
 import { useMemo } from 'react';
@@ -29,6 +29,8 @@ export function CodexQuotaBody({
   quota,
   classes,
   showCodexResetCreditExpiries = false,
+  planItems,
+  afterPlan,
 }: QuotaBodyProps<CodexQuotaState>) {
   const { t, i18n } = useTranslation();
   const now = useNow();
@@ -85,10 +87,11 @@ export function CodexQuotaBody({
         expiryDisplay ||
         creditsUnlimited ||
         creditBalance !== null ||
-        rateLimitResetCreditsAvailableCount !== null) && (
+        rateLimitResetCreditsAvailableCount !== null ||
+        planItems) && (
         <div className={classes.codexPlan}>
           {planLabel && (
-            <span className={classes.codexPlanItem}>
+            <span className={classes.codexPlanItem} data-quota-plan="">
               <span className={classes.codexPlanLabel}>{t('codex_quota.plan_label')}</span>
               <span className={planValueClass}>{planLabel}</span>
             </span>
@@ -120,8 +123,10 @@ export function CodexQuotaBody({
               </span>
             </span>
           )}
+          {planItems}
         </div>
       )}
+      {afterPlan}
       {showCodexResetCreditExpiries && rateLimitResetCredits.length > 0 ? (
         <div className={classes.codexResetCredits}>
           <div className={classes.codexResetCreditsTitle}>
