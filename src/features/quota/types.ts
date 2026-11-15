@@ -21,6 +21,9 @@ export interface QuotaClassMap {
   quotaResetRelativeSoon: string;
   quotaAmount: string;
   quotaMessage: string;
+  // Claude extra usage: state stays beside the label in both hosts.
+  claudeExtraUsageTitle: string;
+  claudeExtraUsageStatus: string;
   // Plan-chip row uses Codex names and is shared by Claude, Antigravity, Kimi, and xAI.
   // premium is the gold card; elite is Pro 20x liquid platinum. Both are finalized assets.
   codexPlan: string;
@@ -61,6 +64,8 @@ export const QUOTA_CLASS_KEYS: readonly (keyof QuotaClassMap)[] = [
   'quotaResetRelativeSoon',
   'quotaAmount',
   'quotaMessage',
+  'claudeExtraUsageTitle',
+  'claudeExtraUsageStatus',
   'codexPlan',
   'codexPlanItem',
   'codexPlanLabel',

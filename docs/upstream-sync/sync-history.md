@@ -1,5 +1,16 @@
 # Sync History
 
+## 2026-11-15 Upstream `v1.28.0` Candidate
+
+- Observation time: `2026-11-15T16:31:32Z`. Fixed official range: `v1.27.3` / `953fb2444350c6c36052dda46cac0abce6b23ea6` to `v1.28.0` / `3d893ec88938c3ceef200a15be6af8cf972564b3`; 43 upstream commits / 151 paths.
+- Product base: `a9a9b1f4e4384618fbd9bc8c8831b35d8cf94cb8`; branch: `sync/upstream-v1.28.0-20261115`. Binary-safe three-way release delta preserves the squash-integrated fork history.
+- All four protected feature clusters are reconciled; decision: `DEC-20261115-020`. New upstream capabilities remain inherited work, not downstream-origin claims.
+- Pinned Bun1.4.3 complete `bun run verify`: 2416 tests passed; lint zero errors / seven warnings; type-check and single-file build passed. Version-injected candidate build is one 4,108,119-byte HTML file.
+- Independent pre-PR source review and 279 focused tests passed with no confirmed P0/P1 in scope. Checked code preserves downstream account, quota, OAuth and plugin ownership; later code changes require fresh review.
+- Playwright synthetic checks: quota layouts, retained Pro flagship tier, 390px overflow, explicit credit-setting save, built-in/second-plugin OAuth proxy POST bodies, account controls, model sync and model-rule dirty draft. Screenshots inspected; optional node and fixture model-list probes returned404. No real provider/account writes or production browser acceptance is claimed.
+- No PR acceptance, merge, tag, Release or deployment is claimed by this candidate record. Subsequent lifecycle entries must name actual identities and evidence.
+- Paired delivery: validate the CPA and CPAMC candidates together, upgrade the server first, then refresh only the single-file panel asset. Preserve the installed plugin directory and original enablement. Recovery must retain old image, panel, configuration and consistent plugin/KV state; do not overwrite post-upgrade data.
+
 ## 2026-11-07 v1.27.3-ergouzi.1 released
 
 - PR33 merged as `d3622d1b778a9012666f0cce4c0caa4659c86351`; its tree equals reviewed candidate `dc6afe830340f8d963c3cbc622e08071c60d033d`. Latest-head Codex review completed without findings; verify/feature-contract CI succeeded. Initial automatic review credit failure was superseded by a completed manual review.

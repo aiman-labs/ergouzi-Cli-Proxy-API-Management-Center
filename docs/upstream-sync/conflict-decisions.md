@@ -529,3 +529,45 @@ brand entries while excluding AIcodemirror entries from duplicate display.
 Merge the locale trees structurally and retain downstream keys. Preserve hash
 routing, version injection and the single inlined `management.html` contract.
 Real OAuth/provider writes are not proven by synthetic or static checks.
+
+## DEC-20261115-020: Compose v1.28.0 layouts and account controls with fork ownership
+
+Status: candidate. Merge, publication and production acceptance are separate facts.
+
+Apply the complete official v1.27.3..v1.28.0 delta (43 commits / 151 paths) to the
+squash-integrated fork. Adopt persistent Even rows / Stacked / Compact layouts,
+independent quota timelines, model-catalog synchronization and model-rule draft
+workspaces. Shared renderers retain downstream filter/sort/pagination, fixed bulk
+mutation scope, manual credential refresh, quota-only refresh, status toggles,
+optional reset details and connection/auth-revision fences.
+
+Retain approved Pro flagship/platinum and full card-tier surfaces, initial tier
+resolution and previous tiers while loading/error. Compact details toggles compose
+with those surfaces; they do not replace the fork's tier classes. Structural locale
+merges retain downstream keys. Retire only the unused provider-placeholder keys
+whose replaced model-rule controls no longer consume them. New comments stay English.
+
+Adopt OAuth login proxy entry using the existing server POST-body contract; never
+persist proxy secrets or put them into query strings. Built-in and plugin login
+results remain bound to their connection and declared provider/source. The plugin
+store refactor carries the downstream install-settlement predicate into its new
+hook, including disabled installs and expected versions, while mutations lock store
+installs. Installed plugin libraries and production enablement are not changed.
+
+Codex credit-overage is an account-user write-only setting, initially unknown and
+changed only after explicit selection/save. Preserve account/user identity, shared
+credential locking, ambiguous-write state and stale-connection protection; no real
+account setting is changed by source or synthetic UI verification. Claude grant
+selection remains explicit and confirmed; no upstream reset is redeemed in tests.
+
+Keep v8 management API, existing capability/session/error events, hash routing,
+version injection, pinned Bun1.4.3 and one public management.html with no dependent
+assets. Pair with the CPA v8.0.73 candidate and verify affected browser routes.
+Deploy the host before refreshing the static asset; panel refresh does not restart
+CPA. Retain the old panel and host as distinct rollback artifacts. Synthetic tests
+and screenshots do not establish real provider OAuth/quota-write acceptance.
+
+Delivery workflow alignment: remove the legacy webhook notification job from the
+component artifact workflow. Artifact build/publication jobs remain unchanged.
+The coordinator sends the separately authorized canonical bot release/deploy
+receipts once each and verifies their message IDs, avoiding duplicate mass pings.

@@ -91,3 +91,11 @@ The current synchronization candidate covers `v1.26.4..v1.27.0` in full.
 See the dated sync-history entry and `DEC-20261031-018` for preserved downstream
 contracts, exact provenance, validation limits and independent upgrade constraints.
 This record does not claim merge, release or deployment.
+
+## 2026-11-15 release-delta candidate
+
+The official v1.28.0 candidate, protected behavior and paired compatibility are
+recorded in the dated sync-history entry and DEC-20261115-020. Validation,
+latest-head review, publication and production deployment remain separate gates.
+The current verified lifecycle at the top does not advance until those stages
+actually complete.
