@@ -1,5 +1,14 @@
 # Sync History
 
+## 2026-11-15 v1.28.0-ergouzi.1 released
+
+- PR34 merged as `50dda77b9aa84417b7b1b6017592b1b590b3afed`; tree `8030ce44e4fd9b53c660e75837e47619e0faed81` equals tested/reviewed candidate `29ad071abe74263acae72383cd4a320776eb993b`. Latest-head Codex review completed with no major issues; both remote checks passed. The initial automatic review quota failure was not treated as acceptance; one manual request completed the actual review.
+- Annotated tag `v1.28.0-ergouzi.1` and matching [GitHub Release](https://github.com/aiman-labs/ergouzi-Cli-Proxy-API-Management-Center/releases/tag/v1.28.0-ergouzi.1) published from validated main. Build43738116015 succeeded with Bun1.4.3 and exact version injection.
+- Asset `management.html`: 4,108,119 bytes; SHA256 `ac3a00333e4598fd7d270a43b84468f192e3c504234c71ee2e91b920cab57e6c`. Anonymous download, GitHub digest, version and focused markers verified. The single-file/hash-routing/v8 API contract remains intact.
+- Source scope remains CPAMC-F001 through CPAMC-F004 / DEC-20261115-020. Complete2416 tests, type-check, build, lint (zero errors/seven existing warnings), focused independent review and synthetic browser scenarios passed. Real provider OAuth/credit/reset writes and long-duration load are not claimed.
+- Release and its internal receipt are verified. Pair with CPA v8.0.73; native-library/recovery, production identity, static deployment verification and deployment receipt are distinct gates maintained in private Ops. A published latest asset does not itself prove a coordinated backend deployment.
+
+
 ## 2026-11-15 Upstream `v1.28.0` Candidate
 
 - Observation time: `2026-11-15T16:31:32Z`. Fixed official range: `v1.27.3` / `953fb2444350c6c36052dda46cac0abce6b23ea6` to `v1.28.0` / `3d893ec88938c3ceef200a15be6af8cf972564b3`; 43 upstream commits / 151 paths.

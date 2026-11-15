@@ -1,6 +1,6 @@
 # Ergouzi CPAMC Upstream Sync
 
-Latest verified lifecycle: `v1.27.3-ergouzi.1` was merged and released on 2026-11-07; see [lifecycle record](sync-history.md#2026-11-07-v1273-ergouzi1-released). The exact official delta and protection decisions remain in DEC-20261107-019. Private Ops holds authorized deployment/recovery facts and stage receipts.
+Latest verified lifecycle: `v1.28.0-ergouzi.1` was merged and released on 2026-11-15; see [lifecycle record](sync-history.md#2026-11-15-v1280-ergouzi1-released). Exact source/artifact and validation limits are recorded there. Private Ops owns actual deployment/recovery evidence and stage receipts.
 
 功能开发先读 [Feature registry](../features/README.md) 和
 [功能索引](../features/registry.json)。同步前用两个明确的上游端点运行重叠分析；
