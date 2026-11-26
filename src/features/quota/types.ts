@@ -82,7 +82,6 @@ export const QUOTA_CLASS_KEYS: readonly (keyof QuotaClassMap)[] = [
   'antigravityQuotaGroup',
   'antigravityQuotaGroupHeader',
   'antigravityQuotaGroupTitle',
-  'antigravityQuotaGroupDescription',
   'quotaBar',
   'quotaBarFill',
   'quotaBarFillHigh',

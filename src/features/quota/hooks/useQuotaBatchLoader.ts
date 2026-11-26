@@ -10,17 +10,14 @@ import { getQuotaCacheKey } from '@/utils/quota/identity';
 import type { QuotaFileEntry } from '../logic';
 import { QUOTA_ADAPTERS, getQuotaSetter } from '../providers';
 import { enrichQuotaInBackground } from '../quotaEnrichment';
+import type { QuotaCardState } from '../providers';
 import type { QuotaProviderType } from '../providers/types';
 
-interface BatchFetchResult {
+type BatchFetchResult = {
   name: string;
   type: QuotaProviderType;
   cacheKey: string;
-  status: 'success' | 'error';
-  data?: unknown;
-  error?: string;
-  errorStatus?: number;
-}
+} & ({ status: 'success'; data: unknown } | { status: 'error'; errorState: QuotaCardState });
 
 export const QUOTA_BATCH_CONCURRENCY = 4;
 
@@ -76,8 +73,7 @@ export function useQuotaBatchLoader() {
                 cacheKey,
                 type,
                 status: 'error',
-                error: message,
-                errorStatus: getStatusFromError(err),
+                errorState: adapter.buildErrorState(message, getStatusFromError(err), err),
               };
             }
           },
@@ -87,7 +83,7 @@ export function useQuotaBatchLoader() {
             const setQuota = getQuotaSetter(adapter);
             const state = result.status === 'success'
               ? adapter.buildSuccessState(result.data)
-              : adapter.buildErrorState(result.error || t('common.unknown_error'), result.errorStatus);
+              : result.errorState;
             const committed = commitIfQuotaCacheCurrent(cacheGeneration, () => {
               setQuota((prev) => ({ ...prev, [result.cacheKey]: state }));
             }, result.name);

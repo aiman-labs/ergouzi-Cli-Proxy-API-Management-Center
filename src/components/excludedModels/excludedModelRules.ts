@@ -38,6 +38,22 @@ export const parseExcludedRulesText = (text: string): string[] =>
 
 export const formatExcludedRulesText = (rules: readonly string[]): string => rules.join('\n');
 
+export interface RuleEditorDraft {
+  text: string;
+  baseRules: readonly string[];
+  baseCandidates: readonly string[];
+  published: readonly string[];
+}
+
+/** Keep raw input across our own updates, but never overwrite an external reset. */
+export function currentRuleEditorDraft(draft: RuleEditorDraft | null, rules: readonly string[]) {
+  return draft &&
+    draft.published.length === rules.length &&
+    draft.published.every((rule, i) => rule === rules[i])
+    ? draft
+    : null;
+}
+
 export function matchesExcludedRule(rule: string, modelId: string): boolean {
   const normalizedRule = ruleKey(rule);
   const normalizedModel = ruleKey(modelId);

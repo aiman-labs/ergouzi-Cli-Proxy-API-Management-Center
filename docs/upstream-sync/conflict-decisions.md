@@ -571,3 +571,26 @@ Delivery workflow alignment: remove the legacy webhook notification job from the
 component artifact workflow. Artifact build/publication jobs remain unchanged.
 The coordinator sends the separately authorized canonical bot release/deploy
 receipts once each and verifies their message IDs, avoiding duplicate mass pings.
+
+## DEC-20261126-021: Reconcile upstream v1.29.2 with protected behavior
+
+Status: `decided`. Official delta: `v1.28.0` / `3d893ec88938c3ceef200a15be6af8cf972564b3` to `v1.29.2` / `3866a16878b04c19627ef0db06a33f5cd79878cf`.
+
+Reconcile the complete release delta with all four hybrid protection clusters.
+Preserve quota tier colors/legend and last known tier state. Native group edits keep
+member inheritance, unknown metadata, original group order, ETag and captured
+connection identity. Keep Fenno's three protocol bundle and hidden-brand behavior
+while adopting upstream workbench claiming and grouped editor changes.
+
+Carry credential status behavior into the extracted module: select immutable
+identities, never broaden same-name selection, cap requests at four workers, stop
+queued writes on connection change and isolate stale settlement. Retain refresh
+locking. Keep visual YAML draft/rebase lineage and conflict errors; adopt upstream
+payload.replace/OAuth validation without swallowing errors. Structural locale
+merges retain downstream keys; new untranslated values use English fallback.
+
+Keep v8 endpoints, hash routing, pinned Bun1.4.3, version injection and the single
+public management.html contract. Pair with CPA v8.1.6; host deployment precedes
+static refresh. No provider accounts, OAuth grants or quota writes are exercised by
+synthetic verification. Artifact, browser, latest-head review and production checks
+remain separate evidence and must not be inferred from this candidate record.

@@ -99,3 +99,9 @@ recorded in the dated sync-history entry and DEC-20261115-020. Validation,
 latest-head review, publication and production deployment remain separate gates.
 The current verified lifecycle at the top does not advance until those stages
 actually complete.
+
+## 2026-11-26 release-delta candidate
+
+The complete `v1.28.0..v1.29.2` candidate and retained contracts are recorded in
+`DEC-20261126-021` and the dated sync-history entry. Publication and production
+status do not advance until verified stage evidence is recorded.

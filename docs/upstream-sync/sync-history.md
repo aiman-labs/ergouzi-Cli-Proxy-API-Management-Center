@@ -1,5 +1,15 @@
 # Sync History
 
+## 2026-11-26 upstream v1.29.2 candidate
+
+- Official baseline: `v1.28.0` / `3d893ec88938c3ceef200a15be6af8cf972564b3`.
+- Official target: `v1.29.2` / `3866a16878b04c19627ef0db06a33f5cd79878cf`.
+- Exact release delta: 45 commits / 367 paths, +23855/-12228; binary-safe three-way application onto the squash-integrated fork.
+- Decision: `DEC-20261126-021`; all four CPAMC hybrid feature records reconciled.
+- Pinned Bun1.4.3 `bun run verify` passed: 2617 tests, zero failures/errors; lint has zero errors and seven existing warnings; TypeScript and the single-file production build passed. Selection identity and connection-change queued cancellation regressions were retained. Initial module import, fixture and lint failures were repaired.
+- Independent focused review found no new P0/P1 in the checked scope. Real local CPA/CPAMC empty-account browser pairing passed provider, credential, quota, configuration, logs and plugin navigation with no page errors; absent optional config leaves return 404 as expected. This does not validate provider accounts or production. Latest-head remote review remains pending. No merge, release or deployment is claimed.
+
+
 ## 2026-11-15 v1.28.0-ergouzi.1 released
 
 - PR34 merged as `50dda77b9aa84417b7b1b6017592b1b590b3afed`; tree `8030ce44e4fd9b53c660e75837e47619e0faed81` equals tested/reviewed candidate `29ad071abe74263acae72383cd4a320776eb993b`. Latest-head Codex review completed with no major issues; both remote checks passed. The initial automatic review quota failure was not treated as acceptance; one manual request completed the actual review.
