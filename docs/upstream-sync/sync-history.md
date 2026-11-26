@@ -1,5 +1,13 @@
 # Sync History
 
+## 2026-11-26 v1.29.2-ergouzi.1 released
+
+- PR36 merged as `b2f0da525ed39b7558fdd037845f7d09a585129b`; tree `39f634c02333e564f237cef4537d94f2ffb689d5` equals the tested candidate. Latest-head Codex review completed with no findings; remote verify and feature-contract checks passed.
+- Annotated tag and matching [GitHub Release](https://github.com/aiman-labs/ergouzi-Cli-Proxy-API-Management-Center/releases/tag/v1.29.2-ergouzi.1) published from validated main. Build45871968307 succeeded with Bun1.4.3 and exact version injection.
+- Public `management.html`: 4,234,171 bytes; SHA256 `8903e8bfd3333a9620646076302ebb00a72b3ed8d192c32c20eb46ec66b7bdac`. Anonymous download, GitHub digest and local formal build match. Version marker and single-file contract verified.
+- CPAMC-F001 through CPAMC-F004 / DEC-20261126-021 remain the source scope. Complete2617 tests, type-check/build/lint (seven inherited warnings), independent review and six-page local real-API pairing passed. Use compatible CPA v8.1.6 before refreshing this static asset.
+- Authorized static deployment and both stage receipts completed independently after the compatible host passed, without restarting the host. Private operators own runtime/recovery details. Real provider writes, production browser acceptance and long-duration load are not claimed; rollback retains the prior asset and pauses automatic panel updates.
+
 ## 2026-11-26 upstream v1.29.2 candidate
 
 - Official baseline: `v1.28.0` / `3d893ec88938c3ceef200a15be6af8cf972564b3`.
