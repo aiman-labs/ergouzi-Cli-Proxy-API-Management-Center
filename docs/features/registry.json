@@ -29,11 +29,11 @@
       ],
       "dependencies": [],
       "upstream_sync": {
-        "baseline": "v1.27.3",
-        "baseline_sha": "953fb2444350c6c36052dda46cac0abce6b23ea6",
-        "target": "v1.28.0",
-        "target_sha": "3d893ec88938c3ceef200a15be6af8cf972564b3",
-        "decision": "DEC-20261115-020",
+        "baseline": "v1.28.0",
+        "baseline_sha": "3d893ec88938c3ceef200a15be6af8cf972564b3",
+        "target": "v1.29.2",
+        "target_sha": "3866a16878b04c19627ef0db06a33f5cd79878cf",
+        "decision": "DEC-20261126-021",
         "strategy": "reconcile exact release delta with downstream invariants"
       }
     },
@@ -61,11 +61,11 @@
       ],
       "dependencies": [],
       "upstream_sync": {
-        "baseline": "v1.27.3",
-        "baseline_sha": "953fb2444350c6c36052dda46cac0abce6b23ea6",
-        "target": "v1.28.0",
-        "target_sha": "3d893ec88938c3ceef200a15be6af8cf972564b3",
-        "decision": "DEC-20261115-020",
+        "baseline": "v1.28.0",
+        "baseline_sha": "3d893ec88938c3ceef200a15be6af8cf972564b3",
+        "target": "v1.29.2",
+        "target_sha": "3866a16878b04c19627ef0db06a33f5cd79878cf",
+        "decision": "DEC-20261126-021",
         "strategy": "reconcile exact release delta with downstream invariants"
       }
     },
@@ -101,11 +101,11 @@
         }
       ],
       "upstream_sync": {
-        "baseline": "v1.27.3",
-        "baseline_sha": "953fb2444350c6c36052dda46cac0abce6b23ea6",
-        "target": "v1.28.0",
-        "target_sha": "3d893ec88938c3ceef200a15be6af8cf972564b3",
-        "decision": "DEC-20261115-020",
+        "baseline": "v1.28.0",
+        "baseline_sha": "3d893ec88938c3ceef200a15be6af8cf972564b3",
+        "target": "v1.29.2",
+        "target_sha": "3866a16878b04c19627ef0db06a33f5cd79878cf",
+        "decision": "DEC-20261126-021",
         "strategy": "reconcile exact release delta with downstream invariants"
       }
     },
@@ -139,11 +139,11 @@
         }
       ],
       "upstream_sync": {
-        "baseline": "v1.27.3",
-        "baseline_sha": "953fb2444350c6c36052dda46cac0abce6b23ea6",
-        "target": "v1.28.0",
-        "target_sha": "3d893ec88938c3ceef200a15be6af8cf972564b3",
-        "decision": "DEC-20261115-020",
+        "baseline": "v1.28.0",
+        "baseline_sha": "3d893ec88938c3ceef200a15be6af8cf972564b3",
+        "target": "v1.29.2",
+        "target_sha": "3866a16878b04c19627ef0db06a33f5cd79878cf",
+        "decision": "DEC-20261126-021",
         "strategy": "reconcile exact release delta with downstream invariants"
       }
     }

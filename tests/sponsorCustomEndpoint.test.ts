@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { openaiToResource } from '../src/features/providers/adapters';
 import {
+  buildFennoAIRaw,
+  FENNO_AI_CODEX_BASE_URL,
+  FENNO_AI_PROVIDER_NAME,
+} from '../src/features/providers/fennoAI';
+import {
   buildQiniuCloudRaw,
   QINIU_CLOUD_BASE_URL_OPTIONS,
   QINIU_CLOUD_PROVIDER_NAME,
@@ -11,6 +16,7 @@ import {
   buildApiKeyFunRaw,
 } from '../src/features/providers/sponsor';
 import { shouldShowInGenericOpenAIGroup } from '../src/features/providers/useProviderWorkbench';
+import { getSponsorProviderDefinition } from '../src/features/providers/sponsorDefinitions';
 import { normalizeConfigResponse } from '../src/services/api/transformers';
 
 const openAIConfig = (name: string, baseUrl: string) => ({
@@ -109,5 +115,21 @@ describe('sponsor custom endpoint isolation', () => {
 
     expect(shouldShowInGenericOpenAIGroup(entry)).toBe(false);
     expect(shouldShowInGenericOpenAIGroup(entry, new Set(['qiniuCloud'] as const))).toBe(true);
+  });
+  test('FennoAI retains supported OpenAI and Codex configurations', () => {
+    const raw = buildFennoAIRaw({
+      openaiCompatibility: [
+        {
+          name: FENNO_AI_PROVIDER_NAME,
+          baseUrl: FENNO_AI_CODEX_BASE_URL,
+          apiKeyEntries: [{ apiKey: 'openai-key' }],
+        },
+      ],
+      codexApiKeys: [{ apiKey: 'codex-key', baseUrl: FENNO_AI_CODEX_BASE_URL }],
+    });
+
+    expect(getSponsorProviderDefinition('fennoAI').protocols).toEqual(['openai', 'codex', 'claude']);
+    expect(raw.openai.map((item) => item.index)).toEqual([0]);
+    expect(raw.codex.map((item) => item.index)).toEqual([0]);
   });
 });

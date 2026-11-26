@@ -31,11 +31,11 @@ describe('auth-files batch scope', () => {
 
   test('routes cross-page status changes through the bounded settled runner', () => {
     const source = readFileSync(
-      new URL('../src/features/authFiles/hooks/useAuthFilesData.ts', import.meta.url),
+      new URL('../src/features/authFiles/statusActions.ts', import.meta.url),
       'utf8'
     );
     expect(source).toContain('runLimitedSettledBatch');
-    expect(source).toContain('BATCH_STATUS_CONCURRENCY');
+    expect(source).toContain('concurrency: 4');
     expect(source).not.toContain('Promise.allSettled(\n          targetNameList.map');
   });
 
